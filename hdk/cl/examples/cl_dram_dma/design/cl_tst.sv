@@ -541,6 +541,12 @@ always_ff @(posedge clk)
 // Inst RAMs
 //---------------------------------------
 
+// 127:0 inst_wr_rdata
+// 127:112 cfg_write_user
+// 111:104 cfg_write_last_length
+// 103:96 cfg_write_length
+// 95:64 cfg_write_data
+// 63:0  cfg_write_address
 bram_2rw #(.WIDTH(128), .ADDR_WIDTH(8), .DEPTH(256)) WRITE_INST_RAM (
    .clk(clk),
    .wea(cfg_write_inst_ram_wr),
