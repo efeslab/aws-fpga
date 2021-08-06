@@ -38,6 +38,9 @@ file copy -force $CL_DIR/../common/design/cl_common_defines.vh     $TARGET_DIR
 file copy -force $CL_DIR/design/cl_dram_dma_defines.vh             $TARGET_DIR
 file copy -force $CL_DIR/design/cl_id_defines.vh                   $TARGET_DIR
 file copy -force $CL_DIR/design/cl_dram_dma_pkg.sv                 $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fpgarr_pkg.sv                   $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fpgarr_types.svh                $TARGET_DIR
+file copy -force $CL_DIR/design/cl_axil_rr.sv                      $TARGET_DIR
 file copy -force $CL_DIR/design/cl_dram_dma.sv                     $TARGET_DIR
 file copy -force $CL_DIR/design/cl_tst.sv                          $TARGET_DIR
 file copy -force $CL_DIR/design/cl_int_tst.sv                      $TARGET_DIR
@@ -68,6 +71,6 @@ puts "AWS FPGA: VIVADO_TOOL_VERSION $TOOL_VERSION"
 puts "vivado_version $vivado_version"
 
 # encrypt .v/.sv/.vh/inc as verilog files
-encrypt -k $HDK_SHELL_DIR/build/scripts/vivado_keyfile_2017_4.txt -lang verilog  [glob -nocomplain -- $TARGET_DIR/*.{v,sv}] [glob -nocomplain -- $TARGET_DIR/*.vh] [glob -nocomplain -- $TARGET_DIR/*.inc]
+#encrypt -k $HDK_SHELL_DIR/build/scripts/vivado_keyfile_2017_4.txt -lang verilog  [glob -nocomplain -- $TARGET_DIR/*.{v,sv}] [glob -nocomplain -- $TARGET_DIR/*.vh] [glob -nocomplain -- $TARGET_DIR/*.inc]
 # encrypt *vhdl files
-encrypt -k $HDK_SHELL_DIR/build/scripts/vivado_vhdl_keyfile_2017_4.txt -lang vhdl -quiet [ glob -nocomplain -- $TARGET_DIR/*.vhd? ]
+#encrypt -k $HDK_SHELL_DIR/build/scripts/vivado_vhdl_keyfile_2017_4.txt -lang vhdl -quiet [ glob -nocomplain -- $TARGET_DIR/*.vhd? ]

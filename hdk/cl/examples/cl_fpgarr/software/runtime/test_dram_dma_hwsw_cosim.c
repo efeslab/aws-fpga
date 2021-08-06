@@ -173,8 +173,8 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     cl_poke_ocl(0x024, ((uint64_t)host_mem >> 32) & 0xffffffff);
     cl_poke_ocl(0x028,0x1234);
     cl_poke_ocl(0x02c,0x5);
-    cl_poke_ocl(0x008,0x1);
-    sv_pause(1000);
+    //cl_poke_ocl(0x008,0x1);
+    //sv_pause(500);
     for (uint8_t i = 0; i < 100; ++i) {
         printf("[%p]=%#x\n", host_mem+i, host_memory_getc(host_mem+i));
     }
