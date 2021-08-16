@@ -48,69 +48,6 @@ module reduction_and #(
    end
 endmodule
 
-/*
-////////////////////////////////////////////////////////////////////////////////
-// rr_channel_splitter is responsible for duplicating one incoming
-// two-way-handshake channel into two.
-// Channel A is dedicated for recording. Besides recording axi(l)
-// transactions, it is also responsible for inserting bubbles when other
-// channels have transactions while this channel does not.
-// Channel B is dedicated for forwarding the transactions to inner user logic.
-//
-// Each channel is equipped with a shallow fifo. Each fifo has its own
-// two-way-handshake to pass through the din
-////////////////////////////////////////////////////////////////////////////////
-module rr_channel_splitter #(
-   parameter DEPTH,
-   parameter WIDTH) (
-   input  logic clk,
-   input  logic sync_rst_n,
-   // Incoming data, transmission is controlled by the validin and readyin
-   input  logic [WIDTH-1:0] din,
-   input  logic validin,
-   output logic readyin,
-   // Channel A
-   input  logic bubble_en,
-   output logic [WIDTH-1:0] douta,
-   output logic valida,
-   input  logic readya,
-   // Channel B
-   output logic [WIDTH-1:0] doutb,
-   output logic validb,
-   input  logic readyb
-);
-
-logic fulla, fullb;
-flop_fifo #(.DEPTH(DEPTH), .WIDTH(WIDTH)) MIRROR_FIFOA (
-   .clk(clk),
-   .rst_n(sync_rst_n),
-   .sync_rst_n(1'b1),
-   .cfg_watermark(DEPTH),
-   .push(validin && readyin),
-   .push_data(din),
-   .pop(valida && readya),
-   .pop_data(douta),
-   .half_full(),
-   .watermark(fulla),
-   .data_valid(valida)
-);
-flop_fifo #(.DEPTH(DEPTH), .WIDTH(WIDTH)) MIRROR_FIFOB (
-   .clk(clk),
-   .rst_n(sync_rst_n),
-   .sync_rst_n(1'b1),
-   .cfg_watermark(DEPTH),
-   .push(validin && readyin),
-   .push_data(din),
-   .pop(validb && readyb),
-   .pop_data(doutb),
-   .half_full(),
-   .watermark(fullb),
-   .data_valid(validb)
-);
-assign readyin = !fulla && !fullb;
-endmodule
-*/
-
 module channel_siderec #(
    parameter DEPTH,
    parameter WIDTH) (
