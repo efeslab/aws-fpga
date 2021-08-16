@@ -112,8 +112,9 @@ begin
       for (int i=0; i<DEPTH; i=i+1)
          fifo[i] <= nxt_fifo[i];
    end
-   
 end
+
+assert(!(&ffio_valid && push)); // overflow
 
 assign {data_valid, pop_data} = fifo[0];
 

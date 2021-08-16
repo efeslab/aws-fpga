@@ -1,5 +1,6 @@
 `ifndef CL_FPGARR_PKG
 `define CL_FPGARR_PKG
+`include "cl_fpgarr_types.svh"
    interface axi_bus_t;
       logic[15:0] awid;
       logic[63:0] awaddr;
@@ -84,47 +85,62 @@
                          input rdata, rresp, rvalid, output rready);
    endinterface
 
-   module axi_to_axil_master(
-      axi_bus_t.master axi,
-      axi_lite_bus_t.slave axil);
-      // AW Channel
-      assign axil.awaddr = axi.awaddr[31:0];
-      assign axil.awvalid = axi.awvalid;
-      assign axi.awready = axil.awready;
-      // W  Channel
-      assign axil.wdata = axi.wdata[31:0];
-      assign axil.wstrb = axi.wstrb[3:0];
-      assign axil.wvalid = axi.wvalid;
-      assign axi.wready = axil.wready;
-      // B  Channel
-      assign axi.bresp = axil.bresp;
-      assign axi.bvalid = axil.bvalid;
-      assign axil.bready = axi.bready;
-      // AR Channel
-      assign axil.araddr = axi.araddr[31:0];
-      assign axil.arvalid = axi.arvalid;
-      assign axi.arready = axil.arready;
-      // R  Channel
-      assign axi.rdata[31:0] = axil.rdata;
-      assign axi.rresp = axil.rresp;
-      assign axi.rvalid = axil.rvalid;
-      assign axil.rready = axi.rready;
-   endmodule
+   // axi_mstr_rec_bus_t is the bus representing unpacked recording info for
+   // axi master
+   // it has a two-way handshake just like axi
+   interface axi_mstr_rec_bus_t;
+      logic valid;
+      logic ready;
+      axi_rr_mstr_hdr_t hdr;
+      axi_rr_AW_t AW;
+      axi_rr_W_t W;
+      axi_rr_AR_t AR;
+      parameter int WIDTH [0:2] = '{AXI_RR_AW_WIDTH, AXI_RR_W_WIDTH, AXI_RR_B_WIDTH};
+      // recording data producer
+      modport P (output valid, input ready,
+                 output hdr, AW, W, AR);
+      // recording data consumer
+      modport C (input valid, output ready,
+                 input hdr, AW, W, AR);
+   endinterface
 
-   module reduction_and #(
-      parameter IN_WIDTH,
-      parameter OUT_WIDTH) (
-      input logic [IN_WIDTH-1:0] in,
-      output logic [OUT_WIDTH-1:0] out);
-      localparam REMAIN = IN_WIDTH % OUT_WIDTH;
-      integer i;
-      always_comb begin
-         out = {OUT_WIDTH{1'b0}};
-         for (i=OUT_WIDTH; i < IN_WIDTH; i+=OUT_WIDTH) begin
-            out = out & in[i-1 -: OUT_WIDTH];
-         end
-         if (REMAIN > 0)
-            out = out & {{OUT_WIDTH-REMAIN{1'b0}}, in[IN_WIDTH-REMAIN +: REMAIN]};
-      end
-   endmodule
+   interface axi_slv_rec_bus_t;
+      logic valid;
+      logic ready;
+      axi_rr_slv_hdr_t hdr;
+      axi_rr_B_t B;
+      axi_rr_R_t R;
+      // recording data producer
+      modport P (output valid, input ready,
+                 output hdr, B, R);
+      // recording data consumer
+      modport C (input valid, output ready,
+                 input hdr, B, R);
+   endinterface
+
+   // axi_lite_mstr_rec_bus_t is the bus representing unpacked recording info
+   // for axi lite master
+   // it has a two-way handshake just like axi
+   interface axi_lite_mstr_rec_bus_t;
+      logic valid;
+      logic ready;
+      axil_rr_mstr_hdr_t hdr;
+      axil_rr_AW_t AW;
+      axil_rr_W_t W;
+      axil_rr_AR_t AR;
+      // recording data producer
+      modport P (output valid, input ready,
+                 output hdr, AW, W, AR);
+      // recording data consumer
+      modport C (input valid, output ready,
+                 input hdr, AW, W, AR);
+   endinterface
+interface siderec_data #(parameter WIDTH);
+   logic valid;
+   logic busy;
+   logic [WIDTH-1:0] data;
+   modport in  (input valid, input busy, input data);
+   modport out (output valid, output busy, output data);
+endinterface
+
 `endif

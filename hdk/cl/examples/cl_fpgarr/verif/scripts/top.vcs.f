@@ -66,6 +66,7 @@ ${CL_ROOT}/design/cl_tst.sv
 ${CL_ROOT}/design/cl_int_tst.sv
 ${CL_ROOT}/design/cl_dram_dma_pkg.sv
 ${CL_ROOT}/design/cl_fpgarr_pkg.sv
+${CL_ROOT}/design/cl_fpgarr_utils.sv
 ${CL_ROOT}/design/cl_axil_rr.sv
 ${CL_ROOT}/design/cl_dma_pcis_slv.sv
 ${CL_ROOT}/design/cl_pcim_mstr.sv

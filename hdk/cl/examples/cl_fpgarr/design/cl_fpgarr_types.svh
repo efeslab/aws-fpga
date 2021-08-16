@@ -1,5 +1,10 @@
 `ifndef CL_FPGARR_TYPES
 `define CL_FPGARR_TYPES
+
+////////////////////////////////////////////////////////////////////////////////
+// structures to track all info you need to start an AXI(lite) transaction for
+// each channel.
+////////////////////////////////////////////////////////////////////////////////
 // RR
 // record inputs from axi master:
 // used in pcis
@@ -40,13 +45,7 @@ typedef struct packed {
 } axi_rr_AR_t;
 parameter AXI_RR_AR_WIDTH = $bits(axi_rr_AR_t);
 
-typedef struct packed {
-   logic hasAW;
-   logic hasW;
-   logic hasAR;
-} axi_rr_mstr_hdr_t;
-typedef axi_rr_mstr_hdr_t axil_rr_mstr_hdr_t;
-localparam AXI_RR_MSTR_WIDTH =
+parameter AXI_RR_MSTR_WIDTH =
    AXI_RR_AW_WIDTH + AXI_RR_W_WIDTH + AXI_RR_AR_WIDTH;
 
 // RR
@@ -73,10 +72,7 @@ typedef struct packed {
 } axi_rr_R_t;
 parameter AXI_RR_R_WIDTH = $bits(axi_rr_R_t);
 
-typedef struct packed {
-   logic hasB;
-   logic hasR;
-} axi_rr_slv_hdr_t;
+parameter AXI_RR_SLV_WIDTH = AXI_RR_B_WIDTH + AXI_R_WIDTH;
 
 
 // RR
@@ -122,4 +118,34 @@ typedef struct packed {
    logic [1:0] rresp;
 } axil_rr_R_t;
 parameter AXIL_RR_R_WIDTH = $bits(axil_rr_R_t);
+parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
+
+////////////////////////////////////////////////////////////////////////////////
+// metadata of a group of channels to manage in record replay
+////////////////////////////////////////////////////////////////////////////////
+// RR metadata
+// generic metadata of axi(lite) channels
+typedef struct packed {
+   logic valid;          // does this channel contain valid in-coming data?
+   logic busy;           // only meaningful when valid is false. When there is
+                         // no valid in-coming data in this channel, does this
+                         // channel still processing some transactions?
+} axi_rr_ch_meta;
+typedef struct packed {
+   axi_rr_ch_meta AW;
+   axi_rr_ch_meta W;
+   axi_rr_ch_meta AR;
+} axi_rr_mstr_hdr_t;
+typedef axi_rr_mstr_hdr_t axil_rr_mstr_hdr_t;
+typedef struct packed {
+   axi_rr_ch_meta B;
+   axi_rr_ch_meta R;
+} axi_rr_slv_hdr_t;
+typedef axi_rr_slv_hdr_t axil_rr_slv_hdr_t;
+
 `endif
+
+// template
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////     garbage      ////////////////////////////////////
+//////////////////////////   end of garbage ////////////////////////////////////
