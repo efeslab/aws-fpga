@@ -114,7 +114,8 @@ begin
    end
 end
 
-assert(!(&ffio_valid && push)); // overflow
+always_comb
+  assert(!(&fifo_valid && push)); // overflow
 
 assign {data_valid, pop_data} = fifo[0];
 

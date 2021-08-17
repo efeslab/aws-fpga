@@ -104,7 +104,7 @@ flop_fifo #(.DEPTH(DEPTH), .WIDTH(WIDTH+2)) REC_FIFO (
    .clk(clk),
    .rst_n(sync_rst_n),
    .sync_rst_n(1'b1),
-   .cfg_watermark(DEPTH),
+   .cfg_watermark(DEPTH-1),
    .push(new_packet || bubble_en),
    .push_data({new_packet, past_busy, din}),
    .pop(rec_valid && rec_ready),

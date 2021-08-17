@@ -72,7 +72,7 @@ typedef struct packed {
 } axi_rr_R_t;
 parameter AXI_RR_R_WIDTH = $bits(axi_rr_R_t);
 
-parameter AXI_RR_SLV_WIDTH = AXI_RR_B_WIDTH + AXI_R_WIDTH;
+parameter AXI_RR_SLV_WIDTH = AXI_RR_B_WIDTH + AXI_RR_R_WIDTH;
 
 
 // RR

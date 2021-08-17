@@ -29,11 +29,10 @@ assign rec_out.valid = &rec_valid;
 // paths between inputs (rec_valid) to outputs (siderec_ready) in the master
 // or subordinate interfaces.
 assign siderec_ready = &rec_valid && rec_out.ready;
-assign bubble_en = &new_packet;
+assign bubble_en = |new_packet;
 
 // AW Channel
-logic AW_rec_valid, AW_new_packet;
-channel_siderec #(.DEPTH(FIFO_DEPTH), .WIDTH($bits(axil_rr_AW_t))) CHANNEL_AW (
+channel_siderec #(.DEPTH(FIFO_DEPTH), .WIDTH(AXIL_RR_AW_WIDTH)) CHANNEL_AW (
    .clk(clk),
    .sync_rst_n(sync_rst_n),
    .din(inS.awaddr),
@@ -48,11 +47,11 @@ channel_siderec #(.DEPTH(FIFO_DEPTH), .WIDTH($bits(axil_rr_AW_t))) CHANNEL_AW (
    .sh_ready(inS.awready),
    .new_packet(new_packet[0])
 );
+assign outM.awaddr = inS.awaddr;
 assign outM.awvalid = inS.awvalid;
 
 // W  Channel
-logic W_rec_valid, W_new_packet;
-channel_siderec #(.DEPTH(FIFO_DEPTH), .WIDTH($bits(axil_rr_W_t))) CHANNEL_W (
+channel_siderec #(.DEPTH(FIFO_DEPTH), .WIDTH(AXIL_RR_W_WIDTH)) CHANNEL_W (
    .clk(clk),
    .sync_rst_n(sync_rst_n),
    .din({inS.wdata, inS.wstrb}),
@@ -67,4 +66,25 @@ channel_siderec #(.DEPTH(FIFO_DEPTH), .WIDTH($bits(axil_rr_W_t))) CHANNEL_W (
    .sh_ready(inS.wready),
    .new_packet(new_packet[1])
 );
+assign outM.wdata = inS.wdata;
+assign outM.wstrb = inS.wstrb;
+assign outM.wvalid = inS.wvalid;
+
+// AR Channel
+channel_siderec #(.DEPTH(FIFO_DEPTH), .WIDTH(AXIL_RR_AR_WIDTH)) CHANNEL_AR (
+   .clk(clk),
+   .sync_rst_n(sync_rst_n),
+   .din({inS.araddr}),
+   .sh_valid(inS.arvalid),
+   .cl_ready(outM.arready),
+   .bubble_en(bubble_en),
+   .ispkt_out(rec_out.hdr.AR.valid),
+   .busy_out(rec_out.hdr.AR.busy),
+   .dout(rec_out.AR),
+   .rec_valid(rec_valid[2]),
+   .sh_ready(inS.arready),
+   .new_packet(new_packet[2])
+);
+assign outM.araddr = inS.araddr;
+assign outM.arvalid = inS.arvalid;
 endmodule

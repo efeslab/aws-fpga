@@ -37,11 +37,17 @@ axi_lite_bus_t axil_out();
 axi_to_axil_master a2al_mstr(
   .axi(sh_ocl_bus),
   .axil(axil_bus));
-axil_record_mstr axil_rec(
+axi_lite_mstr_rec_bus_t axil_rec_mstr();
+axil_mstr_recorder axil_rec(
   .clk(clk),
   .sync_rst_n(sync_rst_n),
-  .axil_in(axil_bus),
-  .axil_out(axil_out));
+  .inS(axil_bus),
+  .outM(axil_out),
+  .rec_out(axil_rec_mstr)
+);
+// for testing only
+assign axil_rec_mstr.ready = 1'b1;
+// end for testing only
 
 axi_bus_t sh_ocl_bus_q();
 
