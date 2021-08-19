@@ -1,4 +1,5 @@
 `include "cl_fpgarr_types.svh"
+`include "cl_fpgarr_defs.svh"
 
 module axil_mstr_recorder (
    input clk,
@@ -7,7 +8,6 @@ module axil_mstr_recorder (
    axi_lite_bus_t.slave outM,
    axi_lite_mstr_rec_bus_t.P rec_out
 );
-parameter FIFO_DEPTH=32;
 
 // pass through B Channel
 assign inS.bresp = outM.bresp;
@@ -20,6 +20,7 @@ assign inS.rresp = outM.rresp;
 assign inS.rvalid = outM.rvalid;
 assign outM.rready = inS.rready;
 
+// Channels to record (AW, W, AR)
 logic bubble_en;
 logic siderec_ready;
 logic [2:0] rec_valid;  // 0:AW, 1:W, 2:AR
@@ -32,7 +33,8 @@ assign siderec_ready = &rec_valid && rec_out.ready;
 assign bubble_en = |new_packet;
 
 // AW Channel
-channel_siderec #(.DEPTH(FIFO_DEPTH), .WIDTH(AXIL_RR_AW_WIDTH)) CHANNEL_AW (
+channel_siderec #(.DEPTH(RECORDER_FIFO_DEPTH), .WIDTH(AXIL_RR_AW_WIDTH))
+CHANNEL_AW (
    .clk(clk),
    .sync_rst_n(sync_rst_n),
    .din(inS.awaddr),
@@ -51,7 +53,8 @@ assign outM.awaddr = inS.awaddr;
 assign outM.awvalid = inS.awvalid;
 
 // W  Channel
-channel_siderec #(.DEPTH(FIFO_DEPTH), .WIDTH(AXIL_RR_W_WIDTH)) CHANNEL_W (
+channel_siderec #(.DEPTH(RECORDER_FIFO_DEPTH), .WIDTH(AXIL_RR_W_WIDTH))
+CHANNEL_W (
    .clk(clk),
    .sync_rst_n(sync_rst_n),
    .din({inS.wdata, inS.wstrb}),
@@ -71,7 +74,8 @@ assign outM.wstrb = inS.wstrb;
 assign outM.wvalid = inS.wvalid;
 
 // AR Channel
-channel_siderec #(.DEPTH(FIFO_DEPTH), .WIDTH(AXIL_RR_AR_WIDTH)) CHANNEL_AR (
+channel_siderec #(.DEPTH(RECORDER_FIFO_DEPTH), .WIDTH(AXIL_RR_AR_WIDTH))
+CHANNEL_AR (
    .clk(clk),
    .sync_rst_n(sync_rst_n),
    .din({inS.araddr}),
