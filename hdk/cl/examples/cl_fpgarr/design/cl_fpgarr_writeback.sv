@@ -48,7 +48,6 @@ else
          loge_valid_out[i] <= loge_valid_out[i];
 endmodule
 
-
 ////////////////////////////////////////////////////////////////////////////
 // axi interconnect for sharing single shell pcim bus across the logging
 // writeback module and the user pcim bus
@@ -186,3 +185,17 @@ rr_pcim_axi_interconnect pcim_interconnect_inst (
    .S01_AXI_wvalid(cl_pcim_bus.wvalid)
 );
 endmodule
+
+module rr_writeback #(
+   parameter WIDTH,
+   parameter OFFSETWIDTH) (
+   input clk,
+   input sync_rst_n,
+   // cfg_max_payload: see https://github.com/aws/aws-fpga/blob/master/hdk/docs/AWS_Shell_Interface_Specification.md#pcim-interface----axi-4-for-outbound-pcie-transactions-cl-is-master-shell-is-slave-512-bit
+   input logic [1:0] cfg_max_payload,
+   input logic din_valid,
+   output logic din_ready,
+   input logic [WIDTH-1:0] din,
+   input logic [OFFSETWIDTH-1:0] din_width,
+   axi_bus_t.slave axi_out
+);
