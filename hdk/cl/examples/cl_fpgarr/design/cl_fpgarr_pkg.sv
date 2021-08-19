@@ -135,12 +135,5 @@
       modport C (input valid, output ready,
                  input hdr, AW, W, AR);
    endinterface
-interface siderec_data #(parameter WIDTH);
-   logic valid;
-   logic busy;
-   logic [WIDTH-1:0] data;
-   modport in  (input valid, input busy, input data);
-   modport out (output valid, output busy, output data);
-endinterface
 
 `endif
