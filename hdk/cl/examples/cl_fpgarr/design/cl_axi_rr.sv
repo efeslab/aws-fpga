@@ -28,8 +28,8 @@ logic bubble_en;
 logic siderec_ready;
 logic [2:0] rec_valid;  // 0:AW, 1:W, 2:AR
 logic [2:0] new_packet; // 0:AW, 1:W, 2:AR
-assign rec_out.valid = &recvalid;
-assign siderec_ready = &recvalid && rec_out.ready; // FIXME double check
+assign rec_out.valid = &rec_valid;
+assign siderec_ready = &rec_valid && rec_out.ready; // FIXME double check
 assign bubble_en = |new_packet;
 
 // AW Channel
