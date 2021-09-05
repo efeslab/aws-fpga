@@ -1,0 +1,16 @@
+[tasks]
+prfc prf
+
+[options]
+prf: mode prove
+prf: depth 20
+
+[engines]
+smtbmc
+
+[script]
+read -formal twowayhandshake_logger.v
+prep -top twowayhandshake_logger
+
+[files]
+twowayhandshake_logger.v
