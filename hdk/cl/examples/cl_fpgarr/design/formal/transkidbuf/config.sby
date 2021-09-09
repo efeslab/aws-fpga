@@ -1,0 +1,36 @@
+[tasks]
+prf_pstl prf  pass_stall
+prf_npstl prf nopass_stall
+cvr_pstl cvr pass_stall
+cvr_npstl cvr nopass_stall
+
+[options]
+prf: mode prove
+prf: depth 20
+cvr: mode cover
+cvr: depth 40
+
+[engines]
+smtbmc
+
+[script]
+verific -vlog-define TRANSKIDBUF_SELF
+verific -formal transkidbuf.sv
+--pycode-begin--
+params = { "PASS_STALL" : {"pass_stall": 1, "nopass_stall": 0}}
+def chparam(params, tags):
+  chparam_str = ""
+  for pname, pchoices in params.items():
+    for tag, pvalue in pchoices.items():
+      if tag in tags:
+        chparam_str += " -chparam {} {}".format(str(pname), str(pvalue))
+  return chparam_str
+cmd = "hierarchy -top transkidbuf"
+cmd += chparam(params, tags)
+output(cmd)
+--pycode-end--
+prep -top transkidbuf
+
+[files]
+../../transkidbuf.sv
+formal/properties.sv ../properties.sv
