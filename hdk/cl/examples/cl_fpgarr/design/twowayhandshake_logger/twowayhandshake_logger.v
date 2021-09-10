@@ -198,11 +198,11 @@ module twowayhandshake_logger #(
   ////////////////////////////////////////////////////////////////////////////
   // {{{
   always @(posedge clk)
-  if (!f_past_valid || !rstn)
+  if (!f_past_valid || $past(!rstn))
   begin
       assume(!in_valid);
   end
-  else if ($past(in_valid && !in_ready && rstn))
+  else if ($past(in_valid && !in_ready && rstn) && rstn)
       assume(in_valid && $stable(in_data));
   // }}} Input AXI Stream
 
@@ -211,19 +211,13 @@ module twowayhandshake_logger #(
   ////////////////////////////////////////////////////////////////////////////
   // {{{
   always @(posedge clk)
-  if (!rstn)
+  if (f_past_valid)
+  if ($past(!rstn))
       assert(!out_valid);
   else begin // f_past_valid
-      if ($past(out_valid && !out_ready && rstn))
+      if ($past(out_valid && !out_ready && rstn) && rstn)
           // Following any stall, valid must remain and data must be stable
           assert(out_valid && $stable(out_data));
-      // output might wait for log, no need to enforce the following property
-      // (performance property?)
-      //if ($past(out_ready && rstn) && !stall_output) begin
-      //    assert(out_valid == in_valid);
-      //    // in_valid |-> out_data == in_data
-      //    assert(!in_valid || (out_data == in_data));
-      //end
   end
   // }}} Output AXI Stream
 
@@ -232,12 +226,13 @@ module twowayhandshake_logger #(
   ////////////////////////////////////////////////////////////////////////////
   // {{{
   always @(posedge clk)
-  if (!rstn)
+  if (f_past_valid)
+  if ($past(!rstn))
     assert(!logb_valid);
   else begin // f_past_valid
     // logb
     // logb_valid should hold if previous cycle transaction is unfinished
-    if ($past(logb_valid && !logb_ready && rstn))
+    if ($past(logb_valid && !logb_ready && rstn) && rstn)
       assert(logb_valid && $stable(logb_data));
     // Log should always sync with input (performance?)
     if ($past(logb_ready && rstn) && !stall_logb) begin
@@ -281,6 +276,7 @@ module twowayhandshake_logger #(
 
   // packet counter consistency
   always @(posedge clk)
+  if (f_past_valid)
   if (rstn) begin
       // logb can finish at most one transaction more than the output channel
       // if out_cnt + 1 == logb_cnt, everything is waiting for the output
@@ -322,6 +318,7 @@ module twowayhandshake_logger #(
   ////////////////////////////////////////////////////////////////////////////
   // {{{
   always @(posedge clk)
+  if (f_past_valid)
   if (rstn) begin
     // in_valid => (logb_valid || out_valid || loge_valid)
     // there should not be any cycle wasted (no output channel asserts valid)
@@ -335,6 +332,7 @@ module twowayhandshake_logger #(
   ////////////////////////////////////////////////////////////////////////////
   // {{{
   always @(posedge clk)
+  if (f_past_valid)
   if (rstn) begin
     assert(!stall_out || stall_logb); // stall_out => stall_logb
     assert(!stall_out || in_valid); // stall_out => in_valid
