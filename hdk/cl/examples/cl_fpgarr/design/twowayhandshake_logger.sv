@@ -102,6 +102,7 @@
 //
 // The following logger for twowayhandshake implements the above splitting
 // feature
+`include "formal/properties.sv"
 module twowayhandshake_logger #(
   parameter DATA_WIDTH=32
 ) (
@@ -180,70 +181,72 @@ module twowayhandshake_logger #(
   assign out_data = in_data;
 
 `ifdef FORMAL
+  `ifdef TWOWAYHANDSHAKE_LOGGER_SELF
+    `define ASSUME assume
+    `define ASSERT assert
+  `else
+    `define ASSUME assert
+    `define ASSERT assume
+  `endif
   ////////////////////////////////////////////////////////////////////////////
   // Init (assumption)
   ////////////////////////////////////////////////////////////////////////////
   // {{{
   // reset properties
+  `ifdef TWOWAYHANDSHAKE_LOGGER_SELF
+  `ifndef JASPERGOLD
   reg f_past_valid = 0;
   always @(posedge clk) begin
     if (!f_past_valid)
       assume(!rstn);
     f_past_valid <= 1;
   end
+  `endif
+  `endif
   // }}} reset
 
   ////////////////////////////////////////////////////////////////////////////
   // Input AXI Stream (assumption)
   ////////////////////////////////////////////////////////////////////////////
   // {{{
+  `ASSUME property(RESET_CLEARS_VALID(clk, rstn, in_valid));
+  `ASSUME property(HELD_VALID_DATA(clk, rstn, in_valid, in_ready, in_data));
+  `ifndef JASPERGOLD
+  // this is to fight the potential yosys bug, where I have to use immediate
+  // assumptions for the input properties
   always @(posedge clk)
   if (!f_past_valid || $past(!rstn))
   begin
-      assume(!in_valid);
+      `ASSUME(!in_valid);
   end
   else if ($past(in_valid && !in_ready && rstn) && rstn)
-      assume(in_valid && $stable(in_data));
+      `ASSUME(in_valid && $stable(in_data));
+  `endif // JASPERGOLD
   // }}} Input AXI Stream
 
   ////////////////////////////////////////////////////////////////////////////
   // Output AXI Stream (correctness)
   ////////////////////////////////////////////////////////////////////////////
   // {{{
-  always @(posedge clk)
-  if (f_past_valid)
-  if ($past(!rstn))
-      assert(!out_valid);
-  else begin // f_past_valid
-      if ($past(out_valid && !out_ready && rstn) && rstn)
-          // Following any stall, valid must remain and data must be stable
-          assert(out_valid && $stable(out_data));
-  end
+  `ASSERT property(RESET_CLEARS_VALID(clk, rstn, out_valid));
+  `ASSERT property(HELD_VALID_DATA(clk, rstn, out_valid, out_ready, out_data));
   // }}} Output AXI Stream
 
   ////////////////////////////////////////////////////////////////////////////
   // Log AXI Stream (correctness)
   ////////////////////////////////////////////////////////////////////////////
   // {{{
+  `ASSERT property(RESET_CLEARS_VALID(clk, rstn, logb_valid));
+  `ASSERT property(HELD_VALID_DATA(clk, rstn, logb_valid, logb_ready, logb_data));
+  `ASSERT property(RESET_CLEARS_VALID(clk, rstn, loge_valid));
+  `ASSERT property(HELD_VALID_DATA(clk, rstn, loge_valid, loge_ready, 0));
   always @(posedge clk)
-  if (f_past_valid)
-  if ($past(!rstn))
-    assert(!logb_valid);
-  else begin // f_past_valid
-    // logb
-    // logb_valid should hold if previous cycle transaction is unfinished
-    if ($past(logb_valid && !logb_ready && rstn) && rstn)
-      assert(logb_valid && $stable(logb_data));
-    // Log should always sync with input (performance?)
+  if (rstn) begin
+    // logb should always sync with input (performance?)
     if ($past(logb_ready && rstn) && !stall_logb) begin
-      assert(logb_valid == in_valid);
-      assert(!in_valid || (logb_data == in_data));
+      `ASSERT(logb_valid == in_valid);
+      `ASSERT(!in_valid || (logb_data == in_data));
     end
-    // loge
-    // loge_valid should hold if previous cycle transaction is unfinished
-    if ($past(loge_valid && !loge_ready && rstn))
-      assert(loge_valid);
-    assert(!stall_loge); // loge is the last step, should never stall
   end
   // }}} Log AXI Stream
   
@@ -276,40 +279,45 @@ module twowayhandshake_logger #(
 
   // packet counter consistency
   always @(posedge clk)
-  if (f_past_valid)
   if (rstn) begin
       // logb can finish at most one transaction more than the output channel
       // if out_cnt + 1 == logb_cnt, everything is waiting for the output
       // channel to complete
       if (out_cnt + 1 == logb_cnt) begin
-        assert(out_valid);
-        assert(stall_logb);
+        `ASSERT(out_valid);
+        `ASSERT(stall_logb);
       end
       else
-        assert(out_cnt == logb_cnt);
+        `ASSERT(out_cnt == logb_cnt);
 
       // Same as above, loge can wait for out but not vice versa.
       if (loge_cnt + 1 == out_cnt) begin
-        assert(loge_valid);
-        assert(stall_out);
+        `ASSERT(loge_valid);
+        `ASSERT(stall_out);
       end
       else
-        assert(loge_cnt == out_cnt);
+        `ASSERT(loge_cnt == out_cnt);
+
+      // the input channel should be synced with at least one of the out
+      // channels.
+      `ASSERT((in_cnt == logb_cnt) || (in_cnt == out_cnt) || (in_cnt == loge_cnt));
+
       ////////////////////////////////////////
       // properties about counter and stall //
       ////////////////////////////////////////
       // when logb is stalled, logb can only be 1 step ahead of input
       if (stall_logb)
-        assert(logb_cnt == in_cnt + 1);
+        `ASSERT(logb_cnt == in_cnt + 1);
       // when output is stalled, logb has to be stalled too. output and logb
       // should be at the same step
       if (stall_out) begin
-        assert(out_cnt == logb_cnt);
-        assert(stall_logb);
+        `ASSERT(out_cnt == logb_cnt);
+        `ASSERT(stall_logb);
       end
-      // the input channel should be synced with at least one of the out
-      // channels.
-      assert((in_cnt == logb_cnt) || (in_cnt == out_cnt) || (in_cnt == loge_cnt));
+      `ASSERT(!stall_loge); // loge is the last step, should never stall
+      // stall_out can only be caused by loge stall
+      if ($past(rstn))
+        `ASSERT(stall_out == $past(loge_valid && !loge_ready));
   end
   // }}}
 
@@ -318,12 +326,11 @@ module twowayhandshake_logger #(
   ////////////////////////////////////////////////////////////////////////////
   // {{{
   always @(posedge clk)
-  if (f_past_valid)
   if (rstn) begin
     // in_valid => (logb_valid || out_valid || loge_valid)
-    // there should not be any cycle wasted (no output channel asserts valid)
-    // when the input channel asserts valid
-    assert(!in_valid || (logb_valid || out_valid || loge_valid));
+    // there should not be any cycle wasted (no output channel `ASSERTs valid)
+    // when the input channel `ASSERTs valid
+    `ASSERT(!in_valid || (logb_valid || out_valid || loge_valid));
   end
   // }}}
 
@@ -332,12 +339,20 @@ module twowayhandshake_logger #(
   ////////////////////////////////////////////////////////////////////////////
   // {{{
   always @(posedge clk)
-  if (f_past_valid)
   if (rstn) begin
-    assert(!stall_out || stall_logb); // stall_out => stall_logb
-    assert(!stall_out || in_valid); // stall_out => in_valid
-    assert(!stall_logb || in_valid); // stall_logb => in_valid
+    `ASSERT(!stall_out || stall_logb); // stall_out => stall_logb
+    `ASSERT(!stall_out || in_valid); // stall_out => in_valid
+    `ASSERT(!stall_logb || in_valid); // stall_logb => in_valid
   end
+  // }}}
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Useful functions to export some signals for verification
+  ////////////////////////////////////////////////////////////////////////////
+  // {{{
+  function automatic loge_stall();
+    loge_stall = loge_valid && !loge_ready;
+  endfunction
   // }}}
 `endif // FORMAL
 endmodule

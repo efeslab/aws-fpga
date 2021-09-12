@@ -1,0 +1,18 @@
+[tasks]
+prfc prf
+
+[options]
+prf: mode prove
+prf: depth 20
+
+[engines]
+smtbmc
+
+[script]
+verific -vlog-define TWOWAYHANDSHAKE_LOGGER_SELF
+verific -formal twowayhandshake_logger.sv
+prep -top twowayhandshake_logger
+
+[files]
+../../twowayhandshake_logger.sv
+formal/properties.sv ../properties.sv
