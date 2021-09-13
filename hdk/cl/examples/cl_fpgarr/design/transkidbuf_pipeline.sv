@@ -1,4 +1,10 @@
 `include "formal/properties.sv"
+// PASS_LAST_STALL: whether to transparently pass the stall signal (ready) in
+// the first stage (the input state to the pipe, which is also the last stall
+// propagation in the pipeline)
+// DEFAULT_PASS_STALL: whether to transparently pass the stall signal (ready)
+// in stages other than the first stage (only makes sense when the pipeline
+// depth > 1)
 module transkidbuf_pipeline #(
   parameter DATA_WIDTH=32,
   parameter PIPE_DEPTH=4,
@@ -29,11 +35,9 @@ generate
     wire [DATA_WIDTH-1:0] in_cnt_pipe[PIPE_DEPTH-1:0];
     wire [DATA_WIDTH-1:0] out_cnt_pipe[PIPE_DEPTH-1:0];
     `endif
-    localparam INIT_PASS_STALL =
-      (PIPE_DEPTH==1)? PASS_LAST_STALL : DEFAULT_PASS_STALL;
     transkidbuf #(
       .DATA_WIDTH(DATA_WIDTH),
-      .PASS_STALL(INIT_PASS_STALL)
+      .PASS_STALL(PASS_LAST_STALL)
     ) input_stage (
       .clk(clk),
       .rstn(rstn),
@@ -46,11 +50,9 @@ generate
     );
 
     for (i=1; i < PIPE_DEPTH; i=i+1) begin: pipe_stages
-      localparam PASS_STALL =
-        (i==PIPE_DEPTH-1)? PASS_LAST_STALL : DEFAULT_PASS_STALL;
       transkidbuf #(
         .DATA_WIDTH(DATA_WIDTH),
-        .PASS_STALL(PASS_STALL)
+        .PASS_STALL(DEFAULT_PASS_STALL)
       ) pipe_stage (
         .clk(clk),
         .rstn(rstn),
