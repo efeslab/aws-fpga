@@ -174,7 +174,7 @@ module twowayhandshake_logger #(
   assign loge_valid = !stall_loge && (stall_out? 1 : out_valid && out_ready);
   assign i_loge_ready = stall_loge || loge_ready;
   // output channel
-  assign out_valid = stall_out ? 0 : (
+  assign out_valid = stall_out ? 1'b0 : (
     stall_logb ? in_valid : (in_valid && logb_valid && logb_ready)
     );
   assign i_out_ready = stall_out || out_ready;
@@ -193,15 +193,13 @@ module twowayhandshake_logger #(
   ////////////////////////////////////////////////////////////////////////////
   // {{{
   // reset properties
-  `ifdef TWOWAYHANDSHAKE_LOGGER_SELF
   `ifndef JASPERGOLD
   reg f_past_valid = 0;
   always @(posedge clk) begin
     if (!f_past_valid)
-      assume(!rstn);
+      `ASSUME(!rstn);
     f_past_valid <= 1;
   end
-  `endif
   `endif
   // }}} reset
 
@@ -215,10 +213,9 @@ module twowayhandshake_logger #(
   // this is to fight the potential yosys bug, where I have to use immediate
   // assumptions for the input properties
   always @(posedge clk)
-  if (!f_past_valid || $past(!rstn))
-  begin
+  if (f_past_valid)
+  if ($past(!rstn))
       `ASSUME(!in_valid);
-  end
   else if ($past(in_valid && !in_ready && rstn) && rstn)
       `ASSUME(in_valid && $stable(in_data));
   `endif // JASPERGOLD
@@ -353,6 +350,19 @@ module twowayhandshake_logger #(
   function automatic loge_stall();
     loge_stall = loge_valid && !loge_ready;
   endfunction
+  function automatic get_stall_logb();
+    get_stall_logb = stall_logb;
+  endfunction
+  // }}}
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Utility signals to fight yosys __extnets
+  ////////////////////////////////////////////////////////////////////////////
+  // {{{
+  `ifndef JASPERGOLD
+  wire wstall_logb;
+  assign wstall_logb = stall_logb;
+  `endif
   // }}}
 `endif // FORMAL
 endmodule

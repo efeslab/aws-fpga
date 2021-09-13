@@ -127,8 +127,8 @@ else
   ////////////////////////////////////////////////////////////////////////////
   // {{{
   // reset properties
-  `ifdef TRANSKIDBUF_SELF
   `ifndef JASPERGOLD
+  `ifdef TRANSKIDBUF_SELF
   reg f_past_valid = 0;
   always @(posedge clk) begin
     if (!f_past_valid)
@@ -152,12 +152,6 @@ else
   localparam F_CNTWIDTH=DATA_WIDTH;
   reg [F_CNTWIDTH-1:0] in_cnt;
   reg [F_CNTWIDTH-1:0] out_cnt;
-  function automatic [F_CNTWIDTH-1:0] get_in_cnt();
-    get_in_cnt = in_cnt;
-  endfunction
-  function automatic [F_CNTWIDTH-1:0] get_out_cnt();
-    get_out_cnt = out_cnt;
-  endfunction
   always @(posedge clk)
   if (!rstn) begin
     in_cnt <= 0;
@@ -166,20 +160,24 @@ else
   else begin
     if (in_valid && in_ready) begin
       in_cnt <= in_cnt + 1;
-      `ASSUME(in_data == in_cnt);
     end
     if (out_valid && out_ready) begin
       out_cnt <= out_cnt + 1;
     end
+    if (in_valid)
+      `ASSUME(in_data == in_cnt);
   end
 
   // sequence inorder behavior property to verify (correctness)
   always @(posedge clk)
   if (rstn)
-    if (out_valid && out_ready)
+    if (out_valid)
       `ASSERT(out_data == out_cnt);
 
-  `ifdef TRANSKIDBUF_SELF
+  ////////////////////////////////////////////////////////////////////////////
+  // Proof
+  ////////////////////////////////////////////////////////////////////////////
+  // {{{
   // sequence inorder behavior proof
   always @(posedge clk)
   if (rstn) begin
@@ -197,7 +195,7 @@ else
     end
     `ASSERT(state != 'b11);
   end
-  `endif // end of inorder proof
+  // }}}
 
   `ifdef TRANSKIDBUF_SELF
   // sanity check, example trace
@@ -246,5 +244,18 @@ else
       ((out_cnt == 'd10) && out_valid && out_ready && out_cnt == out_data)
     );
   `endif
+  ////////////////////////////////////////////////////////////////////////////
+  // Utility signals to fight yosys __extnets
+  ////////////////////////////////////////////////////////////////////////////
+  // {{{
+  `ifndef JASPERGOLD
+  wire [F_CNTWIDTH-1:0] win_cnt;
+  assign win_cnt = in_cnt;
+  wire [F_CNTWIDTH-1:0] wout_cnt;
+  assign wout_cnt = out_cnt;
+  wire [NSTATEBITS-1:0] wstate;
+  assign wstate = state;
+  `endif
+  // }}}
 `endif // FORMAL
 endmodule

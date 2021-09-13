@@ -83,8 +83,8 @@ endgenerate
   ////////////////////////////////////////////////////////////////////////////
   // {{{
   // reset properties
-  `ifdef TRANSKIDBUF_PIPELINE_SELF
   `ifndef JASPERGOLD
+  `ifdef TRANSKIDBUF_PIPELINE_SELF
   reg f_past_valid = 0;
   always @(posedge clk) begin
     if (!f_past_valid)
@@ -107,12 +107,6 @@ endgenerate
   localparam F_CNTWIDTH=DATA_WIDTH;
   reg [F_CNTWIDTH-1:0] in_cnt;
   reg [F_CNTWIDTH-1:0] out_cnt;
-  function automatic [F_CNTWIDTH-1:0] get_in_cnt();
-    get_in_cnt = in_cnt;
-  endfunction
-  function automatic [F_CNTWIDTH-1:0] get_out_cnt();
-    get_out_cnt = out_cnt;
-  endfunction
   always @(posedge clk)
   if (!rstn) begin
     in_cnt <= 0;
@@ -121,28 +115,32 @@ endgenerate
   else begin
     if (in_valid && in_ready) begin
       in_cnt <= in_cnt + 1;
-    `ASSUME(in_data == in_cnt);
     end
     if (out_valid && out_ready) begin
       out_cnt <= out_cnt + 1;
     end
+    if (in_valid)
+      `ASSUME(in_data == in_cnt);
   end
 
   // sequence inorder behavior property to verify (correctness)
   always @(posedge clk)
   if (rstn)
-    if (out_valid && out_ready)
+    if (out_valid)
       `ASSERT(out_data == out_cnt);
 
-  `ifdef TRANSKIDBUF_PIPELINE_SELF
+  ////////////////////////////////////////////////////////////////////////////
+  // Proof
+  ////////////////////////////////////////////////////////////////////////////
+  // {{{
   // sequence inorder behavior proof
   generate
     if (PIPE_DEPTH > 0) begin: proof_pipe_gen
-        assign pipe_gen.in_cnt_pipe[0] = pipe_gen.input_stage.get_in_cnt();
-        assign pipe_gen.out_cnt_pipe[0] = pipe_gen.input_stage.get_out_cnt();
+        assign pipe_gen.in_cnt_pipe[0] = pipe_gen.input_stage.in_cnt;
+        assign pipe_gen.out_cnt_pipe[0] = pipe_gen.input_stage.out_cnt;
         for (i=1; i < PIPE_DEPTH; i=i+1) begin
-          assign pipe_gen.in_cnt_pipe[i] = pipe_gen.pipe_stages[i].pipe_stage.get_in_cnt();
-          assign pipe_gen.out_cnt_pipe[i] = pipe_gen.pipe_stages[i].pipe_stage.get_out_cnt();
+          assign pipe_gen.in_cnt_pipe[i] = pipe_gen.pipe_stages[i].pipe_stage.in_cnt;
+          assign pipe_gen.out_cnt_pipe[i] = pipe_gen.pipe_stages[i].pipe_stage.out_cnt;
         end
         always @(posedge clk)
         if (rstn) begin
@@ -154,7 +152,7 @@ endgenerate
         end
     end
   endgenerate
-  `endif // end of inorder proof
+  // }}}
 
   `ifdef TRANSKIDBUF_PIPELINE_SELF
   check_trace: cover property (@(posedge clk)
@@ -165,5 +163,17 @@ endgenerate
     ##[1:$] (out_cnt == 'd10)
   );
   `endif
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Utility signals to fight yosys __extnets
+  ////////////////////////////////////////////////////////////////////////////
+  // {{{
+  `ifndef JASPERGOLD
+  wire [F_CNTWIDTH-1:0] win_cnt;
+  assign win_cnt = in_cnt;
+  wire [F_CNTWIDTH-1:0] wout_cnt;
+  assign wout_cnt = out_cnt;
+  `endif
+  // }}}
 `endif // FORMAL
 endmodule
