@@ -1,0 +1,26 @@
+[tasks]
+prfc prf
+
+[options]
+prf: mode prove
+prf: depth 20
+
+[engines]
+smtbmc
+
+[script]
+verific -vlog-define AXICHANNEL_LOGGER_SELF
+verific -vlog-define TRANSKIDBUF_PROOF
+verific -vlog-define TRANSKIDBUF_PIPELINE_PROOF
+verific -formal axichannel_logger.sv
+verific -formal twowayhandshake_logger.sv
+verific -formal transkidbuf.sv
+verific -formal transkidbuf_pipeline.sv
+prep -top axichannel_logger
+
+[files]
+../../axichannel_logger.sv
+../../twowayhandshake_logger.sv
+../../transkidbuf.sv
+../../transkidbuf_pipeline.sv
+formal/properties.sv ../properties.sv
