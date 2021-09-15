@@ -1,4 +1,6 @@
+`ifdef FORMAL
 `include "formal/properties.sv"
+`endif
 // PASS_LAST_STALL: whether to transparently pass the stall signal (ready) in
 // the first stage (the input state to the pipe, which is also the last stall
 // propagation in the pipeline)

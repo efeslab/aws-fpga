@@ -1,4 +1,6 @@
+`ifdef FORMAL
 `include "formal/properties.sv"
+`endif
 module axichannel_logger #(
   parameter DATA_WIDTH=32,
   parameter PIPE_DEPTH=4
@@ -26,9 +28,11 @@ wire logb_ready_pipe;
 wire [DATA_WIDTH-1:0] logb_data_pipe;
 wire loge_valid_pipe;
 wire loge_ready_pipe;
+`ifdef FORMAL
 // F_x is for formal properties
 wire [DATA_WIDTH-1:0] F_loge_data_pipe;
 wire [DATA_WIDTH-1:0] F_loge_data;
+`endif
 twowayhandshake_logger #(.DATA_WIDTH(DATA_WIDTH)) logger (
   .clk(clk),
   .rstn(rstn),
@@ -69,16 +73,22 @@ transkidbuf_pipeline #(
   .rstn(rstn),
   .in_valid(loge_valid_pipe),
   .in_ready(loge_ready_pipe),
+`ifdef FORMAL
   .in_data(F_loge_data_pipe),
+`else
+  .in_data(),
+`endif
   .out_valid(loge_valid),
   .out_ready(loge_ready),
+`ifdef FORMAL
   .out_data(F_loge_data)
+`else
+  .out_data()
+`endif
 );
 
 `ifdef FORMAL
 assign F_loge_data_pipe = in_data;
-`else
-assign F_loge_data_pipe = 0;
 `endif
 
 `ifdef FORMAL

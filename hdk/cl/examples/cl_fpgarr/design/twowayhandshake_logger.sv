@@ -102,7 +102,9 @@
 //
 // The following logger for twowayhandshake implements the above splitting
 // feature
+`ifdef FORMAL
 `include "formal/properties.sv"
+`endif
 module twowayhandshake_logger #(
   parameter DATA_WIDTH=32
 ) (

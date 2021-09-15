@@ -5,7 +5,9 @@
 // PASS_STALL:
 //   Does the stall signal (!out_ready) propogate from output to input
 //   regardless of the buffer state (EMPTY?)
+`ifdef FORMAL
 `include "formal/properties.sv"
+`endif
 module transkidbuf #(
   parameter DATA_WIDTH=32,
   parameter PASS_STALL=0
