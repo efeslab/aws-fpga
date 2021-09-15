@@ -1,5 +1,6 @@
 `ifndef CL_FPGARR_PKG
 `define CL_FPGARR_PKG
+`include "cl_fpgarr_defs.svh"
 `include "cl_fpgarr_types.svh"
    interface axi_bus_t;
       logic[15:0] awid;
@@ -85,55 +86,37 @@
                          input rdata, rresp, rvalid, output rready);
    endinterface
 
-   // axi_mstr_rec_bus_t is the bus representing unpacked recording info for
-   // axi master
-   // it has a two-way handshake just like axi
-   interface axi_mstr_rec_bus_t;
-      logic valid;
-      logic ready;
-      axi_rr_mstr_hdr_t hdr;
-      axi_rr_AW_t AW;
-      axi_rr_W_t W;
-      axi_rr_AR_t AR;
-      parameter int WIDTH [0:2] = '{AXI_RR_AW_WIDTH, AXI_RR_W_WIDTH, AXI_RR_B_WIDTH};
-      // recording data producer
-      modport P (output valid, input ready,
-                 output hdr, AW, W, AR);
-      // recording data consumer
-      modport C (input valid, output ready,
-                 input hdr, AW, W, AR);
-   endinterface
-
-   interface axi_slv_rec_bus_t;
-      logic valid;
-      logic ready;
-      axi_rr_slv_hdr_t hdr;
-      axi_rr_B_t B;
-      axi_rr_R_t R;
-      // recording data producer
-      modport P (output valid, input ready,
-                 output hdr, B, R);
-      // recording data consumer
-      modport C (input valid, output ready,
-                 input hdr, B, R);
-   endinterface
-
-   // axi_lite_mstr_rec_bus_t is the bus representing unpacked recording info
-   // for axi lite master
-   // it has a two-way handshake just like axi
-   interface axi_lite_mstr_rec_bus_t;
-      logic valid;
-      logic ready;
-      axil_rr_mstr_hdr_t hdr;
-      axil_rr_AW_t AW;
-      axil_rr_W_t W;
-      axil_rr_AR_t AR;
-      // recording data producer
-      modport P (output valid, input ready,
-                 output hdr, AW, W, AR);
-      // recording data consumer
-      modport C (input valid, output ready,
-                 input hdr, AW, W, AR);
+   interface rr_logging_bus_t #(
+      // how many channel you want to log transaction starts
+      // This is for logging what transaction to replay
+      parameter int LOGB_CHANNEL_CNT,
+      parameter bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS,
+      // how many channel you want to log transaction ends
+      // This is for logging the ordering/happen-before across transactions
+      parameter int LOGE_CHANNEL_CNT
+   );
+   function automatic int GET_FULL_WIDTH;
+      GET_FULL_WIDTH = 0;
+      for (int i=0; i < LOGB_CHANNEL_CNT; ++i)
+         GET_FULL_WIDTH += CHANNEL_WIDTHS[i];
+   endfunction
+   function automatic int GET_OFFSET (int idx);
+      GET_OFFSET = 0;
+      for (int i=0; i < idx; i=i+1)
+         GET_OFFSET += CHANNEL_WIDTHS[i];
+   endfunction
+   parameter OFFSET_WIDTH = $clog2(GET_FULL_WIDTH());
+   localparam FULL_WIDTH = GET_FULL_WIDTH();
+   logic logb_valid [LOGB_CHANNEL_CNT-1:0];
+   logic [FULL_WIDTH-1:0] logb_data;
+   logic loge_valid [LOGE_CHANNEL_CNT-1:0];
+   // this is shared between logb and loge
+   // i.e. ready == logb_ready == loge_ready
+   logic ready;
+   modport P (output logb_valid, output logb_data,
+              output loge_valid, input ready, import GET_OFFSET);
+   modport C (input logb_valid, input logb_data,
+              input loge_valid, output ready);
    endinterface
 
 `endif

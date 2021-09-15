@@ -12,7 +12,7 @@
 // an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
 // implied. See the License for the specific language governing permissions and
 // limitations under the License.
-
+`include "cl_fpgarr_types.svh"
 module cl_ocl_slv (
    
    input clk,
@@ -31,22 +31,31 @@ module cl_ocl_slv (
    cfg_bus_t.slave int_tst_cfg_bus
 
 );
-
+// for testing rr
 axi_lite_bus_t axil_bus();
 axi_lite_bus_t axil_out();
 axi_to_axil_master a2al_mstr(
   .axi(sh_ocl_bus),
   .axil(axil_bus));
-axi_lite_mstr_rec_bus_t axil_rec_mstr();
+`AXIL_MSTR_LOGGING_BUS(ocl_logging_bus);
 axil_mstr_recorder axil_rec(
   .clk(clk),
   .sync_rst_n(sync_rst_n),
   .inS(axil_bus),
   .outM(axil_out),
-  .rec_out(axil_rec_mstr)
+  .axil_log(ocl_logging_bus)
 );
+assign ocl_logging_bus.ready = 1'b1;
+// end of testing rr
 // for testing only
-assign axil_rec_mstr.ready = 1'b1;
+//axi_lite_mstr_rec_packed_bus_t axil_rec_mstr_packed();
+//axil_mstr_packer AXI_MSTR_PACKER(
+//  .clk(clk),
+//  .sync_rst_n(sync_rst_n),
+//  .rec_in(axil_rec_mstr),
+//  .packed_out(axil_rec_mstr_packed)
+//);
+//assign axil_rec_mstr.ready = 1'b0;
 // end for testing only
 
 axi_bus_t sh_ocl_bus_q();

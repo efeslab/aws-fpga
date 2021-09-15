@@ -65,9 +65,6 @@ ${CL_ROOT}/design/cl_tst_scrb.sv
 ${CL_ROOT}/design/cl_tst.sv
 ${CL_ROOT}/design/cl_int_tst.sv
 ${CL_ROOT}/design/cl_dram_dma_pkg.sv
-${CL_ROOT}/design/cl_fpgarr_pkg.sv
-${CL_ROOT}/design/cl_fpgarr_utils.sv
-${CL_ROOT}/design/cl_axil_rr.sv
 ${CL_ROOT}/design/cl_dma_pcis_slv.sv
 ${CL_ROOT}/design/cl_pcim_mstr.sv
 ${CL_ROOT}/design/cl_ila.sv
@@ -78,4 +75,12 @@ ${CL_ROOT}/design/cl_sda_slv.sv
 ${CL_ROOT}/design/cl_dram_dma_axi_mstr.sv
 ${CL_ROOT}/design/cl_dram_dma.sv
 
-
+# fpgarr project
+${CL_ROOT}/design/cl_fpgarr_pkg.sv
+${CL_ROOT}/design/cl_fpgarr_utils.sv
+${CL_ROOT}/design/cl_axi_rr.sv
+${CL_ROOT}/design/cl_axil_rr.sv
+${CL_ROOT}/design/twowayhandshake_logger.sv
+${CL_ROOT}/design/transkidbuf.sv
+${CL_ROOT}/design/transkidbuf_pipeline.sv
+${CL_ROOT}/design/axichannel_logger.sv

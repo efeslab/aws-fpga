@@ -100,6 +100,7 @@ typedef struct packed {
 parameter AXIL_RR_AR_WIDTH = $bits(axil_rr_AR_t);
 parameter AXIL_RR_MSTR_WIDTH =
    AXIL_RR_AW_WIDTH + AXIL_RR_W_WIDTH + AXIL_RR_AR_WIDTH;
+parameter AXIL_RR_MSTR_OFFSET_WIDTH = $clog2(AXIL_RR_MSTR_WIDTH);
 
 // RR
 // record inputs from axi slave:
@@ -120,28 +121,32 @@ typedef struct packed {
 parameter AXIL_RR_R_WIDTH = $bits(axil_rr_R_t);
 parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
 
-////////////////////////////////////////////////////////////////////////////////
-// metadata of a group of channels to manage in record replay
-////////////////////////////////////////////////////////////////////////////////
-// RR metadata
-// generic metadata of axi(lite) channels
-typedef struct packed {
-   logic valid;          // does this channel contain valid in-coming data?
-   logic busy;           // only meaningful when valid is false. When there is
-                         // no valid in-coming data in this channel, does this
-                         // channel still processing some transactions?
-} axi_rr_ch_meta;
-typedef struct packed {
-   axi_rr_ch_meta AW;
-   axi_rr_ch_meta W;
-   axi_rr_ch_meta AR;
-} axi_rr_mstr_hdr_t;
-typedef axi_rr_mstr_hdr_t axil_rr_mstr_hdr_t;
-typedef struct packed {
-   axi_rr_ch_meta B;
-   axi_rr_ch_meta R;
-} axi_rr_slv_hdr_t;
-typedef axi_rr_slv_hdr_t axil_rr_slv_hdr_t;
+`define AXI_MSTR_LOGGING_BUS(name)\
+  rr_logging_bus_t #(\
+    .LOGB_CHANNEL_CNT(3),\
+    .CHANNEL_WIDTHS({\
+      {AXI_RR_AW_WIDTH}, {AXI_RR_W_WIDTH}, \
+      {AXI_RR_AR_WIDTH}}), \
+    .LOGE_CHANNEL_CNT(5)) name()
+`define AXI_SLV_LOGGING_BUS(name)\
+  rr_logging_bus_t #(\
+    .LOGB_CHANNEL_CNT(2),\
+    .CHANNEL_WIDTHS({\
+      {AXI_RR_B_WIDTH}, {AXI_RR_R_WIDTH}}), \
+    .LOGE_CHANNEL_CNT(5)) name()
+`define AXIL_MSTR_LOGGING_BUS(name)\
+  rr_logging_bus_t #(\
+    .LOGB_CHANNEL_CNT(3),\
+    .CHANNEL_WIDTHS({\
+      {AXIL_RR_AW_WIDTH}, {AXIL_RR_W_WIDTH}, \
+      {AXIL_RR_AR_WIDTH}}), \
+    .LOGE_CHANNEL_CNT(5)) name()
+`define AXIL_SLV_LOGGING_BUS(name)\
+  rr_logging_bus_t #(\
+    .LOGB_CHANNEL_CNT(2),\
+    .CHANNEL_WIDTHS({\
+      {AXIL_RR_B_WIDTH}, {AXIL_RR_R_WIDTH}}), \
+    .LOGE_CHANNEL_CNT(5)) name()
 
 `endif
 
