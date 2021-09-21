@@ -14,13 +14,21 @@ localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
    CHANNEL_WIDTHS = axil_log.CHANNEL_WIDTHS;
 `DEF_GET_OFFSET(CHANNEL_WIDTHS)
 // parameter check
-initial begin
-   assert(LOGB_CHANNEL_CNT == 3);
-   assert(CHANNEL_WIDTHS[LOGB_AW] == AXIL_RR_AW_WIDTH);
-   assert(CHANNEL_WIDTHS[LOGB_W] == AXIL_RR_W_WIDTH);
-   assert(CHANNEL_WIDTHS[LOGB_AR] == AXIL_RR_AR_WIDTH);
-   assert(LOGE_CHANNEL_CNT == 5);
-end
+generate
+   if (LOGB_CHANNEL_CNT != 3)
+      $error("Wrong LOGB_CHANNEL_CNT %d\n", LOGB_CHANNEL_CNT);
+   if (CHANNEL_WIDTHS[LOGB_AW] != AXIL_RR_AW_WIDTH)
+      $error("AW Width mismatches: see %d, expected %d\n",
+         CHANNEL_WIDTHS[LOGB_AW], AXIL_RR_AW_WIDTH);
+   if (CHANNEL_WIDTHS[LOGB_W] != AXIL_RR_W_WIDTH)
+      $error("W Width mismatches: see %d, expected %d\n",
+         CHANNEL_WIDTHS[LOGB_W], AXIL_RR_W_WIDTH);
+   if (CHANNEL_WIDTHS[LOGB_AR] != AXIL_RR_AR_WIDTH)
+      $error("AR Width mismatches: see %d, expected %d\n",
+         CHANNEL_WIDTHS[LOGB_AR], AXIL_RR_AR_WIDTH);
+   if (LOGE_CHANNEL_CNT != 5)
+      $error("Wrong LOGE_CHANNEL_CNT %d\n", LOGE_CHANNEL_CNT);
+endgenerate
 
 // AW Channel, inS(shell) => outM(cl)
 axichannel_logger #(
@@ -132,12 +140,18 @@ localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
    CHANNEL_WIDTHS = axil_log.CHANNEL_WIDTHS;
 `DEF_GET_OFFSET(CHANNEL_WIDTHS)
 // parameter check
-initial begin
-   assert(LOGB_CHANNEL_CNT == 2);
-   assert(CHANNEL_WIDTHS[LOGB_R] == AXIL_RR_R_WIDTH);
-   assert(CHANNEL_WIDTHS[LOGB_B] == AXIL_RR_B_WIDTH);
-   assert(LOGE_CHANNEL_CNT == 5);
-end
+generate
+   if (LOGB_CHANNEL_CNT != 2)
+      $error("Wrong LOGB_CHANNEL_CNT %d\n", LOGB_CHANNEL_CNT);
+   if (CHANNEL_WIDTHS[LOGB_R] != AXIL_RR_R_WIDTH)
+      $error("R Width mismatches: see %d, expected %d\n",
+         CHANNEL_WIDTHS[LOGB_R], AXIL_RR_R_WIDTH);
+   if (CHANNEL_WIDTHS[LOGB_B] != AXIL_RR_B_WIDTH)
+      $error("B Width mismatches: see %d, expected %d\n",
+         CHANNEL_WIDTHS[LOGB_B], AXIL_RR_B_WIDTH);
+   if (LOGE_CHANNEL_CNT != 5)
+      $error("Wrong LOGE_CHANNEL_CNT %d\n", LOGE_CHANNEL_CNT);
+endgenerate
 // AW Channel, inM(shell) <= outS(cl)
 axichannel_logger #(
    .DATA_WIDTH(AXIL_RR_AW_WIDTH),

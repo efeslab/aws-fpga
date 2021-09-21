@@ -25,6 +25,7 @@ module rr_packed_logb_bus_sbuf (
    rr_packed_logb_bus_t.C in,
    rr_packed_logb_bus_t.P out
 );
+// parameter check
 generate
   if (in.FULL_WIDTH != out.FULL_WIDTH)
      $error("FULL_WIDTH mismatches: in %d, out %d\n", in.FULL_WIDTH, out.FULL_WIDTH);
@@ -53,9 +54,11 @@ module rr_logging_bus_marshaller2 #(
 );
 
 // parameter check
-initial begin
-   assert(inA.FULL_WIDTH + inB.FULL_WIDTH == out.FULL_WIDTH);
-end
+generate
+   if (inA.FULL_WIDTH + inB.FULL_WIDTH != out.FULL_WIDTH)
+      $error("FULL_WIDTH mismatches: inA %d, inB %d, out %d\n",
+         inA.FULL_WIDTH, inB.FULL_WIDTH, out.FULL_WIDTH);
+endgenerate
 
 // Data packing!
 // TODO: workaround vcs. If I do not require the FULL_WIDTH_X parameterization
@@ -99,17 +102,22 @@ module rr_logging_bus_unpack2pack (
    rr_packed_logging_bus_t.P out
 );
 // parameter check
-initial begin
-   assert(in.LOGB_CHANNEL_CNT == out.LOGB_CHANNEL_CNT);
-   assert(in.LOGE_CHANNEL_CNT == out.LOGE_CHANNEL_CNT);
-   assert(in.FULL_WIDTH == out.FULL_WIDTH);
-end
+generate
+  if (in.LOGB_CHANNEL_CNT != out.LOGB_CHANNEL_CNT)
+     $error("LOGB_CHANNEL_CNT mismatches: in %d, out %d\n",
+       in.LOGB_CHANNEL_CNT, out.LOGB_CHANNEL_CNT);
+  if (in.LOGE_CHANNEL_CNT != out.LOGE_CHANNEL_CNT)
+     $error("LOGE_CHANNEL_CNT mismatches: in %d, out %d\n",
+       in.LOGE_CHANNEL_CNT, out.LOGE_CHANNEL_CNT);
+  if (in.FULL_WIDTH != out.FULL_WIDTH)
+     $error("FULL_WIDTH mismatches: in %d, out %d\n", in.FULL_WIDTH, out.FULL_WIDTH);
+endgenerate
 localparam LOGB_CHANNEL_CNT = in.LOGB_CHANNEL_CNT;
 localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS = in.CHANNEL_WIDTHS;
 `DEF_GET_OFFSET(CHANNEL_WIDTHS)
 
 ////////////////////////////////////////////////////////////////////////////////
-// Converting extract rr_packed_logb_bus_t from rr_logging_bus_t
+// Extract rr_packed_logb_bus_t from rr_logging_bus_t
 ////////////////////////////////////////////////////////////////////////////////
 genvar i;
 generate
@@ -289,12 +297,23 @@ function automatic bit
    return 1;
 endfunction
 // parameter check
-// TODO: Change this to elaboration task (vcs -assert svaext)
+generate
+   if (inA.LOGB_CHANNEL_CNT + inB.LOGB_CHANNEL_CNT != LOGB_CHANNEL_CNT) 
+      $error("LOGB mismatches: inA %d, inB %d, out %d\n",
+         inA.LOGB_CHANNEL_CNT, inB.LOGB_CHANNEL_CNT, LOGB_CHANNEL_CNT
+      );
+   if (inA.LOGE_CHANNEL_CNT + inB.LOGE_CHANNEL_CNT != LOGE_CHANNEL_CNT) 
+      $error("LOGE mismatches: inA %d, inB %d, out %d\n",
+         inA.LOGE_CHANNEL_CNT, inB.LOGE_CHANNEL_CNT, LOGE_CHANNEL_CNT
+      );
+   if (inA.FULL_WIDTH + inB.FULL_WIDTH != out.FULL_WIDTH)
+      $error("FULL_WIDTH mismatches: inA %d, inB %d, out %d\n",
+         inA.FULL_WIDTH, inB.FULL_WIDTH, out.FULL_WIDTH);
+endgenerate
 initial begin
-   assert(inA.LOGB_CHANNEL_CNT + inB.LOGB_CHANNEL_CNT == LOGB_CHANNEL_CNT);
-   assert(inA.LOGE_CHANNEL_CNT + inB.LOGE_CHANNEL_CNT == LOGE_CHANNEL_CNT);
    assert(check_CHANNEL_WIDTHS());
 end
+// end of parameter check
 assign inA.ready = out.ready;
 assign inB.ready = out.ready;
 assign out.logb_valid[0 +: inA.LOGB_CHANNEL_CNT] = inA.logb_valid;
