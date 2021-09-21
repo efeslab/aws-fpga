@@ -38,9 +38,6 @@ file copy -force $CL_DIR/../common/design/cl_common_defines.vh     $TARGET_DIR
 file copy -force $CL_DIR/design/cl_dram_dma_defines.vh             $TARGET_DIR
 file copy -force $CL_DIR/design/cl_id_defines.vh                   $TARGET_DIR
 file copy -force $CL_DIR/design/cl_dram_dma_pkg.sv                 $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_pkg.sv                   $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_types.svh                $TARGET_DIR
-file copy -force $CL_DIR/design/cl_axil_rr.sv                      $TARGET_DIR
 file copy -force $CL_DIR/design/cl_dram_dma.sv                     $TARGET_DIR
 file copy -force $CL_DIR/design/cl_tst.sv                          $TARGET_DIR
 file copy -force $CL_DIR/design/cl_int_tst.sv                      $TARGET_DIR
@@ -56,6 +53,18 @@ file copy -force $CL_DIR/design/cl_ocl_slv.sv                      $TARGET_DIR
 file copy -force $CL_DIR/design/cl_sda_slv.sv                      $TARGET_DIR
 file copy -force $CL_DIR/design/cl_dram_dma_axi_mstr.sv            $TARGET_DIR
 file copy -force $UNUSED_TEMPLATES_DIR/unused_sh_bar1_template.inc $TARGET_DIR
+# fpgarr project
+file copy -force $CL_DIR/design/cl_fpgarr_pkg.sv                   $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fpgarr_utils.sv                 $TARGET_DIR
+file copy -force $CL_DIR/design/cl_axi_rr.sv                       $TARGET_DIR
+file copy -force $CL_DIR/design/cl_axil_rr.sv                      $TARGET_DIR
+file copy -force $CL_DIR/design/twowayhandshake_logger.sv          $TARGET_DIR
+file copy -force $CL_DIR/design/transkidbuf.sv                     $TARGET_DIR
+file copy -force $CL_DIR/design/transkidbuf_pipeline.sv            $TARGET_DIR
+file copy -force $CL_DIR/design/axichannel_logger.sv               $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fpgarr_packing.sv               $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fpgarr_defs.svh                 $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fpgarr_types.svh                $TARGET_DIR
 
 #---- End of section replaced by Developr ---
 
