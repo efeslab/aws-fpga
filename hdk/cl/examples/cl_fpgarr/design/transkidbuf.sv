@@ -10,7 +10,7 @@
 `endif
 module transkidbuf #(
   parameter DATA_WIDTH=32,
-  parameter PASS_STALL=0
+  parameter PASS_STALL=1
 ) (
   input wire clk,
   input wire rstn,
@@ -176,6 +176,19 @@ else
     if (out_valid)
       `ASSERT(out_data == out_cnt);
 
+  // if PASS_STALL, in_ready is just <= out_ready (understanding)
+  generate
+    reg simple_ready;
+    if (PASS_STALL == 1) begin
+      always @(posedge clk)
+      if (!rstn)
+        simple_ready <= 0;
+      else begin
+        simple_ready <= out_ready;
+        trivial_in_ready: assert(in_ready == simple_ready);
+      end
+    end
+  endgenerate
   ////////////////////////////////////////////////////////////////////////////
   // Proof
   ////////////////////////////////////////////////////////////////////////////

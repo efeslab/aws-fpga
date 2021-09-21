@@ -147,8 +147,17 @@ parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
     .CHANNEL_WIDTHS({\
       {AXIL_RR_B_WIDTH}, {AXIL_RR_R_WIDTH}}), \
     .LOGE_CHANNEL_CNT(5)) name()
-
+`define LOGGING_BUS_JOIN2(name, inA, inB)\
+  rr_logging_bus_t #(\
+    .LOGB_CHANNEL_CNT(inA.LOGB_CHANNEL_CNT + inB.LOGB_CHANNEL_CNT), \
+    .CHANNEL_WIDTHS({inA.CHANNEL_WIDTHS, inB.CHANNEL_WIDTHS}), \
+    .LOGE_CHANNEL_CNT(inA.LOGE_CHANNEL_CNT + inB.LOGE_CHANNEL_CNT)) name()
 `endif
+`define LOGGING_UNPACK2PACK(unpackedname, packedname) \
+  rr_packed_logging_bus_t #(\
+    .LOGB_CHANNEL_CNT(unpackedname.LOGB_CHANNEL_CNT), \
+    .LOGE_CHANNEL_CNT(unpackedname.LOGE_CHANNEL_CNT), \
+    .FULL_WIDTH(unpackedname.FULL_WIDTH)) packedname()
 
 // template
 ////////////////////////////////////////////////////////////////////////////////

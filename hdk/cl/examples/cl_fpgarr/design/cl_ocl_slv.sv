@@ -38,6 +38,8 @@ axi_to_axil_master a2al_mstr(
   .axi(sh_ocl_bus),
   .axil(axil_bus));
 `AXIL_MSTR_LOGGING_BUS(ocl_logging_bus);
+// fake a second logging bus
+`AXIL_MSTR_LOGGING_BUS(ocl_logging_bus2);
 axil_mstr_recorder axil_rec(
   .clk(clk),
   .sync_rst_n(sync_rst_n),
@@ -45,18 +47,24 @@ axil_mstr_recorder axil_rec(
   .outM(axil_out),
   .axil_log(ocl_logging_bus)
 );
-assign ocl_logging_bus.ready = 1'b1;
+axi_lite_bus_t axil_bus2();
+axi_lite_bus_t axil_out2();
+axil_mstr_recorder axil_rec2(
+  .clk(clk),
+  .sync_rst_n(sync_rst_n),
+  .inS(axil_bus2),
+  .outM(axil_out2),
+  .axil_log(ocl_logging_bus2)
+);
+`LOGGING_BUS_JOIN2(test_combined_bus, ocl_logging_bus, ocl_logging_bus2);
+//assign ocl_logging_bus.ready = 1'b1;
+rr_logging_bus_packer2 test_packer(ocl_logging_bus, ocl_logging_bus2, test_combined_bus);
+`LOGGING_UNPACK2PACK(test_combined_bus, test_packed_bus);
+rr_logging_bus_unpack2pack u2p(
+  .clk(clk), .rstn(sync_rst_n),
+  .in(test_combined_bus),
+  .out(test_packed_bus));
 // end of testing rr
-// for testing only
-//axi_lite_mstr_rec_packed_bus_t axil_rec_mstr_packed();
-//axil_mstr_packer AXI_MSTR_PACKER(
-//  .clk(clk),
-//  .sync_rst_n(sync_rst_n),
-//  .rec_in(axil_rec_mstr),
-//  .packed_out(axil_rec_mstr_packed)
-//);
-//assign axil_rec_mstr.ready = 1'b0;
-// end for testing only
 
 axi_bus_t sh_ocl_bus_q();
 

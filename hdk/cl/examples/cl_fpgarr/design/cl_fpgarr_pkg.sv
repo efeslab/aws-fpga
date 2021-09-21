@@ -86,6 +86,9 @@
                          input rdata, rresp, rvalid, output rready);
    endinterface
 
+   // rr_logging_bus_t holds the unpacked logb_data
+   // You should refer to the parameter array CHANNEL_WIDTHS for how to parse
+   // the logb_data
    interface rr_logging_bus_t #(
       // how many channel you want to log transaction starts
       // This is for logging what transaction to replay
@@ -100,13 +103,8 @@
       for (int i=0; i < LOGB_CHANNEL_CNT; ++i)
          GET_FULL_WIDTH += CHANNEL_WIDTHS[i];
    endfunction
-   function automatic int GET_OFFSET (int idx);
-      GET_OFFSET = 0;
-      for (int i=0; i < idx; i=i+1)
-         GET_OFFSET += CHANNEL_WIDTHS[i];
-   endfunction
    parameter OFFSET_WIDTH = $clog2(GET_FULL_WIDTH());
-   localparam FULL_WIDTH = GET_FULL_WIDTH();
+   parameter FULL_WIDTH = GET_FULL_WIDTH();
    logic logb_valid [LOGB_CHANNEL_CNT-1:0];
    logic [FULL_WIDTH-1:0] logb_data;
    logic loge_valid [LOGE_CHANNEL_CNT-1:0];
@@ -114,9 +112,36 @@
    // i.e. ready == logb_ready == loge_ready
    logic ready;
    modport P (output logb_valid, output logb_data,
-              output loge_valid, input ready, import GET_OFFSET);
+              output loge_valid, input ready);
    modport C (input logb_valid, input logb_data,
               input loge_valid, output ready);
    endinterface
 
+   interface rr_packed_logging_bus_t #(
+      parameter int LOGB_CHANNEL_CNT,
+      parameter int LOGE_CHANNEL_CNT,
+      parameter int FULL_WIDTH
+   );
+   parameter OFFSET_WIDTH = $clog2(FULL_WIDTH);
+
+   typedef struct packed {
+      // to aggregate whether at least one of the packed logb has valid data
+      // This is also the `valid` indicator for the logb_data and logb_data_len
+      logic any_valid;
+      // logb_data is the packed version of all valid data of each logb channel
+      logic [FULL_WIDTH-1:0] data;
+      // logb_data_len is the total length of the valid data. There are at most
+      // FULL_WIDTH bits of valid data (every channel has valid data)
+      logic [OFFSET_WIDTH-1:0] len;
+   } packed_data_t;
+
+   logic [LOGB_CHANNEL_CNT-1:0] logb_valid;
+   packed_data_t plogb; // packed logb
+   logic [LOGE_CHANNEL_CNT-1:0] loge_valid;
+   logic ready;
+   modport P (output logb_valid, plogb, loge_valid,
+              input ready);
+   modport C (input logb_valid, plogb, loge_valid,
+              output ready);
+   endinterface
 `endif
