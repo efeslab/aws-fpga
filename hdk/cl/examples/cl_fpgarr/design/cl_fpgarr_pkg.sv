@@ -103,7 +103,6 @@
       for (int i=0; i < LOGB_CHANNEL_CNT; ++i)
          GET_FULL_WIDTH += CHANNEL_WIDTHS[i];
    endfunction
-   parameter OFFSET_WIDTH = $clog2(GET_FULL_WIDTH());
    parameter FULL_WIDTH = GET_FULL_WIDTH();
    logic logb_valid [LOGB_CHANNEL_CNT-1:0];
    logic [FULL_WIDTH-1:0] logb_data;
@@ -122,15 +121,18 @@
       parameter int LOGE_CHANNEL_CNT,
       parameter int FULL_WIDTH
    );
-   parameter OFFSET_WIDTH = $clog2(FULL_WIDTH);
+   // here, use $clog2(FULL_WIDTH+1) because if FULL_WIDTH == 32, then
+   // $clog2(32) == 5, but 5 bits cannot represent the integer 32.
+   parameter OFFSET_WIDTH = $clog2(FULL_WIDTH+1);
 
    typedef struct packed {
       // to aggregate whether at least one of the packed logb has valid data
       // This is also the `valid` indicator for the logb_data and logb_data_len
       logic any_valid;
-      // logb_data is the packed version of all valid data of each logb channel
+      // Note that data and len are only meaningful if any_valid is true
+      // data is the packed version of all valid data of each logb channel
       logic [FULL_WIDTH-1:0] data;
-      // logb_data_len is the total length of the valid data. There are at most
+      // len is the total length of the valid data. There are at most
       // FULL_WIDTH bits of valid data (every channel has valid data)
       logic [OFFSET_WIDTH-1:0] len;
    } packed_data_t;

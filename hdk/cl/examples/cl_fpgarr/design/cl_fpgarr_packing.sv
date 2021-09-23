@@ -10,7 +10,8 @@
 interface rr_packed_logb_bus_t #(
    parameter FULL_WIDTH
 );
-parameter OFFSET_WIDTH = $clog2(FULL_WIDTH);
+parameter OFFSET_WIDTH = $clog2(FULL_WIDTH+1);
+//NOTE: data and len are only meaningful when any_valid is true
 logic any_valid;
 logic [FULL_WIDTH-1:0] data;
 logic [OFFSET_WIDTH-1:0] len;
