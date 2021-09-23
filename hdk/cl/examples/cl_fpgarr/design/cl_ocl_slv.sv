@@ -12,7 +12,7 @@
 // an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
 // implied. See the License for the specific language governing permissions and
 // limitations under the License.
-`include "cl_fpgarr_types.svh"
+
 module cl_ocl_slv (
    
    input clk,
@@ -31,40 +31,6 @@ module cl_ocl_slv (
    cfg_bus_t.slave int_tst_cfg_bus
 
 );
-// for testing rr
-axi_lite_bus_t axil_bus();
-axi_lite_bus_t axil_out();
-axi_to_axil_master a2al_mstr(
-  .axi(sh_ocl_bus),
-  .axil(axil_bus));
-`AXIL_MSTR_LOGGING_BUS(ocl_logging_bus);
-// fake a second logging bus
-`AXIL_MSTR_LOGGING_BUS(ocl_logging_bus2);
-axil_mstr_recorder axil_rec(
-  .clk(clk),
-  .sync_rst_n(sync_rst_n),
-  .inS(axil_bus),
-  .outM(axil_out),
-  .axil_log(ocl_logging_bus)
-);
-axi_lite_bus_t axil_bus2();
-axi_lite_bus_t axil_out2();
-axil_mstr_recorder axil_rec2(
-  .clk(clk),
-  .sync_rst_n(sync_rst_n),
-  .inS(axil_bus2),
-  .outM(axil_out2),
-  .axil_log(ocl_logging_bus2)
-);
-`LOGGING_BUS_JOIN2(test_combined_bus, ocl_logging_bus, ocl_logging_bus2);
-//assign ocl_logging_bus.ready = 1'b1;
-rr_logging_bus_packer2 test_packer(ocl_logging_bus, ocl_logging_bus2, test_combined_bus);
-`LOGGING_UNPACK2PACK(test_combined_bus, test_packed_bus);
-rr_logging_bus_unpack2pack u2p(
-  .clk(clk), .rstn(sync_rst_n),
-  .in(test_combined_bus),
-  .out(test_packed_bus));
-// end of testing rr
 
 axi_bus_t sh_ocl_bus_q();
 
@@ -72,6 +38,10 @@ axi_bus_t sh_ocl_bus_q();
 // flop the input OCL bus
 //---------------------------------
 /* backup
+ */
+   axi_register_slice_light AXIL_OCL_REG_SLC (
+    .aclk          (clk),
+    .aresetn       (sync_rst_n),
     .s_axi_awaddr  (sh_ocl_bus.awaddr[31:0]),
     .s_axi_awvalid (sh_ocl_bus.awvalid),
     .s_axi_awready (sh_ocl_bus.awready),
@@ -89,27 +59,6 @@ axi_bus_t sh_ocl_bus_q();
     .s_axi_rresp   (sh_ocl_bus.rresp),
     .s_axi_rvalid  (sh_ocl_bus.rvalid),
     .s_axi_rready  (sh_ocl_bus.rready),
- */
-   axi_register_slice_light AXIL_OCL_REG_SLC (
-    .aclk          (clk),
-    .aresetn       (sync_rst_n),
-    .s_axi_awaddr  (axil_out.awaddr),
-    .s_axi_awvalid (axil_out.awvalid),
-    .s_axi_awready (axil_out.awready),
-    .s_axi_wdata   (axil_out.wdata),
-    .s_axi_wstrb   (axil_out.wstrb),
-    .s_axi_wvalid  (axil_out.wvalid),
-    .s_axi_wready  (axil_out.wready),
-    .s_axi_bresp   (axil_out.bresp),
-    .s_axi_bvalid  (axil_out.bvalid),
-    .s_axi_bready  (axil_out.bready),
-    .s_axi_araddr  (axil_out.araddr),
-    .s_axi_arvalid (axil_out.arvalid),
-    .s_axi_arready (axil_out.arready),
-    .s_axi_rdata   (axil_out.rdata),
-    .s_axi_rresp   (axil_out.rresp),
-    .s_axi_rvalid  (axil_out.rvalid),
-    .s_axi_rready  (axil_out.rready),
  
     .m_axi_awaddr  (sh_ocl_bus_q.awaddr[31:0]), 
     .m_axi_awvalid (sh_ocl_bus_q.awvalid),

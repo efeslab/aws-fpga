@@ -13,7 +13,6 @@
 // implied. See the License for the specific language governing permissions and
 // limitations under the License.
 
-`include "cl_fpgarr_types.svh"
 module cl_dma_pcis_slv #(parameter SCRB_MAX_ADDR = 64'h3FFFFFFFF, parameter SCRB_BURST_LEN_MINUS1 = 15, parameter NO_SCRB_INST = 1)
 
 (
@@ -90,49 +89,37 @@ lib_pipe #(.WIDTH(1), .STAGES(4)) SLR2_PIPE_RST_N (.clk(aclk), .rst_n(1'b1), .in
 // flop the dma_pcis interface input of CL
 //----------------------------
 
-// for testing rr
-axi_bus_t sh_cl_dma_pcis_bus_rr_out();
-`AXI_MSTR_LOGGING_BUS(sh_cl_dma_pcis_logging_bus);
-axi_mstr_recorder sh_cl_dma_pcis_recorder(
-  .clk(aclk),
-  .sync_rst_n(aresetn),
-  .inS(sh_cl_dma_pcis_bus),
-  .outM(sh_cl_dma_pcis_bus_rr_out),
-  .axi_log(sh_cl_dma_pcis_logging_bus)
-);
-assign sh_cl_dma_pcis_logging_bus.ready = 1'b1;
-// end of testing rr
    // AXI4 Register Slice for dma_pcis interface
    axi_register_slice PCI_AXL_REG_SLC (
        .aclk          (aclk),
        .aresetn       (slr0_sync_aresetn),
-       .s_axi_awid    (sh_cl_dma_pcis_bus_rr_out.awid),
-       .s_axi_awaddr  (sh_cl_dma_pcis_bus_rr_out.awaddr),
-       .s_axi_awlen   (sh_cl_dma_pcis_bus_rr_out.awlen),
-       .s_axi_awvalid (sh_cl_dma_pcis_bus_rr_out.awvalid),
-       .s_axi_awsize  (sh_cl_dma_pcis_bus_rr_out.awsize),
-       .s_axi_awready (sh_cl_dma_pcis_bus_rr_out.awready),
-       .s_axi_wdata   (sh_cl_dma_pcis_bus_rr_out.wdata),
-       .s_axi_wstrb   (sh_cl_dma_pcis_bus_rr_out.wstrb),
-       .s_axi_wlast   (sh_cl_dma_pcis_bus_rr_out.wlast),
-       .s_axi_wvalid  (sh_cl_dma_pcis_bus_rr_out.wvalid),
-       .s_axi_wready  (sh_cl_dma_pcis_bus_rr_out.wready),
-       .s_axi_bid     (sh_cl_dma_pcis_bus_rr_out.bid),
-       .s_axi_bresp   (sh_cl_dma_pcis_bus_rr_out.bresp),
-       .s_axi_bvalid  (sh_cl_dma_pcis_bus_rr_out.bvalid),
-       .s_axi_bready  (sh_cl_dma_pcis_bus_rr_out.bready),
-       .s_axi_arid    (sh_cl_dma_pcis_bus_rr_out.arid),
-       .s_axi_araddr  (sh_cl_dma_pcis_bus_rr_out.araddr),
-       .s_axi_arlen   (sh_cl_dma_pcis_bus_rr_out.arlen),
-       .s_axi_arvalid (sh_cl_dma_pcis_bus_rr_out.arvalid),
-       .s_axi_arsize  (sh_cl_dma_pcis_bus_rr_out.arsize),
-       .s_axi_arready (sh_cl_dma_pcis_bus_rr_out.arready),
-       .s_axi_rid     (sh_cl_dma_pcis_bus_rr_out.rid),
-       .s_axi_rdata   (sh_cl_dma_pcis_bus_rr_out.rdata),
-       .s_axi_rresp   (sh_cl_dma_pcis_bus_rr_out.rresp),
-       .s_axi_rlast   (sh_cl_dma_pcis_bus_rr_out.rlast),
-       .s_axi_rvalid  (sh_cl_dma_pcis_bus_rr_out.rvalid),
-       .s_axi_rready  (sh_cl_dma_pcis_bus_rr_out.rready),
+       .s_axi_awid    (sh_cl_dma_pcis_bus.awid),
+       .s_axi_awaddr  (sh_cl_dma_pcis_bus.awaddr),
+       .s_axi_awlen   (sh_cl_dma_pcis_bus.awlen),
+       .s_axi_awvalid (sh_cl_dma_pcis_bus.awvalid),
+       .s_axi_awsize  (sh_cl_dma_pcis_bus.awsize),
+       .s_axi_awready (sh_cl_dma_pcis_bus.awready),
+       .s_axi_wdata   (sh_cl_dma_pcis_bus.wdata),
+       .s_axi_wstrb   (sh_cl_dma_pcis_bus.wstrb),
+       .s_axi_wlast   (sh_cl_dma_pcis_bus.wlast),
+       .s_axi_wvalid  (sh_cl_dma_pcis_bus.wvalid),
+       .s_axi_wready  (sh_cl_dma_pcis_bus.wready),
+       .s_axi_bid     (sh_cl_dma_pcis_bus.bid),
+       .s_axi_bresp   (sh_cl_dma_pcis_bus.bresp),
+       .s_axi_bvalid  (sh_cl_dma_pcis_bus.bvalid),
+       .s_axi_bready  (sh_cl_dma_pcis_bus.bready),
+       .s_axi_arid    (sh_cl_dma_pcis_bus.arid),
+       .s_axi_araddr  (sh_cl_dma_pcis_bus.araddr),
+       .s_axi_arlen   (sh_cl_dma_pcis_bus.arlen),
+       .s_axi_arvalid (sh_cl_dma_pcis_bus.arvalid),
+       .s_axi_arsize  (sh_cl_dma_pcis_bus.arsize),
+       .s_axi_arready (sh_cl_dma_pcis_bus.arready),
+       .s_axi_rid     (sh_cl_dma_pcis_bus.rid),
+       .s_axi_rdata   (sh_cl_dma_pcis_bus.rdata),
+       .s_axi_rresp   (sh_cl_dma_pcis_bus.rresp),
+       .s_axi_rlast   (sh_cl_dma_pcis_bus.rlast),
+       .s_axi_rvalid  (sh_cl_dma_pcis_bus.rvalid),
+       .s_axi_rready  (sh_cl_dma_pcis_bus.rready),
 
        .m_axi_awid    (sh_cl_dma_pcis_q.awid),
        .m_axi_awaddr  (sh_cl_dma_pcis_q.awaddr),
