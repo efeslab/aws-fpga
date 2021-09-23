@@ -36,9 +36,6 @@
 +incdir+${HDK_SHELL_DESIGN_DIR}/sh_ddr/sim
 +incdir+${HDK_SHELL_DESIGN_DIR}/ip/src_register_slice/hdl
 
--f ${HDK_COMMON_DIR}/verif/tb/filelists/tb.${SIMULATOR}.f
-${TEST_NAME}
-
 ${HDK_SHELL_DESIGN_DIR}/ip/cl_axi_interconnect/ipshared/9909/hdl/axi_data_fifo_v2_1_vl_rfs.v
 ${HDK_SHELL_DESIGN_DIR}/ip/cl_axi_interconnect/ipshared/c631/hdl/axi_crossbar_v2_1_vl_rfs.v
 ${HDK_SHELL_DESIGN_DIR}/ip/cl_axi_interconnect/ip/cl_axi_interconnect_xbar_0/sim/cl_axi_interconnect_xbar_0.v
@@ -85,3 +82,8 @@ ${CL_ROOT}/design/transkidbuf.sv
 ${CL_ROOT}/design/transkidbuf_pipeline.sv
 ${CL_ROOT}/design/axichannel_logger.sv
 ${CL_ROOT}/design/cl_fpgarr_packing.sv
+${CL_ROOT}/design/cl_fpgarr_wrapper.sv
+
+# simulation top module
+-f ${HDK_COMMON_DIR}/verif/tb/filelists/tb.${SIMULATOR}.f
+${TEST_NAME}
