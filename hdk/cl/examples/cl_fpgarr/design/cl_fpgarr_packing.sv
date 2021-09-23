@@ -89,10 +89,16 @@ rr_packed_logb_bus_sbuf inB_sbuf (
 assign inB_q.ready = out.ready;
 
 assign out.any_valid = inA_q.any_valid || inB_q.any_valid;
+logic [inA.OFFSET_WIDTH-1:0] valid_len_A;
+logic [inB.OFFSET_WIDTH-1:0] valid_len_B;
 always_comb begin
-   out.len = out.OFFSET_WIDTH'(inA_q.len) + out.OFFSET_WIDTH'(inB_q.len);
-   out.data[0 +: inA.FULL_WIDTH] = inA_q.data;
-   out.data[inA_q.len +: inB.FULL_WIDTH] = inB_q.data;
+   valid_len_A = inA_q.any_valid? inA_q.len: 0;
+   valid_len_B = inB_q.any_valid? inB_q.len: 0;
+   out.len = out.OFFSET_WIDTH'(valid_len_A) + out.OFFSET_WIDTH'(valid_len_B);
+   if (inA_q.any_valid)
+      out.data[0 +: inA.FULL_WIDTH] = inA_q.data;
+   if (inB_q.any_valid)
+      out.data[valid_len_A +: inB.FULL_WIDTH] = inB_q.data;
 end
 endmodule
 
@@ -127,7 +133,7 @@ for (i=0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin: packed_logb_gen
    $info("Elaboration LOGB CHANNEL %d, width %d\n", i, bus.FULL_WIDTH);
    assign bus.any_valid = in.logb_valid[i];
    assign bus.data = in.logb_data[GET_OFFSET(i) +: CHANNEL_WIDTHS[i]];
-   assign bus.len = bus.OFFSET_WIDTH'(CHANNEL_WIDTHS[i]);
+   assign bus.len = in.logb_valid[i]? bus.OFFSET_WIDTH'(CHANNEL_WIDTHS[i]) : 0;
 end
 endgenerate
 
@@ -221,6 +227,7 @@ assign out.plogb.data =
    tree_gen[AGG_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.data;
 assign out.plogb.len =
    tree_gen[AGG_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.len;
+assign tree_gen[AGG_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.ready = out.ready;
 
 // Queue logb_valid and loge_valid for the correct number of cycles
 generate
