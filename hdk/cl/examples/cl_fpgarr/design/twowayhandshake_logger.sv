@@ -366,5 +366,15 @@ module twowayhandshake_logger #(
   assign wstall_logb = stall_logb;
   `endif
   // }}}
+
+  // sanity check
+  check_trace: cover property (@(posedge clk)
+    disable iff (!rstn)
+    (!in_valid && !out_ready && logb_ready && loge_ready) ##1
+    (in_valid && out_ready && !logb_ready && loge_ready) [*3] ##1
+    (in_valid && !out_ready && logb_ready && loge_ready) [*2] ##1
+    (in_valid && out_ready && logb_ready && loge_ready) [*2] ##[1:$]
+    (out_cnt == 'd10)
+  );
 `endif // FORMAL
 endmodule
