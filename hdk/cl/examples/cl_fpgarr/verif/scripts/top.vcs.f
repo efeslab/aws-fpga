@@ -55,6 +55,10 @@ ${HDK_SHELL_DESIGN_DIR}/ip/src_register_slice/sim/src_register_slice.v
 ${HDK_SHELL_DESIGN_DIR}/ip/axi_register_slice/sim/axi_register_slice.v
 ${HDK_SHELL_DESIGN_DIR}/ip/axi_register_slice_light/sim/axi_register_slice_light.v
 
+${CL_ROOT}/ip/fifo_128x128/sim/fifo_128x128.v
+${CL_ROOT}/ip/fifo_128x128/hdl/fifo_generator_v13_2_rfs.v
+${CL_ROOT}/ip/fifo_128x128/simulation/fifo_generator_vlog_beh.v
+
 +define+DISABLE_VJTAG_DEBUG
 ${CL_ROOT}/design/axil_slave.sv
 ${CL_ROOT}/design/cl_dram_dma_defines.vh
@@ -96,6 +100,7 @@ ${CL_ROOT}/ip/rr_cfg_axil_interconnect/ip/rr_cfg_axil_interconnect_xbar_2/sim/rr
 ${CL_ROOT}/design/cl_fpgarr_tracestorage_axi.sv
 # fpgarr top module
 ${CL_ROOT}/design/cl_fpgarr_wrapper.sv
+${CL_ROOT}/design/cl_fpgarr_writeback.sv
 
 # simulation top module
 -f ${HDK_COMMON_DIR}/verif/tb/filelists/tb.${SIMULATOR}.f
