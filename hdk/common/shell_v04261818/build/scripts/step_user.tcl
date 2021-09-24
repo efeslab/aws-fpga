@@ -145,7 +145,7 @@ proc impl_step {phase top {options none} {directive none} {pre none} {post none}
    #Write out additional reports controled by verbose level
    if {($verbose > 1 || [string match $phase "route_design"] || [string match $phase "route_phys_opt_design"]) && ![string match $phase "write_bitstream"]} {
       puts "\tGenerating report files"
-      report_utilization -pblock [get_pblocks pblock_CL] -file $rptDir/${timestamp}.utilization_${phase}.rpt
+      report_utilization -pblock [get_pblocks pblock_CL] -hierarchical -file $rptDir/${timestamp}.utilization_${phase}.rpt
       report_timing_summary -cell WRAPPER_INST/CL -file $rptDir/${timestamp}.timing_summary_$phase.rpt
    }
 

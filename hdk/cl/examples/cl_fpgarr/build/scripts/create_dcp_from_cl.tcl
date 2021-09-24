@@ -19,7 +19,7 @@ package require tar
 set TOP top_sp
 
 ## Replace with the name of your module
-set CL_MODULE cl_dram_dma
+set CL_MODULE cl_fpgarr_wrapper
 
 #################################################
 ## Command-line Arguments
