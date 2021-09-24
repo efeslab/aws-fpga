@@ -13,7 +13,7 @@
 // implied. See the License for the specific language governing permissions and
 // limitations under the License.
 
-module cl_dram_dma #(parameter NUM_DDR=4) 
+module cl_dram_dma #(parameter NUM_DDR=4)
 
 (
    `include "cl_ports.vh"

@@ -54,6 +54,8 @@ file copy -force $CL_DIR/design/cl_sda_slv.sv                      $TARGET_DIR
 file copy -force $CL_DIR/design/cl_dram_dma_axi_mstr.sv            $TARGET_DIR
 file copy -force $UNUSED_TEMPLATES_DIR/unused_sh_bar1_template.inc $TARGET_DIR
 # fpgarr project
+file copy -force $CL_DIR/design/cl_fpgarr_defs.svh                 $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fpgarr_types.svh                $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_pkg.sv                   $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_utils.sv                 $TARGET_DIR
 file copy -force $CL_DIR/design/cl_axi_rr.sv                       $TARGET_DIR
@@ -63,8 +65,8 @@ file copy -force $CL_DIR/design/transkidbuf.sv                     $TARGET_DIR
 file copy -force $CL_DIR/design/transkidbuf_pipeline.sv            $TARGET_DIR
 file copy -force $CL_DIR/design/axichannel_logger.sv               $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_packing.sv               $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_defs.svh                 $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_types.svh                $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fpgarr_writeback.sv             $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fpgarr_wrapper.sv               $TARGET_DIR
 
 #---- End of section replaced by Developr ---
 

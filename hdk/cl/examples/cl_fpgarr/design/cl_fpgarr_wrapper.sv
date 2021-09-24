@@ -125,6 +125,7 @@ rr_logging_bus_packer2 logging_packer(
   .inB(rr_dma_pcis_logging_bus),
   .out(merged_logging_bus)
 );
+// the merging tree of the rr_packed_logging_bus_t is automatically generated
 `LOGGING_BUS_UNPACK2PACK(merged_logging_bus, packed_logging_bus);
 rr_logging_bus_unpack2pack top_packer(
   .clk(clk),
@@ -132,8 +133,10 @@ rr_logging_bus_unpack2pack top_packer(
   .in(merged_logging_bus),
   .out(packed_logging_bus)
 );
-// the merging tree of the rr_packed_logging_bus_t is automatically generated
-assign packed_logging_bus.ready = 1'b1;
+`PACKED_LOGGING_BUS_TO_WBBUS(packed_logging_bus, wbbus);
+rr_packed2writeback_bus wb_inst(
+  .clk(clk), .rstn(rstn), .in(packed_logging_bus), .out(wbbus));
+assign wbbus.ready = 1'b1;
 endmodule
 
 `undef CL_NAME

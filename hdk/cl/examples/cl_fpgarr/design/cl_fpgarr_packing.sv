@@ -1,7 +1,7 @@
 `include "cl_fpgarr_types.svh"
 
 ////////////////////////////////////////////////////////////////////////////////
-// Interface for logb bus packing
+// Interface for logb bus packing (only used in this file)
 ////////////////////////////////////////////////////////////////////////////////
 `define PACKED_LOGB_BUS_JOIN2(inA, inB, name)\
   rr_packed_logb_bus_t #(inA.FULL_WIDTH + inB.FULL_WIDTH) name()

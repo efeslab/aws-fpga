@@ -2,6 +2,8 @@
 `define CL_FPGARR_PKG
 `include "cl_fpgarr_defs.svh"
 `include "cl_fpgarr_types.svh"
+// TODO: use packaging to isolate rr's definition of axi_bus from cl's
+// definition (if there is any)
    interface axi_bus_t;
       logic[15:0] awid;
       logic[63:0] awaddr;
@@ -145,5 +147,17 @@
               input ready);
    modport C (input logb_valid, plogb, loge_valid,
               output ready);
+   endinterface
+
+   // This is supposed to be the interface between mjc and I
+   interface rr_writeback_bus_t #(
+      parameter int FULL_WIDTH
+   );
+   parameter OFFSET_WIDTH = $clog2(FULL_WIDTH+1);
+   logic valid;
+   // LSB to MSB: logb_valid, loge_valid, packed_logb_data
+   logic [FULL_WIDTH-1:0] data;
+   logic [OFFSET_WIDTH-1:0] len;
+   logic ready;
    endinterface
 `endif
