@@ -89,7 +89,8 @@ read_ip [ list \
 
 # Additional IP's that might be needed if using the DDR
 read_bd [ list \
-  $HDK_SHELL_DESIGN_DIR/ip/cl_axi_interconnect/cl_axi_interconnect.bd
+  $HDK_SHELL_DESIGN_DIR/ip/cl_axi_interconnect/cl_axi_interconnect.bd \
+  $CL_DIR/ip/rr_pcim_axi_interconnect/rr_pcim_axi_interconnect.bd
 ]
 
 puts "AWS FPGA: Reading AWS constraints";

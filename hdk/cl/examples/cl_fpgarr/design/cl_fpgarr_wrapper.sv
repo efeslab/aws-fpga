@@ -15,12 +15,36 @@ assign clk = clk_main_a0;
 logic rstn;
 assign rstn = rst_main_n;
 
+// An illustration of the this wrapper
+//
+//              (AXI interconnect)
+//
+// *-------*            *---*   rr_pcim  *-----------*   cl_pcim   *-------*
+// |       |           /   S| <========= |M subord  S| <========== |M      |
+// |       |  sh_pcim *     |            |  logging  |             |       |
+// |      S| <========|     |            *-----------*             |       |
+// |       |          *     |   logging_wb    ‖                    |       |
+// | Shell |           \   S| <======+========+                    |  CL   |
+// |       |            *---*        ‖                             |       |
+// |       |                    *-----------*                      |       |
+// |       |                    |    mstr   |                      |       |
+// |      M| =================> |M logging S| ===================> |S      |
+// |       |      ocl/          *-----------*        rr_xxx        |       |
+// *-------*      sda/                                             *-------*
+//                bar1/
+//                pcis
+
 // connect original F1 interfaces to sv interfaces
-`AXI_SLV_WIRE2BUS(pcim_bus, cl, sh, _pcim_);
+`AXI_SLV_WIRE2BUS(sh_pcim_bus, cl, sh, _pcim_);
 `AXI_MSTR_WIRE2BUS(dma_pcis_bus, sh, cl, _dma_pcis_);
 `AXIL_MSTR_WIRE2BUS(sda_bus, sda, cl, _);
 `AXIL_MSTR_WIRE2BUS(ocl_bus, sh, ocl, _);
 `AXIL_MSTR_WIRE2BUS(bar1_bus, sh, bar1, _);
+// cl_pcim_bus is the pcim bus coming directly out of cl, it is supposed to be
+// logged then passed through to an axi interconnect together with the logging
+// traffic
+axi_bus_t cl_pcim_bus();
+
 ////////////////////////////////////////////////////////////////////////////////
 // LOG AXI bus
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,8 +54,8 @@ axi_bus_t rr_pcim_bus();
 axi_slv_recorder pcim_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
-  .inM(pcim_bus),
-  .outS(rr_pcim_bus),
+  .inM(rr_pcim_bus),
+  .outS(cl_pcim_bus),
   .axi_log(rr_pcim_logging_bus)
 );
 // PCIS bus
@@ -80,8 +104,8 @@ axil_mstr_recorder bar1_bus_recorder (
 ////////////////////////////////////////////////////////////////////////////////
 // connect the original top module
 ////////////////////////////////////////////////////////////////////////////////
-`CL_NAME #(NUM_DDR) top (
-  `AXI_CONNECT_BUS2WIRE(rr_pcim_bus, cl, sh, _pcim_),
+`CL_NAME #(NUM_DDR) cl_top (
+  `AXI_CONNECT_BUS2WIRE(cl_pcim_bus, cl, sh, _pcim_),
   `AXI_CONNECT_BUS2WIRE(rr_dma_pcis_bus, sh, cl, _dma_pcis_),
   `AXIL_CONNECT_BUS2WIRE(rr_sda_bus, sda, cl, _),
   `AXIL_CONNECT_BUS2WIRE(rr_ocl_bus, sh, ocl, _),
@@ -137,6 +161,18 @@ rr_logging_bus_unpack2pack top_packer(
 rr_packed2writeback_bus wb_inst(
   .clk(clk), .rstn(rstn), .in(packed_logging_bus), .out(wbbus));
 assign wbbus.ready = 1'b1;
+// TODO: convert rr_writeback_bus_t to logging_wb_bus via mjc's module
+// TODO: need an integration test
+axi_bus_t logging_wb_bus();
+
+// AXI Interconnect for the logging pcim traffic and user pcim traffic
+rr_writeback_axi_interconnect wb_interconnect (
+  .clk(clk),
+  .rstn(rstn),
+  .logging_wb_bus(logging_wb_bus),
+  .cl_pcim_bus(rr_pcim_bus),
+  .sh_pcim_bus(sh_pcim_bus)
+);
 endmodule
 
 `undef CL_NAME

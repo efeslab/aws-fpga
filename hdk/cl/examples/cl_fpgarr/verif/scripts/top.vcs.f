@@ -83,6 +83,14 @@ ${CL_ROOT}/design/transkidbuf_pipeline.sv
 ${CL_ROOT}/design/axichannel_logger.sv
 ${CL_ROOT}/design/cl_fpgarr_packing.sv
 ${CL_ROOT}/design/cl_fpgarr_writeback.sv
+# start of rr_pcim_axi_interconnect
+${CL_ROOT}/ip/rr_pcim_axi_interconnect/sim/rr_pcim_axi_interconnect.v
+${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_xbar_0/sim/rr_pcim_axi_interconnect_xbar_0.v
+${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_s00_regslice_0/sim/rr_pcim_axi_interconnect_s00_regslice_0.v
+${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_s01_regslice_0/sim/rr_pcim_axi_interconnect_s01_regslice_0.v
+${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_m00_regslice_0/sim/rr_pcim_axi_interconnect_m00_regslice_0.v
+#../../ip/rr_pcim_axi_interconnect/ip/
+# fpgarr top module
 ${CL_ROOT}/design/cl_fpgarr_wrapper.sv
 
 # simulation top module
