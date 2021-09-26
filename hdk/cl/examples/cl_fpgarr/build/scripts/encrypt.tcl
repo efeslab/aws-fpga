@@ -58,8 +58,8 @@ file copy -force $CL_DIR/design/cl_fpgarr_defs.svh                 $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_types.svh                $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_pkg.sv                   $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_utils.sv                 $TARGET_DIR
-file copy -force $CL_DIR/design/cl_axi_rr.sv                       $TARGET_DIR
-file copy -force $CL_DIR/design/cl_axil_rr.sv                      $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fpgarr_axi_rr.sv                $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fpgarr_axil_rr.sv               $TARGET_DIR
 file copy -force $CL_DIR/design/twowayhandshake_logger.sv          $TARGET_DIR
 file copy -force $CL_DIR/design/transkidbuf.sv                     $TARGET_DIR
 file copy -force $CL_DIR/design/transkidbuf_pipeline.sv            $TARGET_DIR

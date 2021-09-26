@@ -75,8 +75,8 @@ ${CL_ROOT}/design/cl_dram_dma.sv
 # fpgarr project
 ${CL_ROOT}/design/cl_fpgarr_pkg.sv
 ${CL_ROOT}/design/cl_fpgarr_utils.sv
-${CL_ROOT}/design/cl_axi_rr.sv
-${CL_ROOT}/design/cl_axil_rr.sv
+${CL_ROOT}/design/cl_fpgarr_axi_rr.sv
+${CL_ROOT}/design/cl_fpgarr_axil_rr.sv
 ${CL_ROOT}/design/twowayhandshake_logger.sv
 ${CL_ROOT}/design/transkidbuf.sv
 ${CL_ROOT}/design/transkidbuf_pipeline.sv
