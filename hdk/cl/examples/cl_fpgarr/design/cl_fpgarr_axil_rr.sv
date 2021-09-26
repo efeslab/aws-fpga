@@ -4,8 +4,8 @@
 module axil_mstr_recorder (
    input clk,
    input sync_rst_n,
-   axi_lite_bus_t.master inS,
-   axi_lite_bus_t.slave outM,
+   rr_axi_lite_bus_t.master inS,
+   rr_axi_lite_bus_t.slave outM,
    rr_logging_bus_t.P axil_log
 );
 localparam int LOGB_CHANNEL_CNT = axil_log.LOGB_CHANNEL_CNT;
@@ -130,8 +130,8 @@ endmodule
 module axil_slv_recorder (
    input clk,
    input sync_rst_n,
-   axi_lite_bus_t.slave inM,
-   axi_lite_bus_t.master outS,
+   rr_axi_lite_bus_t.slave inM,
+   rr_axi_lite_bus_t.master outS,
    rr_logging_bus_t.P axil_log
 );
 localparam int LOGB_CHANNEL_CNT = axil_log.LOGB_CHANNEL_CNT;

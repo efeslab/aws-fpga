@@ -4,7 +4,7 @@
 `include "cl_fpgarr_types.svh"
 // TODO: use packaging to isolate rr's definition of axi_bus from cl's
 // definition (if there is any)
-   interface axi_bus_t;
+   interface rr_axi_bus_t;
       logic[15:0] awid;
       logic[63:0] awaddr;
       logic[7:0] awlen;
@@ -51,7 +51,7 @@
                      input rid, rdata, rresp, rlast, rvalid, output rready);
    endinterface
 
-   interface axi_lite_bus_t;
+   interface rr_axi_lite_bus_t;
       // Write Address
       logic [31:0] awaddr;
       logic awvalid;

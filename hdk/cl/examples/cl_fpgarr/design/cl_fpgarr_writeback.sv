@@ -56,9 +56,9 @@ endmodule
 module rr_writeback_axi_interconnect (
    input wire clk,
    input wire rstn,
-   axi_bus_t.master logging_wb_bus,
-   axi_bus_t.master cl_pcim_bus,
-   axi_bus_t.slave sh_pcim_bus
+   rr_axi_bus_t.master logging_wb_bus,
+   rr_axi_bus_t.master cl_pcim_bus,
+   rr_axi_bus_t.slave sh_pcim_bus
 );
 
 rr_pcim_axi_interconnect pcim_interconnect_inst (

@@ -1,6 +1,6 @@
 module axi_to_axil_master(
-   axi_bus_t.master axi,
-   axi_lite_bus_t.slave axil);
+   rr_axi_bus_t.master axi,
+   rr_axi_lite_bus_t.slave axil);
    // AW Channel
    assign axil.awaddr = axi.awaddr[31:0];
    assign axil.awvalid = axi.awvalid;

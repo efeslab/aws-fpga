@@ -16,7 +16,7 @@
 `ifndef CL_DRAM_DMA_PKG
 `define CL_DRAM_DMA_PKG
  
-/*   interface axi_bus_t;
+   interface axi_bus_t;
       logic[15:0] awid;
       logic[63:0] awaddr;
       logic[7:0] awlen;
@@ -62,7 +62,6 @@
                      output arid, araddr, arlen, arsize, arvalid, input arready,
                      input rid, rdata, rresp, rlast, rvalid, output rready);
    endinterface
-   */
 
 
    interface cfg_bus_t;

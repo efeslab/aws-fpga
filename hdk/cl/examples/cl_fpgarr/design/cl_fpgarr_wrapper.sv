@@ -43,13 +43,13 @@ assign rstn = rst_main_n;
 // cl_pcim_bus is the pcim bus coming directly out of cl, it is supposed to be
 // logged then passed through to an axi interconnect together with the logging
 // traffic
-axi_bus_t cl_pcim_bus();
+rr_axi_bus_t cl_pcim_bus();
 
 ////////////////////////////////////////////////////////////////////////////////
 // LOG AXI bus
 ////////////////////////////////////////////////////////////////////////////////
 // PCIM bus
-axi_bus_t rr_pcim_bus();
+rr_axi_bus_t rr_pcim_bus();
 `AXI_SLV_LOGGING_BUS(rr_pcim_logging_bus);
 axi_slv_recorder pcim_bus_recorder (
   .clk(clk),
@@ -59,7 +59,7 @@ axi_slv_recorder pcim_bus_recorder (
   .axi_log(rr_pcim_logging_bus)
 );
 // PCIS bus
-axi_bus_t rr_dma_pcis_bus();
+rr_axi_bus_t rr_dma_pcis_bus();
 `AXI_MSTR_LOGGING_BUS(rr_dma_pcis_logging_bus);
 axi_mstr_recorder dma_pcis_bus_recorder (
   .clk(clk),
@@ -72,7 +72,7 @@ axi_mstr_recorder dma_pcis_bus_recorder (
 // LOG AXIL bus
 ////////////////////////////////////////////////////////////////////////////////
 // SDA AXIL
-axi_lite_bus_t rr_sda_bus();
+rr_axi_lite_bus_t rr_sda_bus();
 `AXIL_MSTR_LOGGING_BUS(rr_sda_logging_bus);
 axil_mstr_recorder sda_bus_recorder (
   .clk(clk),
@@ -82,7 +82,7 @@ axil_mstr_recorder sda_bus_recorder (
   .axil_log(rr_sda_logging_bus)
 );
 // OCL AXIL
-axi_lite_bus_t rr_ocl_bus();
+rr_axi_lite_bus_t rr_ocl_bus();
 `AXIL_MSTR_LOGGING_BUS(rr_ocl_logging_bus);
 axil_mstr_recorder ocl_bus_recorder (
   .clk(clk),
@@ -92,7 +92,7 @@ axil_mstr_recorder ocl_bus_recorder (
   .axil_log(rr_ocl_logging_bus)
 );
 // BAR1 AXIL
-axi_lite_bus_t rr_bar1_bus();
+rr_axi_lite_bus_t rr_bar1_bus();
 `AXIL_MSTR_LOGGING_BUS(rr_bar1_logging_bus);
 axil_mstr_recorder bar1_bus_recorder (
   .clk(clk),
@@ -163,7 +163,7 @@ rr_packed2writeback_bus wb_inst(
 assign wbbus.ready = 1'b1;
 // TODO: convert rr_writeback_bus_t to logging_wb_bus via mjc's module
 // TODO: need an integration test
-axi_bus_t logging_wb_bus();
+rr_axi_bus_t logging_wb_bus();
 
 // AXI Interconnect for the logging pcim traffic and user pcim traffic
 // NOTE: that all Xid field of pcim buses, either from logging or from the cl,

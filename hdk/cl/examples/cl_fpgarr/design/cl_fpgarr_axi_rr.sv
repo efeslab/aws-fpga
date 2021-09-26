@@ -3,8 +3,8 @@
 module axi_mstr_recorder (
    input clk,
    input sync_rst_n,
-   axi_bus_t.master inS,
-   axi_bus_t.slave outM,
+   rr_axi_bus_t.master inS,
+   rr_axi_bus_t.slave outM,
    rr_logging_bus_t.P axi_log
 );
 localparam int LOGB_CHANNEL_CNT = axi_log.LOGB_CHANNEL_CNT;
@@ -129,8 +129,8 @@ endmodule
 module axi_slv_recorder (
    input clk,
    input sync_rst_n,
-   axi_bus_t.slave inM,
-   axi_bus_t.master outS,
+   rr_axi_bus_t.slave inM,
+   rr_axi_bus_t.master outS,
    rr_logging_bus_t.P axi_log
 );
 localparam int LOGB_CHANNEL_CNT = axi_log.LOGB_CHANNEL_CNT;
