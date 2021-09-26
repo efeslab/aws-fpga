@@ -166,6 +166,9 @@ assign wbbus.ready = 1'b1;
 axi_bus_t logging_wb_bus();
 
 // AXI Interconnect for the logging pcim traffic and user pcim traffic
+// NOTE: that all Xid field of pcim buses, either from logging or from the cl,
+// have to spare 1 bit for this interconnect.
+// So instead of 16-bit Xid available in sh_pcim_bus, they only have 15-bit Xid.
 rr_writeback_axi_interconnect wb_interconnect (
   .clk(clk),
   .rstn(rstn),

@@ -1,8 +1,8 @@
 module rr_packed2writeback_bus (
    input wire clk,
    input wire rstn,
-   rr_packed_logging_bus_t in,
-   rr_writeback_bus_t out
+   rr_packed_logging_bus_t.C in,
+   rr_writeback_bus_t.P out
 );
 
 // parameter check
@@ -108,7 +108,7 @@ rr_pcim_axi_interconnect pcim_interconnect_inst (
    .S00_AXI_araddr(logging_wb_bus.araddr),
    .S00_AXI_arburst(2'b1), // INCR
    .S00_AXI_arcache(4'b11),
-   .S00_AXI_arid(logging_wb_bus.arid),
+   .S00_AXI_arid(logging_wb_bus.arid[14:0]),
    .S00_AXI_arlen(logging_wb_bus.arlen),
    .S00_AXI_arlock(1'b0),
    .S00_AXI_arprot(3'b10),
@@ -120,7 +120,7 @@ rr_pcim_axi_interconnect pcim_interconnect_inst (
    .S00_AXI_awaddr(logging_wb_bus.awaddr),
    .S00_AXI_awburst(2'b1),
    .S00_AXI_awcache(4'b11),
-   .S00_AXI_awid(logging_wb_bus.awid),
+   .S00_AXI_awid(logging_wb_bus.awid[14:0]),
    .S00_AXI_awlen(logging_wb_bus.awlen),
    .S00_AXI_awlock(1'b0),
    .S00_AXI_awprot(3'b10),
@@ -129,12 +129,12 @@ rr_pcim_axi_interconnect pcim_interconnect_inst (
    .S00_AXI_awregion(4'b0),
    .S00_AXI_awsize(logging_wb_bus.awsize),
    .S00_AXI_awvalid(logging_wb_bus.awvalid),
-   .S00_AXI_bid(logging_wb_bus.bid),
+   .S00_AXI_bid(logging_wb_bus.bid[14:0]),
    .S00_AXI_bready(logging_wb_bus.bready),
    .S00_AXI_bresp(logging_wb_bus.bresp),
    .S00_AXI_bvalid(logging_wb_bus.bvalid),
    .S00_AXI_rdata(logging_wb_bus.rdata),
-   .S00_AXI_rid(logging_wb_bus.rid),
+   .S00_AXI_rid(logging_wb_bus.rid[14:0]),
    .S00_AXI_rlast(logging_wb_bus.rlast),
    .S00_AXI_rready(logging_wb_bus.rready),
    .S00_AXI_rresp(logging_wb_bus.rresp),
@@ -148,7 +148,7 @@ rr_pcim_axi_interconnect pcim_interconnect_inst (
    .S01_AXI_araddr(cl_pcim_bus.araddr),
    .S01_AXI_arburst(2'b1), // INCR
    .S01_AXI_arcache(4'b11),
-   .S01_AXI_arid(cl_pcim_bus.arid),
+   .S01_AXI_arid(cl_pcim_bus.arid[14:0]),
    .S01_AXI_arlen(cl_pcim_bus.arlen),
    .S01_AXI_arlock(1'b0),
    .S01_AXI_arprot(3'b10),
@@ -160,7 +160,7 @@ rr_pcim_axi_interconnect pcim_interconnect_inst (
    .S01_AXI_awaddr(cl_pcim_bus.awaddr),
    .S01_AXI_awburst(2'b1),
    .S01_AXI_awcache(4'b11),
-   .S01_AXI_awid(cl_pcim_bus.awid),
+   .S01_AXI_awid(cl_pcim_bus.awid[14:0]),
    .S01_AXI_awlen(cl_pcim_bus.awlen),
    .S01_AXI_awlock(1'b0),
    .S01_AXI_awprot(3'b10),
@@ -169,12 +169,12 @@ rr_pcim_axi_interconnect pcim_interconnect_inst (
    .S01_AXI_awregion(4'b0),
    .S01_AXI_awsize(cl_pcim_bus.awsize),
    .S01_AXI_awvalid(cl_pcim_bus.awvalid),
-   .S01_AXI_bid(cl_pcim_bus.bid),
+   .S01_AXI_bid(cl_pcim_bus.bid[14:0]),
    .S01_AXI_bready(cl_pcim_bus.bready),
    .S01_AXI_bresp(cl_pcim_bus.bresp),
    .S01_AXI_bvalid(cl_pcim_bus.bvalid),
    .S01_AXI_rdata(cl_pcim_bus.rdata),
-   .S01_AXI_rid(cl_pcim_bus.rid),
+   .S01_AXI_rid(cl_pcim_bus.rid[14:0]),
    .S01_AXI_rlast(cl_pcim_bus.rlast),
    .S01_AXI_rready(cl_pcim_bus.rready),
    .S01_AXI_rresp(cl_pcim_bus.rresp),

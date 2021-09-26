@@ -159,5 +159,8 @@
    logic [FULL_WIDTH-1:0] data;
    logic [OFFSET_WIDTH-1:0] len;
    logic ready;
+
+   modport P(output valid, data, len, input ready);
+   modport C(input valid, data, len, output ready);
    endinterface
 `endif
