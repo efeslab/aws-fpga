@@ -104,7 +104,9 @@ axil_mstr_recorder bar1_bus_recorder (
 ////////////////////////////////////////////////////////////////////////////////
 // connect the original top module
 ////////////////////////////////////////////////////////////////////////////////
-`CL_NAME #(NUM_DDR) cl_top (
+// the instance name CL is to match the instance name assigned to the top CL
+// module by AWS building scripts
+`CL_NAME #(NUM_DDR) CL (
   `AXI_CONNECT_BUS2WIRE(cl_pcim_bus, cl, sh, _pcim_),
   `AXI_CONNECT_BUS2WIRE(rr_dma_pcis_bus, sh, cl, _dma_pcis_),
   `AXIL_CONNECT_BUS2WIRE(rr_sda_bus, sda, cl, _),
