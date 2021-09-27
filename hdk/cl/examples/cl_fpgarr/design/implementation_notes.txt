@@ -58,3 +58,11 @@ Note1: Better organize the packing tree in unpack2pack
 // node as same wide as possible. And when merging two subtrees, the wider one
 // should go first (inA)
 //      32 36 32 32 36 32 32 36 32 531 18 91 593 91
+
+Note2: Unverified temporary Timing Hack
+// The following hacks are guided byhuman intuition. Haven't tested whether they
+// help timing or not. Code is evolving quick now and I do not have time to
+// control each parameter and see how much each helps timing.
+// I should revisit these hacks if I have time later.
+
+// Hack1: Copy the do_not_touch from other axi interconnect intances.

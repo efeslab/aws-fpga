@@ -60,7 +60,8 @@ module rr_storage_pcim_axi_interconnect (
    rr_axi_bus_t.slave sh_pcim_bus
 );
 
-rr_pcim_axi_interconnect pcim_interconnect_inst (
+// TODO: is this dont_touch necessary?
+(* dont_touch = "true" *) rr_pcim_axi_interconnect pcim_interconnect_inst (
    .ACLK(clk),
    .ARESETN(rstn),
    /* the single output master bus connecting to the shell*/
