@@ -18,8 +18,7 @@ set_param sta.enableAutoGenClkNamePersistence 0
 set CL_MODULE $CL_MODULE
 set VDEFINES $VDEFINES
 
-#create_project -in_memory -part [DEVICE_TYPE] -force
-create_project -part [DEVICE_TYPE] -force aws_build ./aws_build_prj
+create_project -in_memory -part [DEVICE_TYPE] -force
 
 ########################################
 ## Generate clocks based on Recipe 
