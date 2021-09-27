@@ -20,7 +20,7 @@ set TOP top_sp
 
 ## Replace with the name of your module
 set CL_MODULE cl_fpgarr_wrapper
-
+set_param general.maxThreads 32
 #################################################
 ## Command-line Arguments
 #################################################
