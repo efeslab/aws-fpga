@@ -66,3 +66,4 @@ Note2: Unverified temporary Timing Hack
 // I should revisit these hacks if I have time later.
 
 // Hack1: Copy the do_not_touch from other axi interconnect intances.
+// Hack2: Change PIPE_DEPTH from 4 to 16.

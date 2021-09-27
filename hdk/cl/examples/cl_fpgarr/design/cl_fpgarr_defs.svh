@@ -1,6 +1,6 @@
 `ifndef CL_FPGARR_DEFS
 `define CL_FPGARR_DEFS
-parameter RECORDER_PIPE_DEPTH=4;
+parameter RECORDER_PIPE_DEPTH=16;
 // index allocation of AXI channels
 parameter LOGB_AW=0;
 parameter LOGB_W=1;
