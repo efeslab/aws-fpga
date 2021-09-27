@@ -266,8 +266,10 @@ endgenerate
 // For more info, see transkidbuf.sv assertion "trivial_in_ready"
 // As a result, I ignore in_ready of all transkidbuf instantiations and maintain
 // the ready signal of input packed logger buses myself.
+(* dont_touch = "true" *) logic in_ready_piped;
 lib_pipe #(.WIDTH(1), .STAGES(AGG_TREE_HEIGHT)) in_ready_pipe(
-   .clk(clk), .rst_n(rstn), .in_bus(out.ready), .out_bus(in.ready));
+   .clk(clk), .rst_n(rstn), .in_bus(out.ready), .out_bus(in_ready_piped));
+assign in.ready = in_ready_piped;
 endmodule
 
 module rr_logging_bus_packer2 (
