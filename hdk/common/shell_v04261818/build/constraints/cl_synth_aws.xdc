@@ -22,21 +22,25 @@
 #set_clock_groups -asynchronous -group [get_clocks cl_clk0] -group [get_clocks CLK_300M_DIMM1_DP]
 #set_clock_groups -asynchronous -group [get_clocks cl_clk0] -group [get_clocks CLK_300M_DIMM3_DP]
 
+set DDR4_0_CLKOUT [get_pins -hier -filter {NAME =~ *SH_DDR/ddr_cores.DDR4_0/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0}]
+set DDR4_1_CLKOUT [get_pins -hier -filter {NAME =~ *SH_DDR/ddr_cores.DDR4_1/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0}]
+set DDR4_2_CLKOUT [get_pins -hier -filter {NAME =~ *SH_DDR/ddr_cores.DDR4_2/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0}]
+
 set_max_delay -datapath_only \
-              -from [get_clocks -of_objects [get_pins SH_DDR/ddr_cores.DDR4_0/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0]] \
+              -from [get_clocks -of_objects $DDR4_0_CLKOUT] \
               -to [get_clocks -of [get_ports clk_main_a0]] \
-              [get_property PERIOD [get_clocks -of_objects [get_pins SH_DDR/ddr_cores.DDR4_0/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0]]]
+              [get_property PERIOD [get_clocks -of_objects $DDR4_0_CLKOUT]]
 set_max_delay -datapath_only \
-              -from [get_clocks -of_objects [get_pins SH_DDR/ddr_cores.DDR4_1/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0]]    \
+              -from [get_clocks -of_objects $DDR4_1_CLKOUT]    \
               -to [get_clocks -of [get_ports clk_main_a0]] \
-              [get_property PERIOD [get_clocks -of_objects [get_pins SH_DDR/ddr_cores.DDR4_1/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0]]]
+              [get_property PERIOD [get_clocks -of_objects $DDR4_1_CLKOUT]]
 set_max_delay -datapath_only \
-              -from [get_clocks -of_objects [get_pins SH_DDR/ddr_cores.DDR4_2/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0]]    \
+              -from [get_clocks -of_objects $DDR4_2_CLKOUT]    \
               -to [get_clocks -of [get_ports clk_main_a0]] \
-              [get_property PERIOD [get_clocks -of_objects [get_pins SH_DDR/ddr_cores.DDR4_2/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0]]]
+              [get_property PERIOD [get_clocks -of_objects $DDR4_2_CLKOUT]]
 set_max_delay -datapath_only \
               -from [get_clocks -of [get_ports clk_main_a0]] \
-              -to [get_clocks -of_objects [get_pins SH_DDR/ddr_cores.DDR4_*/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0]] \
+              -to [get_clocks -of_objects [get_pins -hier -filter {NAME =~ *SH_DDR/ddr_cores.DDR4_*/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0}]] \
               [get_property PERIOD [get_clocks -of_objects [get_ports clk_main_a0]]]
 
 set asyncFFs [get_cells -quiet -hier -filter {\
