@@ -1,0 +1,39 @@
+{
+   "ActiveEmotionalView":"Default View",
+   "Default View_ScaleFactor":"1.0",
+   "Default View_TopLeft":"-436,-117",
+   "ExpandedHierarchyInLayout":"",
+   "guistr":"# # String gsaved with Nlview 7.0r4  2019-12-20 bk=1.5203 VDI=41 GEI=36 GUI=JA:10.0 TLS
+#  -string -flagsOSRD
+preplace port S00_AXI -pg 1 -lvl 0 -x -290 -y 60 -defaultsOSRD
+preplace port M00_AXI -pg 1 -lvl 2 -x 820 -y 130 -defaultsOSRD
+preplace port M01_AXI -pg 1 -lvl 2 -x 820 -y 150 -defaultsOSRD
+preplace port ACLK -pg 1 -lvl 0 -x -290 -y 20 -defaultsOSRD
+preplace port ARESETN -pg 1 -lvl 0 -x -290 -y 40 -defaultsOSRD
+preplace inst axi_interconnect_0 -pg 1 -lvl 1 -x -10 -y 142 -defaultsOSRD
+preplace inst axi_interconnect_0|xbar -pg 1 -lvl 2 -x 281 -y 152 -defaultsOSRD
+preplace inst axi_interconnect_0|s00_couplers -pg 1 -lvl 1 -x 20 -y 132 -defaultsOSRD
+preplace inst axi_interconnect_0|m00_couplers -pg 1 -lvl 3 -x 560 -y 182 -defaultsOSRD
+preplace inst axi_interconnect_0|m01_couplers -pg 1 -lvl 3 -x 560 -y 352 -defaultsOSRD
+preplace netloc ACLK_1 1 0 1 -250 20n
+preplace netloc ARESETN_1 1 0 1 -270 40n
+preplace netloc axi_interconnect_0_M01_AXI 1 1 1 800J 150n
+preplace netloc axi_interconnect_0_M00_AXI 1 1 1 790J 130n
+preplace netloc S00_AXI_1 1 0 1 -260 60n
+preplace netloc axi_interconnect_0|axi_interconnect_0_ACLK_net 1 0 3 -90 222 130 72 440
+preplace netloc axi_interconnect_0|axi_interconnect_0_ARESETN_net 1 0 3 -100 232 140 232 450
+preplace netloc axi_interconnect_0|axi_interconnect_0_to_s00_couplers 1 0 1 N 92
+preplace netloc axi_interconnect_0|s00_couplers_to_xbar 1 1 1 N 132
+preplace netloc axi_interconnect_0|m00_couplers_to_axi_interconnect_0 1 3 1 N 182
+preplace netloc axi_interconnect_0|xbar_to_m00_couplers 1 2 1 N 142
+preplace netloc axi_interconnect_0|m01_couplers_to_axi_interconnect_0 1 3 1 N 352
+preplace netloc axi_interconnect_0|xbar_to_m01_couplers 1 2 1 430 162n
+levelinfo -pg 1 -290 -10 820
+levelinfo -hier axi_interconnect_0 * 20 281 560 *
+pagesize -pg 1 -db -bbox -sgen -410 0 930 940
+pagesize -hier axi_interconnect_0 -db -bbox -sgen -130 32 700 442
+"
+}
+{
+   "da_clkrst_cnt":"10"
+}

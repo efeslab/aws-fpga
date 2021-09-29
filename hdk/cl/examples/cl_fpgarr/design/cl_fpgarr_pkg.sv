@@ -150,7 +150,15 @@
    endinterface
 
    // This is supposed to be the interface between mjc and I
-   interface rr_writeback_bus_t #(
+   //
+   // For both record (writting data back to storage),
+   // and replay (reading data from the storage)
+   // `data` contains packed data, a continuously valid data from bit 0
+   // `len` represents the length of the valid data
+   // We call the data passed in each transaction a "logging unit".
+   // Each logging unit has a static part: logb_valid and loge_valid
+   // And a dynamic part: packed logb_data
+   interface rr_stream_bus_t #(
       parameter int FULL_WIDTH
    );
    parameter OFFSET_WIDTH = $clog2(FULL_WIDTH+1);

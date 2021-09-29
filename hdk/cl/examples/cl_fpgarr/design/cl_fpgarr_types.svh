@@ -159,7 +159,7 @@ parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
     .LOGE_CHANNEL_CNT(unpackedname.LOGE_CHANNEL_CNT), \
     .FULL_WIDTH(unpackedname.FULL_WIDTH)) packedname()
 `define PACKED_LOGGING_BUS_TO_WBBUS(plog_bus, wbbus) \
-  rr_writeback_bus_t #( \
+  rr_stream_bus_t #( \
     .FULL_WIDTH(plog_bus.LOGB_CHANNEL_CNT + plog_bus.LOGE_CHANNEL_CNT + \
       plog_bus.FULL_WIDTH)) wbbus()
 

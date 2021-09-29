@@ -165,6 +165,9 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 #else
     //init_ddr();
     deselect_atg_hw();
+    // test rr_cfg_bus
+    cl_poke_bar1(0x100000, 0x12345678);
+    cl_poke_bar1(0x100004, 0x12332123);
     sv_map_host_memory(host_mem);
     printf("host_mem: %p\n", host_mem);
     cl_poke_ocl(0x030, 0);

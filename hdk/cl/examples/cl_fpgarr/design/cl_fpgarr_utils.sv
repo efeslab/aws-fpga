@@ -161,3 +161,79 @@ module rr_axi_register_slice_lite (
     .m_axi_rready  (mstr.rready)
    );
 endmodule
+
+module rr_cfg_bar1_interconnect (
+   input wire clk,
+   input wire rstn,
+   rr_axi_lite_bus_t.master from_sh_bar1_bus,
+   rr_axi_lite_bus_t.slave to_cl_bar1_bus,
+   rr_axi_lite_bus_t.slave rr_cfg_bus
+);
+// M00 is to_cl_bar1_bus (low 1MB)
+// M01 is rr_cfg_bus (high 1MB)
+// S00 is from_sh_bar1_bus (2MB in total)
+(* dont_touch = "true" *) rr_cfg_axil_interconnect bar1_interconnect_inst (
+   .ACLK(clk),
+   .ARESETN(rstn),
+   /* the bar1 output pass through to cl */
+   .M00_AXI_araddr(to_cl_bar1_bus.araddr),
+   .M00_AXI_arprot(),
+   .M00_AXI_arready(to_cl_bar1_bus.arready),
+   .M00_AXI_arvalid(to_cl_bar1_bus.arvalid),
+   .M00_AXI_awaddr(to_cl_bar1_bus.awaddr),
+   .M00_AXI_awprot(),
+   .M00_AXI_awready(to_cl_bar1_bus.awready),
+   .M00_AXI_awvalid(to_cl_bar1_bus.awvalid),
+   .M00_AXI_bready(to_cl_bar1_bus.bready),
+   .M00_AXI_bresp(to_cl_bar1_bus.bresp),
+   .M00_AXI_bvalid(to_cl_bar1_bus.bvalid),
+   .M00_AXI_rdata(to_cl_bar1_bus.rdata),
+   .M00_AXI_rready(to_cl_bar1_bus.rready),
+   .M00_AXI_rresp(to_cl_bar1_bus.rresp),
+   .M00_AXI_rvalid(to_cl_bar1_bus.rvalid),
+   .M00_AXI_wdata(to_cl_bar1_bus.wdata),
+   .M00_AXI_wready(to_cl_bar1_bus.wready),
+   .M00_AXI_wstrb(to_cl_bar1_bus.wstrb),
+   .M00_AXI_wvalid(to_cl_bar1_bus.wvalid),
+   /* the bar1 bus for rr configuration */
+   .M01_AXI_araddr(rr_cfg_bus.araddr),
+   .M01_AXI_arprot(),
+   .M01_AXI_arready(rr_cfg_bus.arready),
+   .M01_AXI_arvalid(rr_cfg_bus.arvalid),
+   .M01_AXI_awaddr(rr_cfg_bus.awaddr),
+   .M01_AXI_awprot(),
+   .M01_AXI_awready(rr_cfg_bus.awready),
+   .M01_AXI_awvalid(rr_cfg_bus.awvalid),
+   .M01_AXI_bready(rr_cfg_bus.bready),
+   .M01_AXI_bresp(rr_cfg_bus.bresp),
+   .M01_AXI_bvalid(rr_cfg_bus.bvalid),
+   .M01_AXI_rdata(rr_cfg_bus.rdata),
+   .M01_AXI_rready(rr_cfg_bus.rready),
+   .M01_AXI_rresp(rr_cfg_bus.rresp),
+   .M01_AXI_rvalid(rr_cfg_bus.rvalid),
+   .M01_AXI_wdata(rr_cfg_bus.wdata),
+   .M01_AXI_wready(rr_cfg_bus.wready),
+   .M01_AXI_wstrb(rr_cfg_bus.wstrb),
+   .M01_AXI_wvalid(rr_cfg_bus.wvalid),
+   /* the bar1 bus directly coming from the shell */
+   .S00_AXI_araddr(from_sh_bar1_bus.araddr),
+   .S00_AXI_arprot(3'b0),
+   .S00_AXI_arready(from_sh_bar1_bus.arready),
+   .S00_AXI_arvalid(from_sh_bar1_bus.arvalid),
+   .S00_AXI_awaddr(from_sh_bar1_bus.awaddr),
+   .S00_AXI_awprot(3'b0),
+   .S00_AXI_awready(from_sh_bar1_bus.awready),
+   .S00_AXI_awvalid(from_sh_bar1_bus.awvalid),
+   .S00_AXI_bready(from_sh_bar1_bus.bready),
+   .S00_AXI_bresp(from_sh_bar1_bus.bresp),
+   .S00_AXI_bvalid(from_sh_bar1_bus.bvalid),
+   .S00_AXI_rdata(from_sh_bar1_bus.rdata),
+   .S00_AXI_rready(from_sh_bar1_bus.rready),
+   .S00_AXI_rresp(from_sh_bar1_bus.rresp),
+   .S00_AXI_rvalid(from_sh_bar1_bus.rvalid),
+   .S00_AXI_wdata(from_sh_bar1_bus.wdata),
+   .S00_AXI_wready(from_sh_bar1_bus.wready),
+   .S00_AXI_wstrb(from_sh_bar1_bus.wstrb),
+   .S00_AXI_wvalid(from_sh_bar1_bus.wvalid)
+);
+endmodule

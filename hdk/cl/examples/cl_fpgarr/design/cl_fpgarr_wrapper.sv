@@ -75,6 +75,9 @@ rr_axi_register_slice_lite BAR1_AXL_REG_SLC (
 // logged then passed through to an axi interconnect together with the logging
 // traffic
 rr_axi_bus_t cl_pcim_bus();
+// cl_bar1_bus is the lower 1MB of the bar1 bus connected to the cl
+// The higher 1MB of the bar1 bus is reserved for rr_cfg_bus
+rr_axi_lite_bus_t cl_bar1_bus();
 
 ////////////////////////////////////////////////////////////////////////////////
 // LOG AXI bus
@@ -128,7 +131,7 @@ rr_axi_lite_bus_t rr_bar1_bus();
 axil_mstr_recorder bar1_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
-  .inS(bar1_bus_q),
+  .inS(cl_bar1_bus),
   .outM(rr_bar1_bus),
   .axil_log(rr_bar1_logging_bus)
 );
@@ -190,24 +193,47 @@ rr_logging_bus_unpack2pack top_packer(
   .in(merged_logging_bus),
   .out(packed_logging_bus)
 );
-`PACKED_LOGGING_BUS_TO_WBBUS(packed_logging_bus, wbbus);
+`PACKED_LOGGING_BUS_TO_WBBUS(packed_logging_bus, record_bus);
 rr_packed2writeback_bus wb_inst(
-  .clk(clk), .rstn(rstn), .in(packed_logging_bus), .out(wbbus));
-assign wbbus.ready = 1'b1;
+  .clk(clk), .rstn(rstn), .in(packed_logging_bus), .out(record_bus));
+// TODO: Storage backend is not implemented yet.
 // TODO: convert rr_stream_bus_t to logging_wb_bus via mjc's module
 // TODO: need an integration test
-rr_axi_bus_t logging_wb_bus();
+// rr_cfg_bus is the higher 1MB of the bar1 bus.
+// It expects RW addresses in 0x100000~0x1FFFFF.
+rr_axi_lite_bus_t rr_cfg_bus();
+rr_axi_bus_t rr_storage_bus();
+rr_stream_bus_t #(.FULL_WIDTH(record_bus.FULL_WIDTH)) replay_bus();
+rr_storage_backend_axi #(
+  .LOGB_CHANNEL_CNT(merged_logging_bus.LOGB_CHANNEL_CNT),
+  .CHANNEL_WIDTHS(merged_logging_bus.CHANNEL_WIDTHS),
+  .LOGE_CHANNEL_CNT(merged_logging_bus.LOGE_CHANNEL_CNT)
+) trace_storage (
+  .clk(clk), .rstn(rstn),
+  .rr_cfg_bus(rr_cfg_bus),
+  .storage_backend_bus(rr_storage_bus),
+  .record_bus(record_bus),
+  .replay_bus(replay_bus)
+);
 
 // AXI Interconnect for the logging pcim traffic and user pcim traffic
 // NOTE: that all Xid field of pcim buses, either from logging or from the cl,
 // have to spare 1 bit for this interconnect.
 // So instead of 16-bit Xid available in sh_pcim_bus, they only have 15-bit Xid.
-rr_writeback_axi_interconnect wb_interconnect (
+rr_storage_pcim_axi_interconnect pcim_interconnect (
   .clk(clk),
   .rstn(rstn),
-  .logging_wb_bus(logging_wb_bus),
+  .logging_wb_bus(rr_storage_bus),
   .cl_pcim_bus(rr_pcim_bus),
   .sh_pcim_bus(sh_pcim_bus_q)
+);
+// AXI4LITE Interconnect for splitting the bar1 bus for rr configuration
+rr_cfg_bar1_interconnect bar1_interconnect (
+  .clk(clk),
+  .rstn(rstn),
+  .from_sh_bar1_bus(bar1_bus_q),
+  .to_cl_bar1_bus(cl_bar1_bus),
+  .rr_cfg_bus(rr_cfg_bus)
 );
 endmodule
 
