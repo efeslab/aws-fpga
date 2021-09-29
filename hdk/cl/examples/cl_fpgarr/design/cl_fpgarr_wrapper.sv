@@ -35,11 +35,42 @@ assign rstn = rst_main_n;
 //                pcis
 
 // connect original F1 interfaces to sv interfaces
+// TODO: need to try adding register slice for timing
 `AXI_SLV_WIRE2BUS(sh_pcim_bus, cl, sh, _pcim_);
+rr_axi_bus_t sh_pcim_bus_q();
+rr_axi_register_slice PCIM_AXI_REG_SLC (
+  .clk(clk), .rstn(rstn),
+  .slv(sh_pcim_bus_q),
+  .mstr(sh_pcim_bus)
+);
 `AXI_MSTR_WIRE2BUS(dma_pcis_bus, sh, cl, _dma_pcis_);
+rr_axi_bus_t dma_pcis_bus_q();
+rr_axi_register_slice PCIS_AXI_REG_SLC (
+  .clk(clk), .rstn(rstn),
+  .slv(dma_pcis_bus),
+  .mstr(dma_pcis_bus_q)
+);
 `AXIL_MSTR_WIRE2BUS(sda_bus, sda, cl, _);
+rr_axi_lite_bus_t sda_bus_q();
+rr_axi_register_slice_lite SDA_AXL_REG_SLC (
+  .clk(clk), .rstn(rstn),
+  .slv(sda_bus),
+  .mstr(sda_bus_q)
+);
 `AXIL_MSTR_WIRE2BUS(ocl_bus, sh, ocl, _);
+rr_axi_lite_bus_t ocl_bus_q();
+rr_axi_register_slice_lite OCL_AXL_REG_SLC (
+  .clk(clk), .rstn(rstn),
+  .slv(ocl_bus),
+  .mstr(ocl_bus_q)
+);
 `AXIL_MSTR_WIRE2BUS(bar1_bus, sh, bar1, _);
+rr_axi_lite_bus_t bar1_bus_q();
+rr_axi_register_slice_lite BAR1_AXL_REG_SLC (
+  .clk(clk), .rstn(rstn),
+  .slv(bar1_bus),
+  .mstr(bar1_bus_q)
+);
 // cl_pcim_bus is the pcim bus coming directly out of cl, it is supposed to be
 // logged then passed through to an axi interconnect together with the logging
 // traffic
@@ -64,7 +95,7 @@ rr_axi_bus_t rr_dma_pcis_bus();
 axi_mstr_recorder dma_pcis_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
-  .inS(dma_pcis_bus),
+  .inS(dma_pcis_bus_q),
   .outM(rr_dma_pcis_bus),
   .axi_log(rr_dma_pcis_logging_bus)
 );
@@ -77,7 +108,7 @@ rr_axi_lite_bus_t rr_sda_bus();
 axil_mstr_recorder sda_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
-  .inS(sda_bus),
+  .inS(sda_bus_q),
   .outM(rr_sda_bus),
   .axil_log(rr_sda_logging_bus)
 );
@@ -87,7 +118,7 @@ rr_axi_lite_bus_t rr_ocl_bus();
 axil_mstr_recorder ocl_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
-  .inS(ocl_bus),
+  .inS(ocl_bus_q),
   .outM(rr_ocl_bus),
   .axil_log(rr_ocl_logging_bus)
 );
@@ -97,7 +128,7 @@ rr_axi_lite_bus_t rr_bar1_bus();
 axil_mstr_recorder bar1_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
-  .inS(bar1_bus),
+  .inS(bar1_bus_q),
   .outM(rr_bar1_bus),
   .axil_log(rr_bar1_logging_bus)
 );
@@ -163,7 +194,7 @@ rr_logging_bus_unpack2pack top_packer(
 rr_packed2writeback_bus wb_inst(
   .clk(clk), .rstn(rstn), .in(packed_logging_bus), .out(wbbus));
 assign wbbus.ready = 1'b1;
-// TODO: convert rr_writeback_bus_t to logging_wb_bus via mjc's module
+// TODO: convert rr_stream_bus_t to logging_wb_bus via mjc's module
 // TODO: need an integration test
 rr_axi_bus_t logging_wb_bus();
 
@@ -176,7 +207,7 @@ rr_writeback_axi_interconnect wb_interconnect (
   .rstn(rstn),
   .logging_wb_bus(logging_wb_bus),
   .cl_pcim_bus(rr_pcim_bus),
-  .sh_pcim_bus(sh_pcim_bus)
+  .sh_pcim_bus(sh_pcim_bus_q)
 );
 endmodule
 

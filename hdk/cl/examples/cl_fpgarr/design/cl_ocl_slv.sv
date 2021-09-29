@@ -37,8 +37,6 @@ axi_bus_t sh_ocl_bus_q();
 //---------------------------------
 // flop the input OCL bus
 //---------------------------------
-/* backup
- */
    axi_register_slice_light AXIL_OCL_REG_SLC (
     .aclk          (clk),
     .aresetn       (sync_rst_n),
