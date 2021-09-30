@@ -67,6 +67,7 @@ file copy -force $CL_DIR/design/axichannel_logger.sv               $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_packing.sv               $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_writeback.sv             $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_wrapper.sv               $TARGET_DIR
+file copy -force $CL_DIR/design/merged_fifo.sv                     $TARGET_DIR
 
 #---- End of section replaced by Developr ---
 
