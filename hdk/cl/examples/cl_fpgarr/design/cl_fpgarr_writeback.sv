@@ -323,6 +323,14 @@ module rr_writeback #(
                 end
             end
 
+`ifdef TEST_DIRECT_CONNECT
+            if (unhandled_size >= 0) begin
+                out_fifo_in <= unhandled[curr];
+                out_fifo_wr_en <= 1;
+            end else begin
+                out_fifo_wr_en <= 0;
+            end
+`else
             if (unhandled_size >= AXI_WIDTH) begin
                 leftover_size <= leftover_size;
                 leftover <= unhandled[curr] >> (AXI_WIDTH - leftover_size);
@@ -348,6 +356,7 @@ module rr_writeback #(
             end else begin
                 out_fifo_wr_en <= 0;
             end
+`endif
         end
     end
 
