@@ -52,6 +52,27 @@ generate
     $error("FULL_WIDTH mismatches: from parameter %d, replay_bus %d\n", FULL_WIDTH, replay_bus.FULL_WIDTH);
 endgenerate
 
+rr_writeback #(
+  .WIDTH(record_bus.FULL_WIDTH),
+  .AXI_WIDTH(512),
+  .OFFSETWIDTH(16),
+  .AXI_ADDR_WIDTH(64)
+) writeback (
+  .clk(clk),
+  .sync_rst_n(rstn),
+  .cfg_max_payload(0),
+  .din_valid(record_bus.valid),
+  .din_ready(record_bus.ready),
+  .finish(rr_cfg_bus.wdata[0]), // FIXME
+  .din(record_bus.data),
+  .din_width(record_bus.len),
+  .axi_out(storage_backend_bus),
+  .buf_addr(rr_cfg_bus.wdata),
+  .buf_size('h3000000),
+  .buf_update(rr_cfg_bus.wvalid & rr_cfg_bus.wready), // FIXME
+  .interrupt()
+);
+
 // TODO
 // placeholder for rr_cfg_bus
 assign rr_cfg_bus.awready = 1'b1;
@@ -62,14 +83,7 @@ assign rr_cfg_bus.rdata = 32'b0;
 assign rr_cfg_bus.rresp = 2'b0; // OKAY
 assign rr_cfg_bus.bvalid = 1'b1;
 assign rr_cfg_bus.bresp = 2'b0; // OKAY
-// placeholder for storage_backend_bus
-assign storage_backend_bus.awvalid = 1'b0;
-assign storage_backend_bus.wvalid = 1'b0;
-assign storage_backend_bus.arvalid = 1'b0;
-assign storage_backend_bus.rready = 1'b1;
-assign storage_backend_bus.bready = 1'b1;
 // placeholder for record and replay
-assign record_bus.ready = 1'b1;
 assign replay_bus.valid = 1'b0;
 
 // demo use of GET_LEN

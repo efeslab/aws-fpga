@@ -48,7 +48,6 @@ else
          loge_valid_out[i] <= loge_valid_out[i];
 endmodule
 
-
 ////////////////////////////////////////////////////////////////////////////
 // axi interconnect for sharing single shell pcim bus across the logging
 // writeback module and the user pcim bus
@@ -185,4 +184,253 @@ rr_pcim_axi_interconnect pcim_interconnect_inst (
    .S01_AXI_wstrb(cl_pcim_bus.wstrb),
    .S01_AXI_wvalid(cl_pcim_bus.wvalid)
 );
+endmodule
+
+module rr_writeback #(
+    parameter WIDTH = 2500,
+    parameter AXI_WIDTH = 512,
+    parameter OFFSETWIDTH = 32,
+    parameter AXI_ADDR_WIDTH = 64) (
+    input clk,
+    input sync_rst_n,
+    // cfg_max_payload: see https://github.com/aws/aws-fpga/blob/master/hdk/docs/AWS_Shell_Interface_Specification.md#pcim-interface----axi-4-for-outbound-pcie-transactions-cl-is-master-shell-is-slave-512-bit
+    input logic [1:0] cfg_max_payload,
+
+    input logic din_valid,
+    output logic din_ready,
+    input logic finish,
+    input logic [WIDTH-1:0] din,
+    input logic [OFFSETWIDTH-1:0] din_width,
+
+    rr_axi_bus_t.slave axi_out,
+    input logic [AXI_ADDR_WIDTH-1:0] buf_addr,
+    input logic [AXI_ADDR_WIDTH-1:0] buf_size,
+    input logic buf_update,
+
+    // When there's a buffer overflow, the interrupt will be triggerred
+    output logic interrupt
+);
+
+    localparam NSTAGES = (WIDTH - 1) / AXI_WIDTH + 1;
+    localparam EXT_WIDTH = NSTAGES * AXI_WIDTH;
+
+    logic [WIDTH-1:0] in_fifo_out;
+    logic [EXT_WIDTH-1:0] in_fifo_out_wrap;
+    logic [OFFSETWIDTH-1:0] in_fifo_out_width;
+    logic in_fifo_rd_en;
+    logic in_fifo_full, in_fifo_almfull, in_fifo_empty;
+
+    assign in_fifo_out_wrap = EXT_WIDTH'(in_fifo_out);
+
+    merged_fifo #(
+        .WIDTH(WIDTH+OFFSETWIDTH),
+        .ALMFULL_THRESHOLD(12))
+    mfifo_inst_in(
+        .clk(clk),
+        .rst(~sync_rst_n),
+        .din({din,din_width}),
+        .dout({in_fifo_out,in_fifo_out_width}),
+        .wr_en(din_valid),
+        .rd_en(in_fifo_rd_en),
+        .full(in_fifo_full),
+        .almfull(in_fifo_almfull),
+        .empty(in_fifo_empty)
+    );
+
+    logic [AXI_WIDTH-1:0] out_fifo_out, out_fifo_in;
+    logic out_fifo_rd_en, out_fifo_wr_en;
+    logic out_fifo_full, out_fifo_almfull, out_fifo_empty;
+
+    merged_fifo #(
+        .WIDTH(AXI_WIDTH),
+        .ALMFULL_THRESHOLD(12))
+    mfifo_inst_out(
+        .clk(clk),
+        .rst(~sync_rst_n),
+        .din(out_fifo_in),
+        .dout(out_fifo_out),
+        .wr_en(out_fifo_wr_en),
+        .rd_en(out_fifo_rd_en),
+        .full(out_fifo_full),
+        .almfull(out_fifo_almfull),
+        .empty(out_fifo_empty)
+    );
+
+    logic [OFFSETWIDTH-1:0] unhandled_size;
+    logic [AXI_WIDTH-1:0] unhandled [NSTAGES-1:0];
+    logic [AXI_WIDTH-1:0] leftover;
+    logic [$clog2(AXI_WIDTH):0] leftover_size;
+    logic [$clog2(NSTAGES):0] curr;
+    logic do_finish;
+
+    assign in_fifo_rd_en = ~in_fifo_empty && ~out_fifo_almfull && unhandled_size <= AXI_WIDTH;
+
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            unhandled_size <= 0;
+            leftover_size <= 0;
+            curr <= 0;
+            do_finish <= 0;
+            out_fifo_in <= 0;
+        end else begin
+            if (finish) begin
+                do_finish <= 1;
+            end
+
+            if (in_fifo_rd_en) begin
+                curr <= 0;
+                unhandled_size <= in_fifo_out_width;
+                for (int i = 0; i < NSTAGES; i++) begin
+                    unhandled[i] <= in_fifo_out_wrap[i*AXI_WIDTH+:AXI_WIDTH];
+                end
+            end else if (curr + 1 <= NSTAGES) begin
+                curr <= curr + 1;
+                if (unhandled_size >= AXI_WIDTH) begin
+                    unhandled_size <= unhandled_size - AXI_WIDTH;
+                end else begin
+                    unhandled_size <= 0;
+                end
+            end
+
+            if (unhandled_size >= AXI_WIDTH) begin
+                leftover_size <= leftover_size;
+                leftover <= unhandled[curr] >> (AXI_WIDTH - leftover_size);
+                out_fifo_in <= (unhandled[curr] << leftover_size) | (leftover & (AXI_WIDTH'(-1) >> (AXI_WIDTH - leftover_size)));
+                out_fifo_wr_en <= 1;
+            end else if (unhandled_size > 0) begin
+                if (leftover_size + unhandled_size >= AXI_WIDTH) begin
+                    leftover_size <= leftover_size + unhandled_size - AXI_WIDTH;
+                    leftover <= unhandled[curr] >> (AXI_WIDTH - leftover_size);
+                    out_fifo_in <= (unhandled[curr] << leftover_size) + (leftover & (AXI_WIDTH'(-1) >> (AXI_WIDTH - leftover_size)));
+                    out_fifo_wr_en <= 1;
+                end else begin
+                    leftover_size <= leftover_size + unhandled_size;
+                    leftover <= (unhandled[curr] << leftover_size) | (leftover & (AXI_WIDTH'(-1) >> (AXI_WIDTH - leftover_size)));
+                    out_fifo_wr_en <= 0;
+                end
+            end else if (do_finish && in_fifo_empty && ~din_valid) begin
+                if (leftover_size > 0) begin
+                    out_fifo_wr_en <= 1;
+                    out_fifo_in <= leftover;
+                    do_finish <= 0;
+                end
+            end else begin
+                out_fifo_wr_en <= 0;
+            end
+        end
+    end
+
+    assign din_ready = ~in_fifo_almfull && ~out_fifo_almfull;
+
+    logic [AXI_ADDR_WIDTH-1:0] buf_curr;
+    logic [AXI_ADDR_WIDTH-1:0] buf_end;
+    logic buf_write_en, buf_write_success;
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            buf_curr <= 0;
+            buf_end <= 0;
+        end else if (buf_update) begin
+            buf_curr <= buf_addr;
+            buf_end <= buf_addr + buf_size;
+        end else if (buf_write_en) begin
+            buf_curr <= buf_curr + AXI_WIDTH/8;
+        end
+
+        interrupt <= (buf_curr == buf_end);
+    end
+
+    logic axi_aw_transmitted, axi_w_transmitted, axi_transmitted;
+    logic axi_aw_working, axi_w_working, axi_working;
+    assign axi_aw_transmitted = axi_out.awready & axi_out.awvalid;
+    assign axi_w_transmitted = axi_out.wready & axi_out.wvalid;
+    assign axi_aw_working = axi_out.awvalid & ~axi_out.awready;
+    assign axi_w_working = axi_out.wvalid & ~axi_out.wready;
+    assign axi_working = axi_aw_working | axi_w_working;
+
+    // Transaction control
+    logic axi_aw_handled, axi_w_handled;
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            axi_aw_handled <= 0;
+            axi_w_handled <= 0;
+        end else begin
+            if (axi_aw_transmitted & axi_w_transmitted) begin
+                axi_aw_handled <= 0;
+            end else if (axi_aw_transmitted) begin
+                axi_aw_handled <= 1;
+            end else if (axi_aw_handled & axi_w_transmitted) begin
+                axi_aw_handled <= 0;
+            end
+
+            if (axi_aw_transmitted & axi_w_transmitted) begin
+                axi_w_handled <= 0;
+            end else if (axi_w_transmitted) begin
+                axi_w_handled <= 1;
+            end else if (axi_w_handled & axi_aw_handled) begin
+                axi_w_handled <= 0;
+            end
+        end
+    end
+
+    assign axi_transmitted = (axi_aw_transmitted | axi_aw_handled) & (axi_w_transmitted | axi_w_handled);
+    assign buf_write_en = axi_transmitted;
+
+    // Valid control
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            axi_out.awvalid <= 0;
+            axi_out.wvalid <= 0;
+        end else begin
+            if (axi_aw_working) begin
+                axi_out.awvalid <= 1;
+            end else if (axi_w_working) begin
+                axi_out.awvalid <= 0;
+            end else begin
+                axi_out.awvalid <= ~out_fifo_empty;
+            end
+
+            if (axi_w_working) begin
+                axi_out.wvalid <= 1;
+            end else if (axi_aw_working) begin
+                axi_out.wvalid <= 0;
+            end else begin
+                axi_out.wvalid <= ~out_fifo_empty;
+            end
+        end
+    end
+
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            axi_out.wdata <= 0;
+        end else begin
+            if (~axi_aw_working & ~axi_w_working & ~out_fifo_empty)
+                axi_out.wdata <= out_fifo_out;
+        end
+    end
+    assign out_fifo_rd_en = ~axi_aw_working & ~axi_w_working & ~out_fifo_empty;
+
+    logic [15:0] tid;
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            tid <= 0;
+        end else begin
+            if (axi_transmitted) begin
+                tid <= tid + 1;
+            end
+        end
+    end
+
+    // AW extras
+    assign axi_out.awid = tid;
+    assign axi_out.awaddr = buf_curr;
+    assign axi_out.awlen = 0;
+    assign axi_out.awsize = AXI_WIDTH / 8;
+
+    assign axi_out.wid = tid;
+    assign axi_out.wstrb = -1;
+    assign axi_out.wlast = 1;
+
+    // Read and write response are always ready
+    assign axi_out.bready = 1;
+    assign axi_out.rready = 1;
 endmodule

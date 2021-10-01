@@ -93,6 +93,10 @@ read_bd [ list \
   $CL_DIR/ip/rr_cfg_axil_interconnect/rr_cfg_axil_interconnect.bd
 ]
 
+read_ip [ list \
+  $CL_DIR/ip/fifo_128x128/fifo_128x128.xci
+]
+
 puts "AWS FPGA: Reading AWS constraints";
 
 #Read all the constraints

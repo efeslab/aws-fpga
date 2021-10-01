@@ -55,6 +55,10 @@ ${HDK_SHELL_DESIGN_DIR}/ip/src_register_slice/sim/src_register_slice.v
 ${HDK_SHELL_DESIGN_DIR}/ip/axi_register_slice/sim/axi_register_slice.v
 ${HDK_SHELL_DESIGN_DIR}/ip/axi_register_slice_light/sim/axi_register_slice_light.v
 
+${CL_ROOT}/ip/fifo_128x128/sim/fifo_128x128.v
+${CL_ROOT}/ip/fifo_128x128/hdl/fifo_generator_v13_2_rfs.v
+${CL_ROOT}/ip/fifo_128x128/simulation/fifo_generator_vlog_beh.v
+
 +define+DISABLE_VJTAG_DEBUG
 ${CL_ROOT}/design/axil_slave.sv
 ${CL_ROOT}/design/cl_dram_dma_defines.vh
@@ -83,6 +87,7 @@ ${CL_ROOT}/design/transkidbuf_pipeline.sv
 ${CL_ROOT}/design/axichannel_logger.sv
 ${CL_ROOT}/design/cl_fpgarr_packing.sv
 ${CL_ROOT}/design/cl_fpgarr_writeback.sv
+
 # start of rr_pcim_axi_interconnect
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/sim/rr_pcim_axi_interconnect.v
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_xbar_0/sim/rr_pcim_axi_interconnect_xbar_0.v
