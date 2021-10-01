@@ -257,9 +257,20 @@ module rr_writeback #(
         .empty(in_fifo_empty)
     );
 
-    logic [AXI_WIDTH-1:0] out_fifo_out, out_fifo_in;
-    logic out_fifo_rd_en, out_fifo_wr_en;
+    logic [AXI_WIDTH-1:0] out_fifo_out, out_fifo_in, out_fifo_in_q, out_fifo_in_qq;
+    logic out_fifo_rd_en, out_fifo_wr_en, out_fifo_wr_en_q, out_fifo_wr_en_qq;
     logic out_fifo_full, out_fifo_almfull, out_fifo_empty;
+
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            out_fifo_wr_en_qq <= 0;
+        end else begin
+            out_fifo_in_q <= out_fifo_in;
+            out_fifo_in_qq <= out_fifo_in_q;
+            out_fifo_wr_en_q <= out_fifo_wr_en;
+            out_fifo_wr_en_qq <= out_fifo_wr_en_q;
+        end
+    end
 
     merged_fifo #(
         .WIDTH(AXI_WIDTH),
@@ -267,9 +278,9 @@ module rr_writeback #(
     mfifo_inst_out(
         .clk(clk),
         .rst(~sync_rst_n),
-        .din(out_fifo_in),
+        .din(out_fifo_in_qq),
         .dout(out_fifo_out),
-        .wr_en(out_fifo_wr_en),
+        .wr_en(out_fifo_wr_en_qq),
         .rd_en(out_fifo_rd_en),
         .full(out_fifo_full),
         .almfull(out_fifo_almfull),
@@ -340,7 +351,13 @@ module rr_writeback #(
         end
     end
 
-    assign din_ready = ~in_fifo_almfull && ~out_fifo_almfull;
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            din_ready <= 0;
+        end else begin
+            din_ready <= ~in_fifo_almfull && ~out_fifo_almfull;
+        end
+    end
 
     logic [AXI_ADDR_WIDTH-1:0] buf_curr;
     logic [AXI_ADDR_WIDTH-1:0] buf_end;
