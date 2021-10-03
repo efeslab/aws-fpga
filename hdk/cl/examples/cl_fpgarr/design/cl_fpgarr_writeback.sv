@@ -186,6 +186,26 @@ rr_pcim_axi_interconnect pcim_interconnect_inst (
 );
 endmodule
 
+/*
+ * A better structure in my mind.
+ * Summary of the requirement:
+ * ===> Variable length input (0..WIDTH)
+ *             Fixed 512 output (AXI_WIDTH) ===>
+ * A [2*WIDTH-1:0] (shift register?) B
+ * Four cases to consider:
+ * B_next
+ * B
+ * 1. !in, !out B_next = B
+ * 2. in, !out
+ *    B_next[B_len +: WIDTH] = in
+ * 3. !in, out
+ *    B_next[0 +: WIDTH-AXI_WIDTH] = B[AXI_WIDTH +: WIDTH-AXI_WIDTH]
+ *    out[AXI_WIDTH-1:0] = B[0 +: AXI_WIDTH]
+ * 4. in, out
+ *    B_next[0 +: WIDTH-AXI_WIDTH] = B[AXI_WIDTH +: WIDTH-AXI_WIDTH]
+ *    B_next[B_len - AXI_WIDTH +: WIDTH] = in
+ *    out[AXI_WIDTH-1:0] = B[0 +: AXI_WIDTH]
+ */
 module rr_writeback #(
     parameter WIDTH = 2500,
     parameter AXI_WIDTH = 512,
