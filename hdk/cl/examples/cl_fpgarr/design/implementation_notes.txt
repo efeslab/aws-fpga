@@ -1,0 +1,60 @@
+Note1: Better organize the packing tree in unpack2pack
+// Snapshot of the schematic of the merge tree (top_packer) 
+// L1      *-N0-*
+//        /      \
+// L0     N0     N1 ...
+//       /  \   /  \
+//      W32 W36 W32 W32 W36 W32 W32 W36 W32 W531 W18 W91 W593 W91
+// logb 0   1   2   3   4   5   6   7   8   9    10  11  12   13
+// Bellow are the original packing tree structure captured through elaboration
+// printf
+// msg: Elaboration LOGB CHANNEL 0, width 32
+// msg: Elaboration LOGB CHANNEL 1, width 36
+// msg: Elaboration LOGB CHANNEL 2, width 32
+// msg: Elaboration LOGB CHANNEL 3, width 32
+// msg: Elaboration LOGB CHANNEL 4, width 36
+// msg: Elaboration LOGB CHANNEL 5, width 32
+// msg: Elaboration LOGB CHANNEL 6, width 32
+// msg: Elaboration LOGB CHANNEL 7, width 36
+// msg: Elaboration LOGB CHANNEL 8, width 32
+// msg: Elaboration LOGB CHANNEL 9, width 531
+// msg: Elaboration LOGB CHANNEL 10, width 18
+// msg: Elaboration LOGB CHANNEL 11, width 91
+// msg: Elaboration LOGB CHANNEL 12, width 593
+// msg: Elaboration LOGB CHANNEL 13, width 91
+// msg: Layer 0, Node 0(W68), merging Leaf 0 (W32) and Leaf 1 (W36).
+// msg: Layer 0, Node 1(W64), merging Leaf 2 (W32) and Leaf 3 (W32).
+// msg: Layer 0, Node 2(W68), merging Leaf 4 (W36) and Leaf 5 (W32).
+// msg: Layer 0, Node 3(W68), merging Leaf 6 (W32) and Leaf 7 (W36).
+// msg: Layer 0, Node 4(W563), merging Leaf 8 (W32) and Leaf 9 (W531).
+// msg: Layer 0, Node 5(W109), merging Leaf 10 (W18) and Leaf 11 (W91).
+// msg: Layer 0, Node 6(W684), merging Leaf 12 (W593) and Leaf 13 (W91).
+// msg: Layer 1, Node 0(W132), merging Leaf 0 (W68) and Leaf 1 (W64).
+// msg: Layer 1, Node 1(W136), merging Leaf 2 (W68) and Leaf 3 (W68).
+// msg: Layer 1, Node 2(W672), merging Leaf 4 (W563) and Leaf 5 (W109).
+// msg: Layer 1, Node 3(W684), queue Leaf 6(W684)
+// msg: Layer 2, Node 0(W268), merging Leaf 0 (W132) and Leaf 1 (W136).
+// msg: Layer 2, Node 1(W1356), merging Leaf 2 (W672) and Leaf 3 (W684).
+// msg: Layer 3, Node 0(W1624), merging Leaf 0 (W268) and Leaf 1 (W1356).
+
+// CHANNEL_WIDTHS reorganize for merge tree efficiency
+// A few observation from the schematic
+// 1. Layer 0, Node 4, merging W32(inA) with W531(inB)
+//    inB =W535=> inA =W563=> Fanout 535
+//    ext =W33=+
+// 2. Layer 0, Node 6, merging W593(inA) with W91(inB)
+//    inB =~W100=> inA =W673=> Fanout 597~605
+//    ext =W594=+
+// 3. Layer 1, Node 2, merging W563(inA) with W109(inB)
+//    inB =~W100=> inA =W625=> Fanout 575~782
+//    ext =W568=+
+// 4. Layer 3, Node 0, merging W268(inA) with W1356(inB)
+//    inB =W980============> out
+//      +=~W400=> inA => W??? => Fanout 1768,1367,1367...
+//    ext W275=+
+// 5. Layer 2, Node 1, merging W672(inA) and W684(inB)
+
+// Intuition: maintain a balanced binary merging tree, make the two subtree of a
+// node as same wide as possible. And when merging two subtrees, the wider one
+// should go first (inA)
+//      32 36 32 32 36 32 32 36 32 531 18 91 593 91

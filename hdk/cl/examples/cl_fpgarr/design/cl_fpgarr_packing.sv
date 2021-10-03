@@ -1,4 +1,5 @@
 `include "cl_fpgarr_types.svh"
+`include "cl_fpgarr_packing_cfg.svh"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Interface for logb bus packing (only used in this file)
@@ -96,9 +97,9 @@ always_comb begin
    valid_len_B = inB_q.any_valid? inB_q.len: 0;
    out.len = out.OFFSET_WIDTH'(valid_len_A) + out.OFFSET_WIDTH'(valid_len_B);
    if (inA_q.any_valid)
-      out.data[0 +: inA.FULL_WIDTH] = inA_q.data;
+     out.data[0 +: inA.FULL_WIDTH] = inA_q.data;
    if (inB_q.any_valid)
-      out.data[valid_len_A +: inB.FULL_WIDTH] = inB_q.data;
+     out.data[valid_len_A +: inB.FULL_WIDTH] = inB_q.data;
 end
 endmodule
 
@@ -108,19 +109,28 @@ module rr_logging_bus_unpack2pack (
    rr_logging_bus_t.C in,
    rr_packed_logging_bus_t.P out
 );
+
 // parameter check
 generate
   if (in.LOGB_CHANNEL_CNT != out.LOGB_CHANNEL_CNT)
-     $error("LOGB_CHANNEL_CNT mismatches: in %d, out %d\n",
-       in.LOGB_CHANNEL_CNT, out.LOGB_CHANNEL_CNT);
+    $error("LOGB_CHANNEL_CNT mismatches: in %d, out %d\n",
+      in.LOGB_CHANNEL_CNT, out.LOGB_CHANNEL_CNT);
+  if (in.LOGB_CHANNEL_CNT != MERGE_TREE_MAX_NODES)
+    $error("LOGB_CHANNEL_CNT mismatches: in %d, MERGE_TREE_MAX_NODES %d\n",
+      in.LOGB_CHANNEL_CNT, MERGE_TREE_MAX_NODES);
   if (in.LOGE_CHANNEL_CNT != out.LOGE_CHANNEL_CNT)
-     $error("LOGE_CHANNEL_CNT mismatches: in %d, out %d\n",
-       in.LOGE_CHANNEL_CNT, out.LOGE_CHANNEL_CNT);
+    $error("LOGE_CHANNEL_CNT mismatches: in %d, out %d\n",
+      in.LOGE_CHANNEL_CNT, out.LOGE_CHANNEL_CNT);
   if (in.FULL_WIDTH != out.FULL_WIDTH)
-     $error("FULL_WIDTH mismatches: in %d, out %d\n", in.FULL_WIDTH, out.FULL_WIDTH);
+    $error("FULL_WIDTH mismatches: in %d, out %d\n",
+      in.FULL_WIDTH, out.FULL_WIDTH);
+  if (MERGE_TREE_MAX_NODES != in.LOGB_CHANNEL_CNT)
+    $error("MERGE_TREE_MAX_NODES mismatches: max nodes %d, LOGB %d\n",
+      MERGE_TREE_MAX_NODES, in.LOGB_CHANNEL_CNT);
 endgenerate
 localparam LOGB_CHANNEL_CNT = in.LOGB_CHANNEL_CNT;
-localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS = in.CHANNEL_WIDTHS;
+localparam bit [LOGB_CHANNEL_CNT-1:0]
+  [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS = in.CHANNEL_WIDTHS;
 `DEF_GET_OFFSET(CHANNEL_WIDTHS)
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -129,22 +139,36 @@ localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS
 genvar i;
 generate
 for (i=0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin: packed_logb_gen
-   rr_packed_logb_bus_t #(CHANNEL_WIDTHS[i]) bus();
-   $info("Elaboration LOGB CHANNEL %d, width %d\n", i, bus.FULL_WIDTH);
-   assign bus.any_valid = in.logb_valid[i];
-   assign bus.data = in.logb_data[GET_OFFSET(i) +: CHANNEL_WIDTHS[i]];
-   assign bus.len = in.logb_valid[i]? bus.OFFSET_WIDTH'(CHANNEL_WIDTHS[i]) : 0;
+  localparam IDX = SHUFFLE_PLAN[i][0];
+  localparam IDX2 = SHUFFLE_PLAN[i][1];
+  localparam WIDTH = CHANNEL_WIDTHS[IDX];
+  if (IDX != IDX2)
+    $error("Invalid Channel Shuffle Plan at %d, plan is (%d, %d)\n",
+      i, IDX, IDX2);
+  rr_packed_logb_bus_t #(WIDTH) bus();
+  $info("Elaboration LOGB CHANNEL %d (W%d), as merge-tree leaf %d\n",
+    IDX, WIDTH, i);
+  assign bus.any_valid = in.logb_valid[IDX];
+  assign bus.data = in.logb_data[GET_OFFSET(IDX) +: WIDTH];
+  assign bus.len = in.logb_valid[IDX]? bus.OFFSET_WIDTH'(WIDTH) : 0;
 end
 endgenerate
+
+// expose the shuffled CHANNEL_WIDTHS outside. This is useful when decoding the
+// trace buffer.
+function automatic bit [LOGB_CHANNEL_CNT-1:0]
+  [RR_CHANNEL_WIDTH_BITS-1:0] GET_SHUFFLED_CHANNEL_WIDTHS();
+  for (int i=0; i < LOGB_CHANNEL_CNT; i=i+1) begin
+    GET_SHUFFLED_CHANNEL_WIDTHS[i] = CHANNEL_WIDTHS[SHUFFLE_PLAN[i][0]];
+  end
+endfunction
+parameter bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
+  SHUFFLED_CHANNEL_WIDTHS = GET_SHUFFLED_CHANNEL_WIDTHS();
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructing a binary merge tree to marshall all logb_data
 ////////////////////////////////////////////////////////////////////////////////
-// the height of the aggregation packing tree
-// It is also the number of stages other signals should be queued
-localparam AGG_TREE_HEIGHT = $clog2(in.LOGB_CHANNEL_CNT);
-
 `define TREE_MARSHALLER2(_inA, _inB, _out) \
    `PACKED_LOGB_BUS_JOIN2(_inA, _inB, _out);\
    rr_logging_bus_marshaller2 #(\
@@ -155,86 +179,83 @@ localparam AGG_TREE_HEIGHT = $clog2(in.LOGB_CHANNEL_CNT);
    `PACKED_LOGB_BUS_DUP(_in, _out); \
    rr_packed_logb_bus_sbuf q(.clk(clk), .rstn(rstn), .in(_in), .out(_out))
 
-// An example of the aggregation tree
-// h=3               0       LEVEL_OUTN=1, PREV_LEVEL_OUTN=2
-//                  /  \
-//                 /    \
-//                /      \
-// h=2           0        1  LEVEL_OUTN=2, PREV_LEVEL_OUTN=3
-//             /   \      |
-//            /     \     |
-// h=1       0       1    2  LEVEL_OUTN=3, PREV_LEVEL_OUTN=5
-//          / \     / \   |
-// h=0     0   1   2   3  4  LEVEL_OUTN=5, PREV_LEVEL_OUTN=9
-//        / \ / \ / \ / \ |
-// init   0 1 2 3 4 5 6 7 8  LOGB_CHANNEL_CNT=9
+// TODO: This need to be updated to reflect the MERGE_PLAN change
+// The aggregation/merge tree is controlled by cl_fpgarr_packing_cfg.svh
+// There is an interesting macro MERGE_PLAN, which is organized in terms of
+// layer (nodes in the tree with the same height), node (define the operation of
+// an intermediate node in tree) and plan (merge two subtree or queue one
+// subtree).
+// Note that the height 0 layer of the MERGE_PLAN is reserved to specify the
+// initial shuffleing of all channels, used above. The real merging structure
+// starts from height 1.
+// For more details, see cl_fpgarr_packing_cfg.svh and cl_fpgarr_treegen.py
 genvar h; // height of the aggregation tree
 generate
-for (h=0; h < AGG_TREE_HEIGHT; h=h+1) begin: tree_gen
-   // LEVEL_OUTN: how many output packed_logb_bus this level should output
-   localparam int LEVEL_OUTN = $ceil(LOGB_CHANNEL_CNT/$pow(2,h+1));
-   localparam int PREV_LEVEL_OUTN = $ceil(LOGB_CHANNEL_CNT/$pow(2,h));
-   // deal with leaf nodes
-   for (i=0; i < LEVEL_OUTN; i=i+1) begin: level_gen
-      if (2*i + 1 < PREV_LEVEL_OUTN) begin: agg_or_q
-         if (h==0) begin: node
-            // can find two buses to merge, use marshaller2
-            // plogb stands for packed logb
-            `TREE_MARSHALLER2(
-               packed_logb_gen[2*i].bus,
-               packed_logb_gen[2*i+1].bus,
-               plogb);
-            $info("Layer %d, Node %d(W%d), merging Leaf %d (W%d) and Leaf %d (W%d).\n",
-               h, i, plogb.FULL_WIDTH,
-               2*i, packed_logb_gen[2*i].bus.FULL_WIDTH,
-               2*i+1, packed_logb_gen[2*i+1].bus.FULL_WIDTH);
-         end
-         else begin: node
-            `TREE_MARSHALLER2(
-               tree_gen[h-1].level_gen[2*i].agg_or_q.node.plogb,
-               tree_gen[h-1].level_gen[2*i+1].agg_or_q.node.plogb,
-               plogb);
-            $info("Layer %d, Node %d(W%d), merging Leaf %d (W%d) and Leaf %d (W%d).\n",
-               h, i, plogb.FULL_WIDTH,
-               2*i, tree_gen[h-1].level_gen[2*i].agg_or_q.node.plogb.FULL_WIDTH,
-               2*i+1, tree_gen[h-1].level_gen[2*i+1].agg_or_q.node.plogb.FULL_WIDTH);
-         end
+for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
+  for (i=0; i < NODES_PER_LAYER[h]; i=i+1) begin: level_gen
+    localparam LID = MERGE_PLAN[h][i][0];
+    localparam RID = MERGE_PLAN[h][i][1];
+    if (LID != RID) begin: agg_or_q
+      // merge
+      if (h==1) begin: node
+         // can find two buses to merge, use marshaller2
+         // plogb stands for packed logb
+         `TREE_MARSHALLER2(
+            packed_logb_gen[LID].bus,
+            packed_logb_gen[RID].bus,
+            plogb);
+         $info("Layer %d, Node %d(W%d), merging Leaf %d (W%d) and Leaf %d (W%d).\n",
+            h, i, plogb.FULL_WIDTH,
+            LID, packed_logb_gen[LID].bus.FULL_WIDTH,
+            RID, packed_logb_gen[RID].bus.FULL_WIDTH);
       end
-      else begin: agg_or_q
-         if (h==0) begin: node
-            // trivially queue the signal to next level of tree
-            `TREE_QUEUE(packed_logb_gen[2*i].bus, plogb);
-            $info("Layer %d, Node %d(W%d), queue Leaf %d(W%d)\n",
-               h, i, plogb.FULL_WIDTH,
-               2*i, packed_logb_gen[2*i].bus.FULL_WIDTH);
-         end
-         else begin: node
-            `TREE_QUEUE(
-               tree_gen[h-1].level_gen[2*i].agg_or_q.node.plogb, plogb);
-            $info("Layer %d, Node %d(W%d), queue Leaf %d(W%d)\n",
-               h, i, plogb.FULL_WIDTH,
-               2*i, tree_gen[h-1].level_gen[2*i].agg_or_q.node.plogb.FULL_WIDTH);
-         end
+      else begin: node
+         `TREE_MARSHALLER2(
+            tree_gen[h-1].level_gen[LID].agg_or_q.node.plogb,
+            tree_gen[h-1].level_gen[RID].agg_or_q.node.plogb,
+            plogb);
+         $info("Layer %d, Node %d(W%d), merging Leaf %d (W%d) and Leaf %d (W%d).\n",
+            h, i, plogb.FULL_WIDTH,
+            LID, tree_gen[h-1].level_gen[LID].agg_or_q.node.plogb.FULL_WIDTH,
+            RID, tree_gen[h-1].level_gen[RID].agg_or_q.node.plogb.FULL_WIDTH);
       end
-   end
+    end
+    else begin: agg_or_q
+      // queue
+      if (h==1) begin: node
+         // trivially queue the signal to next level of tree
+         `TREE_QUEUE(packed_logb_gen[LID].bus, plogb);
+         $info("Layer %d, Node %d(W%d), queue Leaf %d(W%d)\n",
+            h, i, plogb.FULL_WIDTH,
+            LID, packed_logb_gen[LID].bus.FULL_WIDTH);
+      end
+      else begin: node
+         `TREE_QUEUE(
+            tree_gen[h-1].level_gen[LID].agg_or_q.node.plogb, plogb);
+         $info("Layer %d, Node %d(W%d), queue Leaf %d(W%d)\n",
+            h, i, plogb.FULL_WIDTH,
+            LID, tree_gen[h-1].level_gen[LID].agg_or_q.node.plogb.FULL_WIDTH);
+      end
+    end
+  end
 end
 endgenerate
 
 // output packed_logb_bus
 assign out.plogb.any_valid =
-   tree_gen[AGG_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.any_valid;
+   tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.any_valid;
 assign out.plogb.data =
-   tree_gen[AGG_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.data;
+   tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.data;
 assign out.plogb.len =
-   tree_gen[AGG_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.len;
-assign tree_gen[AGG_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.ready = out.ready;
+   tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.len;
+assign tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.ready = out.ready;
 
 // Queue logb_valid and loge_valid for the correct number of cycles
 generate
 for (i=0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin: logb_gen
    transkidbuf_pipeline #(
       .DATA_WIDTH(0),
-      .PIPE_DEPTH(AGG_TREE_HEIGHT),
+      .PIPE_DEPTH(MERGE_TREE_HEIGHT),
       .PASS_LAST_STALL(1)) sbuf_p (
       .clk(clk), .rstn(rstn),
       .in_valid(in.logb_valid[i]),
@@ -248,7 +269,7 @@ end
 for (i=0; i < in.LOGE_CHANNEL_CNT; i=i+1) begin: loge_gen
    transkidbuf_pipeline #(
       .DATA_WIDTH(0),
-      .PIPE_DEPTH(AGG_TREE_HEIGHT),
+      .PIPE_DEPTH(MERGE_TREE_HEIGHT),
       .PASS_LAST_STALL(1)) sbuf_p (
       .clk(clk), .rstn(rstn),
       .in_valid(in.loge_valid[i]),
@@ -267,7 +288,7 @@ endgenerate
 // As a result, I ignore in_ready of all transkidbuf instantiations and maintain
 // the ready signal of input packed logger buses myself.
 (* dont_touch = "true" *) logic in_ready_piped;
-lib_pipe #(.WIDTH(1), .STAGES(AGG_TREE_HEIGHT)) in_ready_pipe(
+lib_pipe #(.WIDTH(1), .STAGES(MERGE_TREE_HEIGHT)) in_ready_pipe(
    .clk(clk), .rst_n(rstn), .in_bus(out.ready), .out_bus(in_ready_piped));
 assign in.ready = in_ready_piped;
 endmodule

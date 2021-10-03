@@ -65,6 +65,7 @@ file copy -force $CL_DIR/design/transkidbuf.sv                     $TARGET_DIR
 file copy -force $CL_DIR/design/transkidbuf_pipeline.sv            $TARGET_DIR
 file copy -force $CL_DIR/design/axichannel_logger.sv               $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_packing.sv               $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fpgarr_packing_cfg.svh          $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_writeback.sv             $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_wrapper.sv               $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_tracestorage_axi.sv      $TARGET_DIR

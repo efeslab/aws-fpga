@@ -153,7 +153,8 @@ axil_mstr_recorder bar1_bus_recorder (
 // Pack the logging bus
 ////////////////////////////////////////////////////////////////////////////////
 // the merging tree of rr_logging_bus_t
-// TODO: that there is a benefit to postpone the merge of wide buses
+// Note that there is a benefit to postpone the merge of wide buses.
+// This kind of optimization is handled in top_packer.
 //         merged bus
 //              |
 //          *-- p3 ----*
@@ -206,7 +207,7 @@ rr_axi_bus_t rr_storage_bus();
 rr_stream_bus_t #(.FULL_WIDTH(record_bus.FULL_WIDTH)) replay_bus();
 rr_storage_backend_axi #(
   .LOGB_CHANNEL_CNT(merged_logging_bus.LOGB_CHANNEL_CNT),
-  .CHANNEL_WIDTHS(merged_logging_bus.CHANNEL_WIDTHS),
+  .CHANNEL_WIDTHS(top_packer.SHUFFLED_CHANNEL_WIDTHS),
   .LOGE_CHANNEL_CNT(merged_logging_bus.LOGE_CHANNEL_CNT)
 ) trace_storage (
   .clk(clk), .rstn(rstn),
