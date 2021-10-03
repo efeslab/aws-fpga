@@ -263,6 +263,7 @@ module rr_writeback #(
 
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
+            out_fifo_wr_en_q <= 0;
             out_fifo_wr_en_qq <= 0;
         end else begin
             out_fifo_in_q <= out_fifo_in;
@@ -289,7 +290,13 @@ module rr_writeback #(
 
     logic [OFFSETWIDTH-1:0] unhandled_size;
     logic [AXI_WIDTH-1:0] unhandled [NSTAGES-1:0];
+`ifdef WRITEBACK_MERGE_SEL
+    logic [AXI_WIDTH-1:0] current_unhandled;
+    logic [OFFSETWIDTH-1:0] current_unhandled_size;
+    logic [AXI_WIDTH*2-1:0] leftover, leftover_next;
+`else
     logic [AXI_WIDTH-1:0] leftover;
+`endif
     logic [$clog2(AXI_WIDTH):0] leftover_size;
     logic [$clog2(NSTAGES):0] curr;
     logic do_finish;
@@ -303,6 +310,7 @@ module rr_writeback #(
             curr <= 0;
             do_finish <= 0;
             out_fifo_in <= 0;
+            out_fifo_wr_en <= 0;
         end else begin
             if (finish) begin
                 do_finish <= 1;
@@ -331,6 +339,27 @@ module rr_writeback #(
                 out_fifo_wr_en <= 0;
             end
 `else
+    `ifdef WRITEBACK_MERGE_SEL
+            if (unhandled_size >= AXI_WIDTH) begin
+                current_unhandled_size <= AXI_WIDTH;
+            end else begin
+                current_unhandled_size <= unhandled_size;
+            end
+            current_unhandled <= unhandled[curr];
+
+            leftover_next = leftover;
+            leftover_next[leftover_size +: AXI_WIDTH] = current_unhandled;
+            if (leftover_size + current_unhandled_size >= AXI_WIDTH) begin
+                leftover[0 +: AXI_WIDTH] <= leftover_next[AXI_WIDTH +: AXI_WIDTH];
+                leftover_size <= leftover_size + current_unhandled_size - AXI_WIDTH;
+                out_fifo_in <= leftover_next[0 +: AXI_WIDTH];
+                out_fifo_wr_en <= 1;
+            end else begin
+                leftover <= leftover_next;
+                leftover_size <= leftover_size + AXI_WIDTH;
+                out_fifo_wr_en <= 0;
+            end
+    `else
             if (unhandled_size >= AXI_WIDTH) begin
                 leftover_size <= leftover_size;
                 leftover <= unhandled[curr] >> (AXI_WIDTH - leftover_size);
@@ -356,6 +385,7 @@ module rr_writeback #(
             end else begin
                 out_fifo_wr_en <= 0;
             end
+    `endif
 `endif
         end
     end
