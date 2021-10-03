@@ -8,7 +8,8 @@
 // This module is offloaded to mjc to implement
 module rr_storage_backend_axi #(
   parameter int LOGB_CHANNEL_CNT,
-  parameter bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS,
+  parameter bit [LOGB_CHANNEL_CNT-1:0]
+    [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS,
   parameter int LOGE_CHANNEL_CNT
 ) (
   input wire clk,
@@ -47,9 +48,11 @@ endfunction
 // parameter check
 generate
   if (FULL_WIDTH != record_bus.FULL_WIDTH)
-    $error("FULL_WIDTH mismatches: from parameter %d, record_bus %d\n", FULL_WIDTH, record_bus.FULL_WIDTH);
+    $error("FULL_WIDTH mismatches: from parameter %d, record_bus %d\n",
+      FULL_WIDTH, record_bus.FULL_WIDTH);
   if (FULL_WIDTH != replay_bus.FULL_WIDTH)
-    $error("FULL_WIDTH mismatches: from parameter %d, replay_bus %d\n", FULL_WIDTH, replay_bus.FULL_WIDTH);
+    $error("FULL_WIDTH mismatches: from parameter %d, replay_bus %d\n",
+      FULL_WIDTH, replay_bus.FULL_WIDTH);
 endgenerate
 
 rr_writeback #(

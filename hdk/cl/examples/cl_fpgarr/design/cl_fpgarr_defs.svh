@@ -34,7 +34,7 @@ parameter RR_CHANNEL_WIDTH_BITS=32;
 // TODO: seperate rr axi bus definition and remove wid
 // TODO: pcis Xid is just 6bit
 `define AXI_MSTR_WIRE2BUS(b, m, s, pfx)                                        \
-  rr_axi_bus_t b();                                                               \
+  rr_axi_bus_t b();                                                            \
   assign b.awid = m``_``s``pfx``awid;                                          \
   assign b.awaddr = m``_``s``pfx``awaddr;                                      \
   assign b.awlen = m``_``s``pfx``awlen;                                        \
@@ -68,7 +68,7 @@ parameter RR_CHANNEL_WIDTH_BITS=32;
   assign s``_``m``pfx``rvalid = b.rvalid;                                      \
   assign b.rready = m``_``s``pfx``rready
 `define AXI_SLV_WIRE2BUS(b, m, s, pfx)                                         \
-  rr_axi_bus_t b();                                                               \
+  rr_axi_bus_t b();                                                            \
   assign m``_``s``pfx``awid = b.awid;                                          \
   assign m``_``s``pfx``awaddr = b.awaddr;                                      \
   assign m``_``s``pfx``awlen = b.awlen;                                        \
@@ -102,7 +102,7 @@ parameter RR_CHANNEL_WIDTH_BITS=32;
   assign b.rvalid = s``_``m``pfx``rvalid;                                      \
   assign m``_``s``pfx``rready = b.rready
 `define AXIL_MSTR_WIRE2BUS(b, m, s, pfx)                                       \
-  rr_axi_lite_bus_t b();                                                          \
+  rr_axi_lite_bus_t b();                                                       \
   assign b.awaddr = m``_``s``pfx``awaddr;                                      \
   assign b.awvalid = m``_``s``pfx``awvalid;                                    \
   assign s``_``m``pfx``awready = b.awready;                                    \
@@ -125,7 +125,7 @@ parameter RR_CHANNEL_WIDTH_BITS=32;
   assign s``_``m``pfx``rvalid = b.rvalid;                                      \
   assign b.rready = m``_``s``pfx``rready
 `define AXIL_SLV_WIRE2BUS(b, m, s, pfx)                                        \
-  rr_axi_lite_bus_t b();                                                          \
+  rr_axi_lite_bus_t b();                                                       \
   assign m``_``s``pfx``awaddr = b.awaddr;                                      \
   assign m``_``s``pfx``awvalid = b.awvalid;                                    \
   assign b.awready = s``_``m``pfx``awready;                                    \
