@@ -131,7 +131,7 @@ endgenerate
 localparam LOGB_CHANNEL_CNT = in.LOGB_CHANNEL_CNT;
 localparam bit [LOGB_CHANNEL_CNT-1:0]
   [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS = in.CHANNEL_WIDTHS;
-`DEF_GET_OFFSET(CHANNEL_WIDTHS)
+`DEF_GET_OFFSET(GET_OFFSET, CHANNEL_WIDTHS)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Extract rr_packed_logb_bus_t from rr_logging_bus_t
