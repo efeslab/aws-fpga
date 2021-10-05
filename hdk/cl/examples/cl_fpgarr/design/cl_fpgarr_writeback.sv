@@ -308,10 +308,11 @@ module rr_writeback #(
         if (~sync_rst_n) begin
             unhandled_size <= 0;
             leftover_size <= 0;
-            curr <= 0;
+            curr <= NSTAGES;
             do_finish <= 0;
             out_fifo_in <= 0;
             out_fifo_wr_en <= 0;
+            current_unhandled_size <= 0;
         end else begin
             if (finish) begin
                 do_finish <= 1;
@@ -355,9 +356,15 @@ module rr_writeback #(
                 leftover_size <= leftover_size + current_unhandled_size - AXI_WIDTH;
                 out_fifo_in <= leftover_next[0 +: AXI_WIDTH];
                 out_fifo_wr_en <= 1;
+            end else if (do_finish && in_fifo_empty && ~din_valid) begin
+                if (leftover_size > 0) begin
+                    out_fifo_wr_en <= 1;
+                    out_fifo_in <= leftover[0 +: AXI_WIDTH];
+                    do_finish <= 0;
+                end
             end else begin
                 leftover <= leftover_next;
-                leftover_size <= leftover_size + AXI_WIDTH;
+                leftover_size <= leftover_size + current_unhandled_size;
                 out_fifo_wr_en <= 0;
             end
     `else
@@ -401,7 +408,7 @@ module rr_writeback #(
 
     logic [AXI_ADDR_WIDTH-1:0] buf_curr;
     logic [AXI_ADDR_WIDTH-1:0] buf_end;
-    logic buf_write_en, buf_write_success;
+    logic buf_write_en;
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
             buf_curr <= 0;
