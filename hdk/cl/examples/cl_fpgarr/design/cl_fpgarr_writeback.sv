@@ -517,4 +517,12 @@ module rr_writeback #(
     // Read and write response are always ready
     assign axi_out.bready = 1;
     assign axi_out.rready = 1;
+
+    always_ff @(posedge clk) begin
+        if (axi_out.awvalid & axi_out.awready)
+            $display("[writeback]: axi write addr 0x%x", axi_out.awaddr);
+        if (axi_out.wvalid & axi_out.wready)
+            $display("[writeback]: axi write data 0x%x", axi_out.wdata);
+    end
+
 endmodule
