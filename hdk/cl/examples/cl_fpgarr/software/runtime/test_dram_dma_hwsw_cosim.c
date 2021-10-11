@@ -163,11 +163,22 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         /*channel*/ 0, /*is_read*/ false);
     fail_on((rc = (write_fd < 0) ? -1 : 0), out, "unable to open write dma queue");
 #else
+    uint8_t *trace_buffer = malloc(0x1000000);
+    uint64_t trace_buffer_hi = ((uint64_t) trace_buffer >> 32) & 0xffffffff;
+    uint64_t trace_buffer_lo = ((uint64_t) trace_buffer) & 0xffffffff;
+    uint64_t trace_buffer_size_hi = 0;
+    uint64_t trace_buffer_size_lo = 0x1000000;
+
+    // configure csrs via rr_cfg_bus
+    cl_poke_bar1(0x100000, trace_buffer_hi);
+    cl_poke_bar1(0x100004, trace_buffer_lo);
+    cl_poke_bar1(0x100008, trace_buffer_size_hi);
+    cl_poke_bar1(0x10000c, trace_buffer_size_lo);
+    cl_poke_bar1(0x100010, 1);
+
     //init_ddr();
     deselect_atg_hw();
-    // test rr_cfg_bus
-    cl_poke_bar1(0x100000, 0x12345678);
-    cl_poke_bar1(0x100004, 0x12332123);
+
     sv_map_host_memory(host_mem);
     printf("host_mem: %p\n", host_mem);
     cl_poke_ocl(0x001, 0xffffffff);

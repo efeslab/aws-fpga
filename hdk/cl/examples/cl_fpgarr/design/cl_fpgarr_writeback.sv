@@ -423,13 +423,13 @@ module rr_writeback #(
         interrupt <= (buf_curr == buf_end);
     end
 
-    logic axi_aw_transmitted, axi_w_transmitted, axi_transmitted;
-    logic axi_aw_working, axi_w_working, axi_working;
+    logic axi_aw_transmitted, axi_w_transmitted, axi_write_transmitted;
+    logic axi_aw_working, axi_w_working, axi_write_working;
     assign axi_aw_transmitted = axi_out.awready & axi_out.awvalid;
     assign axi_w_transmitted = axi_out.wready & axi_out.wvalid;
     assign axi_aw_working = axi_out.awvalid & ~axi_out.awready;
     assign axi_w_working = axi_out.wvalid & ~axi_out.wready;
-    assign axi_working = axi_aw_working | axi_w_working;
+    assign axi_write_working = axi_aw_working | axi_w_working;
 
     // Transaction control
     logic axi_aw_handled, axi_w_handled;
@@ -450,14 +450,14 @@ module rr_writeback #(
                 axi_w_handled <= 0;
             end else if (axi_w_transmitted) begin
                 axi_w_handled <= 1;
-            end else if (axi_w_handled & axi_aw_handled) begin
+            end else if (axi_w_handled & axi_aw_transmitted) begin
                 axi_w_handled <= 0;
             end
         end
     end
 
-    assign axi_transmitted = (axi_aw_transmitted | axi_aw_handled) & (axi_w_transmitted | axi_w_handled);
-    assign buf_write_en = axi_transmitted;
+    assign axi_write_transmitted = (axi_aw_transmitted | axi_aw_handled) & (axi_w_transmitted | axi_w_handled);
+    assign buf_write_en = axi_write_transmitted;
 
     // Valid control
     always_ff @(posedge clk) begin
@@ -498,7 +498,7 @@ module rr_writeback #(
         if (~sync_rst_n) begin
             tid <= 0;
         end else begin
-            if (axi_transmitted) begin
+            if (axi_write_transmitted) begin
                 tid <= tid + 1;
             end
         end
@@ -508,7 +508,7 @@ module rr_writeback #(
     assign axi_out.awid = tid;
     assign axi_out.awaddr = buf_curr;
     assign axi_out.awlen = 0;
-    assign axi_out.awsize = AXI_WIDTH / 8;
+    assign axi_out.awsize = 3'b110; // 3'b110 means 64 bytes
 
     assign axi_out.wid = tid;
     assign axi_out.wstrb = -1;

@@ -87,6 +87,7 @@ ${CL_ROOT}/design/transkidbuf_pipeline.sv
 ${CL_ROOT}/design/axichannel_logger.sv
 ${CL_ROOT}/design/cl_fpgarr_packing.sv
 ${CL_ROOT}/design/cl_fpgarr_writeback.sv
+${CL_ROOT}/design/cl_fpgarr_csrs.sv
 
 # start of rr_pcim_axi_interconnect
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/sim/rr_pcim_axi_interconnect.v
