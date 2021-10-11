@@ -65,7 +65,7 @@ module rr_csrs (
             end
 
             if (al_aw_transmitted) begin
-                al_addr <= rr_cfg_bus.awaddr[3:0];
+                al_addr <= rr_cfg_bus.awaddr[5:2];
             end
             if (al_w_transmitted) begin
                 al_data <= rr_cfg_bus.wdata;
@@ -128,7 +128,7 @@ module rr_csrs (
     assign al_ar_transmitted = rr_cfg_bus.arvalid & rr_cfg_bus.arready;
     assign al_r_working = rr_cfg_bus.rvalid & ~rr_cfg_bus.rready;
     assign al_r_transmitted = rr_cfg_bus.rvalid & rr_cfg_bus.rready;
-    assign al_araddr = rr_cfg_bus.araddr[3:0];
+    assign al_araddr = rr_cfg_bus.araddr[5:2];
 
     always_ff @(posedge clk) begin
         if (~rstn) begin
@@ -149,9 +149,10 @@ module rr_csrs (
     assign buf_addr[31:0] = csrs[1];
     assign buf_size[63:32] = csrs[2];
     assign buf_size[31:0] = csrs[3];
-    assign buf_update = al_write_transmitted_q && (al_addr == 32'h00000010);
-    assign force_finish = al_write_transmitted_q && (al_addr == 32'h00000014);
+    assign buf_update = al_write_transmitted_q && (al_addr == 4);
+    assign force_finish = al_write_transmitted_q && (al_addr == 5);
 
+`ifdef WRITEBACK_DEBUG
     always_ff @(posedge clk) begin
         if (al_aw_transmitted) begin
             $display("[cfg]: axilite write addr 0x%x", rr_cfg_bus.awaddr);
@@ -159,5 +160,6 @@ module rr_csrs (
         if (al_w_transmitted)
             $display("[cfg]: axilite write data 0x%x", rr_cfg_bus.wdata);
     end
+`endif
 
 endmodule

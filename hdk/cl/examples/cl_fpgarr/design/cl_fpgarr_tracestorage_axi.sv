@@ -91,6 +91,13 @@ rr_csrs csrs (
     .force_finish(force_finish)
 );
 
+`ifdef WRITEBACK_DEBUG
+always_ff @(posedge clk) begin
+    if (record_bus.valid & record_bus.ready)
+        $display("[record_bus]: width\t%d\tdata\t%x", record_bus.len, record_bus.data);
+end
+`endif
+
 // demo use of GET_LEN
 logic [OFFSET_WIDTH-1:0] replay_data_len;
 assign replay_data_len = GET_LEN(replay_bus.data);

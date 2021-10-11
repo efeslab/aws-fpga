@@ -196,6 +196,8 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     rc = 0;
 #endif
 
+    cl_poke_bar1(0x100014, 1);
+
 out:
     //if (host_mem != NULL) {
     //    free(host_mem);

@@ -440,7 +440,7 @@ module rr_writeback #(
         end else begin
             if (axi_aw_transmitted & axi_w_transmitted) begin
                 axi_aw_handled <= 0;
-            end else if (axi_aw_transmitted) begin
+            end else if (axi_aw_transmitted & ~axi_w_transmitted & ~axi_w_handled) begin
                 axi_aw_handled <= 1;
             end else if (axi_aw_handled & axi_w_transmitted) begin
                 axi_aw_handled <= 0;
@@ -448,7 +448,7 @@ module rr_writeback #(
 
             if (axi_aw_transmitted & axi_w_transmitted) begin
                 axi_w_handled <= 0;
-            end else if (axi_w_transmitted) begin
+            end else if (axi_w_transmitted & ~axi_aw_transmitted & ~axi_aw_handled) begin
                 axi_w_handled <= 1;
             end else if (axi_w_handled & axi_aw_transmitted) begin
                 axi_w_handled <= 0;
@@ -518,11 +518,18 @@ module rr_writeback #(
     assign axi_out.bready = 1;
     assign axi_out.rready = 1;
 
+`ifdef WRITEBACK_DEBUG
     always_ff @(posedge clk) begin
         if (axi_out.awvalid & axi_out.awready)
             $display("[writeback]: axi write addr 0x%x", axi_out.awaddr);
         if (axi_out.wvalid & axi_out.wready)
             $display("[writeback]: axi write data 0x%x", axi_out.wdata);
     end
+
+    always_ff @(posedge clk) begin
+        if (axi_out.awvalid & axi_out.awready & (axi_out.awaddr == 0))
+            $stop;
+    end
+`endif
 
 endmodule
