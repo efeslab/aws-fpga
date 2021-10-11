@@ -252,12 +252,13 @@ assign out.plogb.len =
    tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.len;
 assign tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.ready = out.ready;
 
+localparam QUEUE_NSTAGES = MERGE_TREE_HEIGHT-1;
 // Queue logb_valid and loge_valid for the correct number of cycles
 generate
 for (i=0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin: logb_gen
    transkidbuf_pipeline #(
       .DATA_WIDTH(0),
-      .PIPE_DEPTH(MERGE_TREE_HEIGHT),
+      .PIPE_DEPTH(QUEUE_NSTAGES),
       .PASS_LAST_STALL(1)) sbuf_p (
       .clk(clk), .rstn(rstn),
       .in_valid(in.logb_valid[i]),
@@ -271,7 +272,7 @@ end
 for (i=0; i < in.LOGE_CHANNEL_CNT; i=i+1) begin: loge_gen
    transkidbuf_pipeline #(
       .DATA_WIDTH(0),
-      .PIPE_DEPTH(MERGE_TREE_HEIGHT),
+      .PIPE_DEPTH(QUEUE_NSTAGES),
       .PASS_LAST_STALL(1)) sbuf_p (
       .clk(clk), .rstn(rstn),
       .in_valid(in.loge_valid[i]),
@@ -289,8 +290,9 @@ endgenerate
 // For more info, see transkidbuf.sv assertion "trivial_in_ready"
 // As a result, I ignore in_ready of all transkidbuf instantiations and maintain
 // the ready signal of input packed logger buses myself.
+// TODO: CHeck this ready is in-synch with the merge tree.
 (* dont_touch = "true" *) logic in_ready_piped;
-lib_pipe #(.WIDTH(1), .STAGES(MERGE_TREE_HEIGHT)) in_ready_pipe(
+lib_pipe #(.WIDTH(1), .STAGES(QUEUE_NSTAGES)) in_ready_pipe(
    .clk(clk), .rst_n(rstn), .in_bus(out.ready), .out_bus(in_ready_piped));
 assign in.ready = in_ready_piped;
 endmodule
