@@ -32,7 +32,10 @@ generate
   if (in.FULL_WIDTH != out.FULL_WIDTH)
      $error("FULL_WIDTH mismatches: in %d, out %d\n", in.FULL_WIDTH, out.FULL_WIDTH);
 endgenerate
-transkidbuf #(.DATA_WIDTH(in.FULL_WIDTH + in.OFFSET_WIDTH)) sbuf (
+transkidbuf #(
+  .DATA_WIDTH(in.FULL_WIDTH + in.OFFSET_WIDTH),
+  .PASS_STALL(1)
+) sbuf (
    .clk(clk),
    .rstn(rstn),
    .in_valid(in.any_valid),
@@ -167,7 +170,7 @@ parameter bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Constructing a binary merge tree to marshall all logb_data
+// Constructing a binary merge tree to marshal all logb_data
 ////////////////////////////////////////////////////////////////////////////////
 `define TREE_MARSHALLER2(_inA, _inB, _out) \
    `PACKED_LOGB_BUS_JOIN2(_inA, _inB, _out);\
@@ -179,7 +182,6 @@ parameter bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
    `PACKED_LOGB_BUS_DUP(_in, _out); \
    rr_packed_logb_bus_sbuf q(.clk(clk), .rstn(rstn), .in(_in), .out(_out))
 
-// TODO: This need to be updated to reflect the MERGE_PLAN change
 // The aggregation/merge tree is controlled by cl_fpgarr_packing_cfg.svh
 // There is an interesting macro MERGE_PLAN, which is organized in terms of
 // layer (nodes in the tree with the same height), node (define the operation of

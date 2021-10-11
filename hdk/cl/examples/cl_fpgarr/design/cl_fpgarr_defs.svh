@@ -19,8 +19,8 @@ parameter RR_CHANNEL_WIDTH_BITS=32;
 // This is a workaround for vcs non-local function call.
 // the function GET_OFFSET should be a constant function bound to a specific
 // instance of rr_logging_bus_t
-`define DEF_GET_OFFSET(fname, channel_widths)                                         \
-  function automatic int fname (int idx);                                 \
+`define DEF_GET_OFFSET(fname, channel_widths)                                  \
+  function automatic int fname (int idx);                                      \
      GET_OFFSET = 0;                                                           \
      for (int i=0; i < idx; i=i+1)                                             \
         GET_OFFSET += channel_widths[i];                                       \

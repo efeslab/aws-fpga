@@ -6,6 +6,7 @@
 // It may consume logging data in the record mode, or producing logging data in
 // the replay mode. In both mode, it uses the rr_stream_bus_t interface.
 // This module is offloaded to mjc to implement
+// The parameter CHANNEL_WIDTHS should be the shuffled one
 module rr_storage_backend_axi #(
   parameter int LOGB_CHANNEL_CNT,
   parameter bit [LOGB_CHANNEL_CNT-1:0]
@@ -92,5 +93,11 @@ assign replay_bus.valid = 1'b0;
 // demo use of GET_LEN
 logic [OFFSET_WIDTH-1:0] replay_data_len;
 assign replay_data_len = GET_LEN(replay_bus.data);
+
+// suggest:
+// Should use this bram fifo lib to instantiate big buffer for interacting with
+// PCIM. And only have one instance and dynamically configure it to be used in
+// either record or replay.
+// "hdk/cl/examples/cl_sde/lib/ram_fifo_ft.sv"
 
 endmodule
