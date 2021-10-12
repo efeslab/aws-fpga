@@ -256,12 +256,14 @@ localparam QUEUE_NSTAGES = MERGE_TREE_HEIGHT-1;
 // Queue logb_valid and loge_valid for the correct number of cycles
 generate
 for (i=0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin: logb_gen
+   // shuffle logb_valid together with logb_data according to the SHUFFLE_PLAN
+   localparam IDX = SHUFFLE_PLAN[i][0];
    transkidbuf_pipeline #(
       .DATA_WIDTH(0),
       .PIPE_DEPTH(QUEUE_NSTAGES),
       .PASS_LAST_STALL(1)) sbuf_p (
       .clk(clk), .rstn(rstn),
-      .in_valid(in.logb_valid[i]),
+      .in_valid(in.logb_valid[IDX]),
       .in_data(),
       .in_ready(),
       .out_valid(out.logb_valid[i]),
