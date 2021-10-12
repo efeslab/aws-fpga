@@ -222,18 +222,10 @@ endgenerate
 assign `TREE_TOP.valid = packed_replay_bus.valid;
 assign `TREE_TOP.logb_valid = packed_replay_bus.data[LOGB_CHANNEL_CNT-1:0];
 assign `TREE_TOP.logb_data =
-  packed_replay_bus.data[
-    packed_replay_bus.FULL_WIDTH-1 : LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT];
+  packed_replay_bus.data[LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT +: FULL_WIDTH];
 assign `TREE_TOP.loge_valid =
-  packed_replay_bus.data[LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT - 1: LOGB_CHANNEL_CNT];
-assign packed_replay_bus.ready = `TREE_TOP.ready;
-// FIXME: double check the loge_valid bit ordering
-logic [LOGE_CHANNEL_CNT-1:0] test_loge_valid_1;
-assign test_loge_valid_1 =
   packed_replay_bus.data[LOGB_CHANNEL_CNT +: LOGE_CHANNEL_CNT];
-logic [LOGE_CHANNEL_CNT-1:0] test_loge_valid_2;
-assign test_loge_valid_2 =
-  packed_replay_bus.data[LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT -1: LOGB_CHANNEL_CNT];
+assign packed_replay_bus.ready = `TREE_TOP.ready;
 endmodule
 
 // The input packed replay will be demarshalled to two subtree/leaves
@@ -321,6 +313,7 @@ logic i_outB_ready; // internal ready abstraction
 // When outX is not valid, it is also not required to be ready.
 // This is to avoid unnecessary stalls when there is no valid data to a full
 // channel but valid data to another empty channel.
+// TODO: Here should be a good candidate to be double-checked by jg
 assign i_outA_ready = stall_A || outA.ready || !outA.valid;
 assign i_outB_ready = stall_B || outB.ready || !outB.valid;
 assign in_q.ready = i_outA_ready && i_outB_ready;
