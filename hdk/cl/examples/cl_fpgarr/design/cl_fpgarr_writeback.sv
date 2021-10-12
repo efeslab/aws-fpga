@@ -217,16 +217,16 @@ module rr_writeback #(
     // cfg_max_payload: see https://github.com/aws/aws-fpga/blob/master/hdk/docs/AWS_Shell_Interface_Specification.md#pcim-interface----axi-4-for-outbound-pcie-transactions-cl-is-master-shell-is-slave-512-bit
     input logic [1:0] cfg_max_payload,
 
-    input logic din_valid,
-    output logic din_ready,
-    input logic finish,
-    input logic [WIDTH-1:0] din,
-    input logic [OFFSETWIDTH-1:0] din_width,
+    input logic record_din_valid,
+    output logic record_din_ready,
+    input logic record_finish,
+    input logic [WIDTH-1:0] record_din,
+    input logic [OFFSETWIDTH-1:0] record_din_width,
 
     rr_axi_bus_t.slave axi_out,
-    input logic [AXI_ADDR_WIDTH-1:0] buf_addr,
-    input logic [AXI_ADDR_WIDTH-1:0] buf_size,
-    input logic buf_update,
+    input logic [AXI_ADDR_WIDTH-1:0] write_buf_addr,
+    input logic [AXI_ADDR_WIDTH-1:0] write_buf_size,
+    input logic write_buf_update,
 
     // When there's a buffer overflow, the interrupt will be triggerred
     output logic interrupt
@@ -235,94 +235,90 @@ module rr_writeback #(
     localparam NSTAGES = (WIDTH - 1) / AXI_WIDTH + 1;
     localparam EXT_WIDTH = NSTAGES * AXI_WIDTH;
 
-    logic [WIDTH-1:0] in_fifo_out;
-    logic [EXT_WIDTH-1:0] in_fifo_out_wrap;
-    logic [OFFSETWIDTH-1:0] in_fifo_out_width;
-    logic in_fifo_rd_en;
-    logic in_fifo_full, in_fifo_almfull, in_fifo_empty;
+    logic [WIDTH-1:0] record_in_fifo_out;
+    logic [EXT_WIDTH-1:0] record_in_fifo_out_wrap;
+    logic [OFFSETWIDTH-1:0] record_in_fifo_out_width;
+    logic record_in_fifo_rd_en;
+    logic record_in_fifo_full, record_in_fifo_almfull, record_in_fifo_empty;
 
-    assign in_fifo_out_wrap = EXT_WIDTH'(in_fifo_out);
+    assign record_in_fifo_out_wrap = EXT_WIDTH'(record_in_fifo_out);
 
     merged_fifo #(
         .WIDTH(WIDTH+OFFSETWIDTH),
         .ALMFULL_THRESHOLD(12))
-    mfifo_inst_in(
+    mfifo_inst_record_in(
         .clk(clk),
         .rst(~sync_rst_n),
-        .din({din,din_width}),
-        .dout({in_fifo_out,in_fifo_out_width}),
-        .wr_en(din_valid),
-        .rd_en(in_fifo_rd_en),
-        .full(in_fifo_full),
-        .almfull(in_fifo_almfull),
-        .empty(in_fifo_empty)
+        .din({record_din,record_din_width}),
+        .dout({record_in_fifo_out,record_in_fifo_out_width}),
+        .wr_en(record_din_valid),
+        .rd_en(record_in_fifo_rd_en),
+        .full(record_in_fifo_full),
+        .almfull(record_in_fifo_almfull),
+        .empty(record_in_fifo_empty)
     );
 
-    logic [AXI_WIDTH-1:0] out_fifo_out, out_fifo_in, out_fifo_in_q, out_fifo_in_qq;
-    logic out_fifo_rd_en, out_fifo_wr_en, out_fifo_wr_en_q, out_fifo_wr_en_qq;
-    logic out_fifo_full, out_fifo_almfull, out_fifo_empty;
+    logic [AXI_WIDTH-1:0] record_out_fifo_out, record_out_fifo_in, record_out_fifo_in_q, record_out_fifo_in_qq;
+    logic record_out_fifo_rd_en, record_out_fifo_wr_en, record_out_fifo_wr_en_q, record_out_fifo_wr_en_qq;
+    logic record_out_fifo_full, record_out_fifo_almfull, record_out_fifo_empty;
 
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
-            out_fifo_wr_en_q <= 0;
-            out_fifo_wr_en_qq <= 0;
+            record_out_fifo_wr_en_q <= 0;
+            record_out_fifo_wr_en_qq <= 0;
         end else begin
-            out_fifo_in_q <= out_fifo_in;
-            out_fifo_in_qq <= out_fifo_in_q;
-            out_fifo_wr_en_q <= out_fifo_wr_en;
-            out_fifo_wr_en_qq <= out_fifo_wr_en_q;
+            record_out_fifo_in_q <= record_out_fifo_in;
+            record_out_fifo_in_qq <= record_out_fifo_in_q;
+            record_out_fifo_wr_en_q <= record_out_fifo_wr_en;
+            record_out_fifo_wr_en_qq <= record_out_fifo_wr_en_q;
         end
     end
 
     merged_fifo #(
         .WIDTH(AXI_WIDTH),
         .ALMFULL_THRESHOLD(12))
-    mfifo_inst_out(
+    mfifo_inst_record_out(
         .clk(clk),
         .rst(~sync_rst_n),
-        .din(out_fifo_in_qq),
-        .dout(out_fifo_out),
-        .wr_en(out_fifo_wr_en_qq),
-        .rd_en(out_fifo_rd_en),
-        .full(out_fifo_full),
-        .almfull(out_fifo_almfull),
-        .empty(out_fifo_empty)
+        .din(record_out_fifo_in_qq),
+        .dout(record_out_fifo_out),
+        .wr_en(record_out_fifo_wr_en_qq),
+        .rd_en(record_out_fifo_rd_en),
+        .full(record_out_fifo_full),
+        .almfull(record_out_fifo_almfull),
+        .empty(record_out_fifo_empty)
     );
 
     logic [OFFSETWIDTH-1:0] unhandled_size;
     logic [AXI_WIDTH-1:0] unhandled [NSTAGES-1:0];
-`ifdef WRITEBACK_MERGE_SEL
     logic [AXI_WIDTH-1:0] current_unhandled;
     logic [OFFSETWIDTH-1:0] current_unhandled_size;
     logic [AXI_WIDTH*2-1:0] leftover, leftover_next;
-`else
-    logic [AXI_WIDTH-1:0] leftover;
-`endif
     logic [$clog2(AXI_WIDTH):0] leftover_size;
     logic [$clog2(NSTAGES):0] curr;
-    logic do_finish;
+    logic do_record_finish;
 
-    assign in_fifo_rd_en = ~in_fifo_empty && ~out_fifo_almfull && unhandled_size <= AXI_WIDTH;
+    assign record_in_fifo_rd_en = ~record_in_fifo_empty && ~record_out_fifo_almfull && unhandled_size <= AXI_WIDTH;
 
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
             unhandled_size <= 0;
             leftover_size <= 0;
             curr <= NSTAGES;
-            do_finish <= 0;
-            out_fifo_in <= 0;
-            out_fifo_wr_en <= 0;
+            do_record_finish <= 0;
+            record_out_fifo_in <= 0;
+            record_out_fifo_wr_en <= 0;
             current_unhandled_size <= 0;
         end else begin
-            if (finish) begin
-                do_finish <= 1;
+            if (record_finish) begin
+                do_record_finish <= 1;
             end
 
-            if (in_fifo_rd_en) begin
+            if (record_in_fifo_rd_en) begin
                 curr <= 0;
-                unhandled_size <= in_fifo_out_width;
+                unhandled_size <= record_in_fifo_out_width;
                 for (int i = 0; i < NSTAGES; i++) begin
-                    unhandled[i] <= in_fifo_out_wrap[i*AXI_WIDTH+:AXI_WIDTH];
+                    unhandled[i] <= record_in_fifo_out_wrap[i*AXI_WIDTH+:AXI_WIDTH];
                 end
             end else if (curr + 1 <= NSTAGES) begin
                 curr <= curr + 1;
@@ -333,15 +329,6 @@ module rr_writeback #(
                 end
             end
 
-`ifdef TEST_DIRECT_CONNECT
-            if (unhandled_size >= 0) begin
-                out_fifo_in <= unhandled[curr];
-                out_fifo_wr_en <= 1;
-            end else begin
-                out_fifo_wr_en <= 0;
-            end
-`else
-    `ifdef WRITEBACK_MERGE_SEL
             if (unhandled_size >= AXI_WIDTH) begin
                 current_unhandled_size <= AXI_WIDTH;
             end else begin
@@ -354,73 +341,45 @@ module rr_writeback #(
             if (leftover_size + current_unhandled_size >= AXI_WIDTH) begin
                 leftover[0 +: AXI_WIDTH] <= leftover_next[AXI_WIDTH +: AXI_WIDTH];
                 leftover_size <= leftover_size + current_unhandled_size - AXI_WIDTH;
-                out_fifo_in <= leftover_next[0 +: AXI_WIDTH];
-                out_fifo_wr_en <= 1;
-            end else if (do_finish && in_fifo_empty && ~din_valid) begin
+                record_out_fifo_in <= leftover_next[0 +: AXI_WIDTH];
+                record_out_fifo_wr_en <= 1;
+            end else if (do_record_finish && record_in_fifo_empty && ~record_din_valid) begin
                 if (leftover_size > 0) begin
-                    out_fifo_wr_en <= 1;
-                    out_fifo_in <= leftover[0 +: AXI_WIDTH];
-                    do_finish <= 0;
+                    record_out_fifo_wr_en <= 1;
+                    record_out_fifo_in <= leftover[0 +: AXI_WIDTH];
+                    do_record_finish <= 0;
                 end
             end else begin
                 leftover <= leftover_next;
                 leftover_size <= leftover_size + current_unhandled_size;
-                out_fifo_wr_en <= 0;
+                record_out_fifo_wr_en <= 0;
             end
-    `else
-            if (unhandled_size >= AXI_WIDTH) begin
-                leftover_size <= leftover_size;
-                leftover <= unhandled[curr] >> (AXI_WIDTH - leftover_size);
-                out_fifo_in <= (unhandled[curr] << leftover_size) | (leftover & (AXI_WIDTH'(-1) >> (AXI_WIDTH - leftover_size)));
-                out_fifo_wr_en <= 1;
-            end else if (unhandled_size > 0) begin
-                if (leftover_size + unhandled_size >= AXI_WIDTH) begin
-                    leftover_size <= leftover_size + unhandled_size - AXI_WIDTH;
-                    leftover <= unhandled[curr] >> (AXI_WIDTH - leftover_size);
-                    out_fifo_in <= (unhandled[curr] << leftover_size) + (leftover & (AXI_WIDTH'(-1) >> (AXI_WIDTH - leftover_size)));
-                    out_fifo_wr_en <= 1;
-                end else begin
-                    leftover_size <= leftover_size + unhandled_size;
-                    leftover <= (unhandled[curr] << leftover_size) | (leftover & (AXI_WIDTH'(-1) >> (AXI_WIDTH - leftover_size)));
-                    out_fifo_wr_en <= 0;
-                end
-            end else if (do_finish && in_fifo_empty && ~din_valid) begin
-                if (leftover_size > 0) begin
-                    out_fifo_wr_en <= 1;
-                    out_fifo_in <= leftover;
-                    do_finish <= 0;
-                end
-            end else begin
-                out_fifo_wr_en <= 0;
-            end
-    `endif
-`endif
         end
     end
 
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
-            din_ready <= 0;
+            record_din_ready <= 0;
         end else begin
-            din_ready <= ~in_fifo_almfull && ~out_fifo_almfull;
+            record_din_ready <= ~record_in_fifo_almfull && ~record_out_fifo_almfull;
         end
     end
 
-    logic [AXI_ADDR_WIDTH-1:0] buf_curr;
-    logic [AXI_ADDR_WIDTH-1:0] buf_end;
-    logic buf_write_en;
+    logic [AXI_ADDR_WIDTH-1:0] write_buf_curr;
+    logic [AXI_ADDR_WIDTH-1:0] write_buf_end;
+    logic write_buf_write_en;
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
-            buf_curr <= 0;
-            buf_end <= 0;
-        end else if (buf_update) begin
-            buf_curr <= buf_addr;
-            buf_end <= buf_addr + buf_size;
-        end else if (buf_write_en) begin
-            buf_curr <= buf_curr + AXI_WIDTH/8;
+            write_buf_curr <= 0;
+            write_buf_end <= 0;
+        end else if (write_buf_update) begin
+            write_buf_curr <= write_buf_addr;
+            write_buf_end <= write_buf_addr + write_buf_size;
+        end else if (write_buf_write_en) begin
+            write_buf_curr <= write_buf_curr + AXI_WIDTH/8;
         end
 
-        interrupt <= (buf_curr == buf_end);
+        interrupt <= (write_buf_curr == write_buf_end);
     end
 
     logic axi_aw_transmitted, axi_w_transmitted, axi_write_transmitted;
@@ -457,7 +416,7 @@ module rr_writeback #(
     end
 
     assign axi_write_transmitted = (axi_aw_transmitted | axi_aw_handled) & (axi_w_transmitted | axi_w_handled);
-    assign buf_write_en = axi_write_transmitted;
+    assign write_buf_write_en = axi_write_transmitted;
 
     // Valid control
     always_ff @(posedge clk) begin
@@ -470,7 +429,7 @@ module rr_writeback #(
             end else if (axi_w_working) begin
                 axi_out.awvalid <= 0;
             end else begin
-                axi_out.awvalid <= ~out_fifo_empty;
+                axi_out.awvalid <= ~record_out_fifo_empty;
             end
 
             if (axi_w_working) begin
@@ -478,7 +437,7 @@ module rr_writeback #(
             end else if (axi_aw_working) begin
                 axi_out.wvalid <= 0;
             end else begin
-                axi_out.wvalid <= ~out_fifo_empty;
+                axi_out.wvalid <= ~record_out_fifo_empty;
             end
         end
     end
@@ -487,11 +446,11 @@ module rr_writeback #(
         if (~sync_rst_n) begin
             axi_out.wdata <= 0;
         end else begin
-            if (~axi_aw_working & ~axi_w_working & ~out_fifo_empty)
-                axi_out.wdata <= out_fifo_out;
+            if (~axi_aw_working & ~axi_w_working & ~record_out_fifo_empty)
+                axi_out.wdata <= record_out_fifo_out;
         end
     end
-    assign out_fifo_rd_en = ~axi_aw_working & ~axi_w_working & ~out_fifo_empty;
+    assign record_out_fifo_rd_en = ~axi_aw_working & ~axi_w_working & ~record_out_fifo_empty;
 
     logic [15:0] tid;
     always_ff @(posedge clk) begin
@@ -506,7 +465,7 @@ module rr_writeback #(
 
     // AW extras
     assign axi_out.awid = tid;
-    assign axi_out.awaddr = buf_curr;
+    assign axi_out.awaddr = write_buf_curr;
     assign axi_out.awlen = 0;
     assign axi_out.awsize = 3'b110; // 3'b110 means 64 bytes
 
@@ -519,6 +478,7 @@ module rr_writeback #(
     assign axi_out.rready = 1;
 
 `ifdef WRITEBACK_DEBUG
+    // Debugging info for AXI write
     always_ff @(posedge clk) begin
         if (axi_out.awvalid & axi_out.awready)
             $display("[writeback]: axi write addr 0x%x", axi_out.awaddr);

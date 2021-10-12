@@ -56,9 +56,9 @@ generate
       FULL_WIDTH, replay_bus.FULL_WIDTH);
 endgenerate
 
-logic [63:0] buf_addr;
-logic [63:0] buf_size;
-logic buf_update, force_finish;
+logic [63:0] write_buf_addr;
+logic [63:0] write_buf_size;
+logic write_buf_update, record_force_finish;
 
 rr_writeback #(
   .WIDTH(record_bus.FULL_WIDTH),
@@ -69,15 +69,15 @@ rr_writeback #(
   .clk(clk),
   .sync_rst_n(rstn),
   .cfg_max_payload(0),
-  .din_valid(record_bus.valid),
-  .din_ready(record_bus.ready),
-  .finish(force_finish),
-  .din(record_bus.data),
-  .din_width(record_bus.len),
+  .record_din_valid(record_bus.valid),
+  .record_din_ready(record_bus.ready),
+  .record_finish(write_force_finish),
+  .record_din(record_bus.data),
+  .record_din_width(record_bus.len),
   .axi_out(storage_backend_bus),
-  .buf_addr(buf_addr),
-  .buf_size(buf_size),
-  .buf_update(buf_update),
+  .write_buf_addr(write_buf_addr),
+  .write_buf_size(write_buf_size),
+  .write_buf_update(write_buf_update),
   .interrupt()
 );
 
@@ -85,10 +85,10 @@ rr_csrs csrs (
     .clk(clk),
     .rstn(rstn),
     .rr_cfg_bus(rr_cfg_bus),
-    .buf_addr(buf_addr),
-    .buf_size(buf_size),
-    .buf_update(buf_update),
-    .force_finish(force_finish)
+    .write_buf_addr(write_buf_addr),
+    .write_buf_size(write_buf_size),
+    .write_buf_update(write_buf_update),
+    .record_force_finish(record_force_finish)
 );
 
 `ifdef WRITEBACK_DEBUG

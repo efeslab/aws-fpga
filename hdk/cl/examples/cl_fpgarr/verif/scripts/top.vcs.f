@@ -109,5 +109,4 @@ ${CL_ROOT}/design/cl_fpgarr_wrapper.sv
 -f ${HDK_COMMON_DIR}/verif/tb/filelists/tb.${SIMULATOR}.f
 ${TEST_NAME}
 
-+define+WRITEBACK_MERGE_SEL
 +define+WRITEBACK_DEBUG

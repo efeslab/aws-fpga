@@ -5,10 +5,10 @@ module rr_csrs (
     input wire rstn,
     rr_axi_lite_bus_t.master rr_cfg_bus,
 
-    output logic [63:0] buf_addr,
-    output logic [63:0] buf_size,
-    output logic buf_update,
-    output logic force_finish
+    output logic [63:0] write_buf_addr,
+    output logic [63:0] write_buf_size,
+    output logic write_buf_update,
+    output logic record_force_finish
 );
 
     // Address Map:
@@ -145,12 +145,12 @@ module rr_csrs (
         end
     end
 
-    assign buf_addr[63:32] = csrs[0];
-    assign buf_addr[31:0] = csrs[1];
-    assign buf_size[63:32] = csrs[2];
-    assign buf_size[31:0] = csrs[3];
-    assign buf_update = al_write_transmitted_q && (al_addr == 4);
-    assign force_finish = al_write_transmitted_q && (al_addr == 5);
+    assign write_buf_addr[63:32] = csrs[0];
+    assign write_buf_addr[31:0] = csrs[1];
+    assign write_buf_size[63:32] = csrs[2];
+    assign write_buf_size[31:0] = csrs[3];
+    assign write_buf_update = al_write_transmitted_q && (al_addr == 4);
+    assign record_force_finish = al_write_transmitted_q && (al_addr == 5);
 
 `ifdef WRITEBACK_DEBUG
     always_ff @(posedge clk) begin
