@@ -88,6 +88,8 @@ ${CL_ROOT}/design/axichannel_logger.sv
 ${CL_ROOT}/design/cl_fpgarr_packing.sv
 ${CL_ROOT}/design/cl_fpgarr_writeback.sv
 ${CL_ROOT}/design/cl_fpgarr_csrs.sv
+${CL_ROOT}/design/cl_fpgarr_tracestorage_axi.sv
+${CL_ROOT}/design/cl_fpgarr_tracedecoder.sv
 
 # start of rr_pcim_axi_interconnect
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/sim/rr_pcim_axi_interconnect.v
@@ -99,7 +101,6 @@ ${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_m00_regslice_
 ${CL_ROOT}/ip/rr_cfg_axil_interconnect/sim/rr_cfg_axil_interconnect.v
 ${CL_ROOT}/ip/rr_cfg_axil_interconnect/ip/rr_cfg_axil_interconnect_xbar_2/sim/rr_cfg_axil_interconnect_xbar_2.v
 #../../ip/rr_pcim_axi_interconnect/ip/
-${CL_ROOT}/design/cl_fpgarr_tracestorage_axi.sv
 # fpgarr top module
 ${CL_ROOT}/design/cl_fpgarr_wrapper.sv
 

@@ -205,6 +205,7 @@ rr_packed2writeback_bus wb_inst(
 rr_axi_lite_bus_t rr_cfg_bus();
 rr_axi_bus_t rr_storage_bus();
 rr_stream_bus_t #(.FULL_WIDTH(record_bus.FULL_WIDTH)) replay_bus();
+`ifndef TEST_BRIDGE_REC_REP
 rr_storage_backend_axi #(
   .LOGB_CHANNEL_CNT(merged_logging_bus.LOGB_CHANNEL_CNT),
   .CHANNEL_WIDTHS(top_packer.SHUFFLED_CHANNEL_WIDTHS),
@@ -216,6 +217,33 @@ rr_storage_backend_axi #(
   .record_bus(record_bus),
   .replay_bus(replay_bus)
 );
+`else
+// TESTING replay trace decoding
+rr_replay_bus_t # (
+  .LOGB_CHANNEL_CNT(merged_logging_bus.LOGB_CHANNEL_CNT),
+  .CHANNEL_WIDTHS(merged_logging_bus.CHANNEL_WIDTHS),
+  .LOGE_CHANNEL_CNT(merged_logging_bus.LOGE_CHANNEL_CNT)
+) unpacked_replay_bus();
+rr_tracedecoder top_decoder(
+  .clk(clk), .rstn(rstn),
+  .packed_replay_bus(record_bus),
+  .replay_bus(unpacked_replay_bus)
+);
+genvar i;
+generate
+for (i=0; i < merged_logging_bus.LOGB_CHANNEL_CNT; i=i+1)
+  assign unpacked_replay_bus.ready[i] = 1;
+endgenerate
+// placeholder for rr_cfg_bus
+assign rr_cfg_bus.awready = 1'b1;
+assign rr_cfg_bus.wready = 1'b1;
+assign rr_cfg_bus.arready = 1'b1;
+assign rr_cfg_bus.rvalid = 1'b1;
+assign rr_cfg_bus.rdata = 32'b0;
+assign rr_cfg_bus.rresp = 2'b0; // OKAY
+assign rr_cfg_bus.bvalid = 1'b1;
+assign rr_cfg_bus.bresp = 2'b0; // OKAY
+`endif
 
 // AXI Interconnect for the logging pcim traffic and user pcim traffic
 // NOTE: that all Xid field of pcim buses, either from logging or from the cl,

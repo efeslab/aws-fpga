@@ -171,4 +171,34 @@
    modport P(output valid, data, len, input ready);
    modport C(input valid, data, len, output ready);
    endinterface
+
+   // rr_replay_bus_t holds the unpacked logb_data
+   // Unlike rr_logging_bus_t, which has a shared ready signal across all
+   // channels, rr_replay_bus_t has a unique ready signal for each channel.
+   // This is because during record, we rely on the timing of each transaction
+   // begin/end events to infer the happen-before relation.
+   // But during replay, given the known happen-before relation, the flow of
+   // replay packets can be asynchronous.
+   // In this interface, we assume the loge_valid has already be duplicated for
+   // each channel, so the parameter LOGE_CHANNEL_CNT specifies the number of
+   // loge for each channel, not in total.
+   // In total, there are LOGB_CHANNEL_CNT * LOGE_CHANNEL_CNT loge_valid.
+   interface rr_replay_bus_t #(
+     parameter int LOGB_CHANNEL_CNT,
+     parameter bit [LOGB_CHANNEL_CNT-1:0]
+       [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS,
+     parameter int LOGE_CHANNEL_CNT
+   );
+   `DEF_SUM_WIDTH(GET_FULL_WIDTH, CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
+   // This FULL_WIDTH does not include logb_valid
+   parameter int FULL_WIDTH = GET_FULL_WIDTH();
+
+   logic logb_valid [LOGB_CHANNEL_CNT-1:0];
+   logic [FULL_WIDTH-1:0] logb_data;
+   logic [LOGE_CHANNEL_CNT-1:0] loge_valid [LOGB_CHANNEL_CNT-1:0];
+   logic ready [LOGB_CHANNEL_CNT-1:0];
+
+   modport P(output logb_valid, logb_data, loge_valid, input ready);
+   modport C(input logb_valid, logb_data, loge_valid, output ready);
+   endinterface
 `endif

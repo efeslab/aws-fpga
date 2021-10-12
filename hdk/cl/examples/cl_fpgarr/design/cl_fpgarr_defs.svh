@@ -26,6 +26,19 @@ parameter RR_CHANNEL_WIDTH_BITS=32;
         GET_OFFSET += channel_widths[i];                                       \
   endfunction
 
+// This is to reuse the function definition of getting the sum of a certain
+// range of a parameter array.
+// fname: function name
+// aname: array name
+// idx_b: the index to begin sum
+// idx_e: the index to end sum (non-inclusive, i.e. sum of [idx_b..idx_e))
+`define DEF_SUM_WIDTH(fname, aname, idx_b, idx_e)                              \
+  function automatic int fname;                                                \
+   fname = 0;                                                                  \
+   for (int i=idx_b; i < idx_e; i=i+1)                                         \
+      fname += aname[i];                                                       \
+  endfunction
+
 // macro utility to connect verilog wire signals to systemverilog interfaces
 // b for bus, m for master, s for slave
 // bus signals are accessed via `b.Xvalid`
