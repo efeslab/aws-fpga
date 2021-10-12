@@ -90,6 +90,7 @@ ${CL_ROOT}/design/cl_fpgarr_writeback.sv
 ${CL_ROOT}/design/cl_fpgarr_csrs.sv
 ${CL_ROOT}/design/cl_fpgarr_tracestorage_axi.sv
 ${CL_ROOT}/design/cl_fpgarr_tracedecoder.sv
+${CL_ROOT}/design/cl_fpgarr_chgrouping.sv
 
 # start of rr_pcim_axi_interconnect
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/sim/rr_pcim_axi_interconnect.v

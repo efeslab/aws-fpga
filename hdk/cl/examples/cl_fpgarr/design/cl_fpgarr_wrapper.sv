@@ -154,10 +154,10 @@ axil_mstr_recorder bar1_bus_recorder (
 ////////////////////////////////////////////////////////////////////////////////
 // the merging tree of rr_logging_bus_t
 // Note that there is a benefit to postpone the merge of wide buses.
-// This kind of optimization is handled in top_packer.
+// This kind of optimization is handled in top_group.
 //         merged bus
 //              |
-//          *-- p3 ----*
+//          *-- top ---*
 //         /           |
 //      *-p2-*         |
 //     /      \        |
@@ -167,28 +167,28 @@ axil_mstr_recorder bar1_bus_recorder (
 // sda  ocl bar1 pcim pcis
 //////////////////////////
 `LOGGING_BUS_JOIN2(p0, rr_sda_logging_bus, rr_ocl_logging_bus);
-rr_logging_bus_packer2 p0_packer(
+rr_logging_bus_group2 p0_group(
   .inA(rr_sda_logging_bus),
   .inB(rr_ocl_logging_bus),
   .out(p0)
 );
 `LOGGING_BUS_JOIN2(p1, rr_bar1_logging_bus, rr_pcim_logging_bus);
-rr_logging_bus_packer2 p1_packer(
+rr_logging_bus_group2 p1_group(
   .inA(rr_bar1_logging_bus),
   .inB(rr_pcim_logging_bus),
   .out(p1)
 );
 `LOGGING_BUS_JOIN2(p2, p0, p1);
-rr_logging_bus_packer2 p2_packer(.inA(p0), .inB(p1), .out(p2));
+rr_logging_bus_group2 p2_group(.inA(p0), .inB(p1), .out(p2));
 `LOGGING_BUS_JOIN2(merged_logging_bus, p2, rr_dma_pcis_logging_bus);
-rr_logging_bus_packer2 logging_packer(
+rr_logging_bus_group2 logging_group(
   .inA(p2),
   .inB(rr_dma_pcis_logging_bus),
   .out(merged_logging_bus)
 );
 // the merging tree of the rr_packed_logging_bus_t is automatically generated
 `LOGGING_BUS_UNPACK2PACK(merged_logging_bus, packed_logging_bus);
-rr_logging_bus_unpack2pack top_packer(
+rr_logging_bus_unpack2pack top_group(
   .clk(clk),
   .rstn(rstn),
   .in(merged_logging_bus),
@@ -197,6 +197,40 @@ rr_logging_bus_unpack2pack top_packer(
 `PACKED_LOGGING_BUS_TO_WBBUS(packed_logging_bus, record_bus);
 rr_packed2writeback_bus wb_inst(
   .clk(clk), .rstn(rstn), .in(packed_logging_bus), .out(record_bus));
+
+////////////////////////////////////////////////////////////////////////////////
+// Unpack the replay bus
+////////////////////////////////////////////////////////////////////////////////
+localparam REPLAY_NLOGE = merged_logging_bus.LOGE_CHANNEL_CNT;
+// Declare the rr_replay_bus for all channels
+`AXI_SLV_REPLAY_BUS(rr_pcim_replay_bus, REPLAY_NLOGE);
+`AXI_MSTR_REPLAY_BUS(rr_dma_pcis_replay_bus, REPLAY_NLOGE);
+`AXIL_MSTR_REPLAY_BUS(rr_sda_replay_bus, REPLAY_NLOGE);
+`AXIL_MSTR_REPLAY_BUS(rr_ocl_replay_bus, REPLAY_NLOGE);
+`AXIL_MSTR_REPLAY_BUS(rr_bar1_replay_bus, REPLAY_NLOGE);
+// This is just a reverse of the above rr_logging_bus_t merging tree
+`REPLAY_BUS_JOIN2(rp0, rr_sda_replay_bus, rr_ocl_replay_bus);
+rr_replay_bus_ungroup2 p0_ungroup(
+  .in(rp0),
+  .outA(rr_sda_replay_bus),
+  .outB(rr_ocl_replay_bus)
+);
+`REPLAY_BUS_JOIN2(rp1, rr_bar1_replay_bus, rr_pcim_replay_bus);
+rr_replay_bus_ungroup2 p1_ungroup(
+  .in(rp1),
+  .outA(rr_bar1_replay_bus),
+  .outB(rr_pcim_replay_bus)
+);
+`REPLAY_BUS_JOIN2(rp2, rp0, rp1);
+rr_replay_bus_ungroup2 p2_ungroup(.in(rp2), .outA(rp0), .outB(rp1));
+`REPLAY_BUS_JOIN2(unpacked_replay_bus, rp2, rr_dma_pcis_replay_bus);
+rr_replay_bus_ungroup2 top_ungroup(
+  .in(unpacked_replay_bus),
+  .outA(rp2), .outB(rr_dma_pcis_replay_bus));
+
+////////////////////////////////////////////////////////////////////////////////
+// Connect packed record and replay bus to the storage backend
+////////////////////////////////////////////////////////////////////////////////
 // TODO: Storage backend is not implemented yet.
 // TODO: convert rr_stream_bus_t to logging_wb_bus via mjc's module
 // TODO: need an integration test
@@ -204,35 +238,46 @@ rr_packed2writeback_bus wb_inst(
 // It expects RW addresses in 0x100000~0x1FFFFF.
 rr_axi_lite_bus_t rr_cfg_bus();
 rr_axi_bus_t rr_storage_bus();
-rr_stream_bus_t #(.FULL_WIDTH(record_bus.FULL_WIDTH)) replay_bus();
+rr_stream_bus_t #(.FULL_WIDTH(record_bus.FULL_WIDTH)) packed_replay_bus();
+
+// With TEST_BRIDGE_REC_REP, the packed recording data will be directly used as
+// packed replay data (without going to the backend storage)
 `ifndef TEST_BRIDGE_REC_REP
 rr_storage_backend_axi #(
   .LOGB_CHANNEL_CNT(merged_logging_bus.LOGB_CHANNEL_CNT),
-  .CHANNEL_WIDTHS(top_packer.SHUFFLED_CHANNEL_WIDTHS),
+  .CHANNEL_WIDTHS(top_group.SHUFFLED_CHANNEL_WIDTHS),
   .LOGE_CHANNEL_CNT(merged_logging_bus.LOGE_CHANNEL_CNT)
 ) trace_storage (
   .clk(clk), .rstn(rstn),
   .rr_cfg_bus(rr_cfg_bus),
   .storage_backend_bus(rr_storage_bus),
   .record_bus(record_bus),
-  .replay_bus(replay_bus)
+  .replay_bus(packed_replay_bus)
+);
+
+rr_tracedecoder top_decoder(
+  .clk(clk), .rstn(rstn),
+  .packed_replay_bus(packed_replay_bus),
+  .replay_bus(unpacked_replay_bus)
 );
 `else
 // TESTING replay trace decoding
-rr_replay_bus_t # (
-  .LOGB_CHANNEL_CNT(merged_logging_bus.LOGB_CHANNEL_CNT),
-  .CHANNEL_WIDTHS(merged_logging_bus.CHANNEL_WIDTHS),
-  .LOGE_CHANNEL_CNT(merged_logging_bus.LOGE_CHANNEL_CNT)
-) unpacked_replay_bus();
 rr_tracedecoder top_decoder(
   .clk(clk), .rstn(rstn),
   .packed_replay_bus(record_bus),
   .replay_bus(unpacked_replay_bus)
 );
+
+`define FAKE_READY_REPLAY_BUS(bus) \
+  for (i=0; i < bus.LOGB_CHANNEL_CNT; i=i+1) \
+    assign bus.ready[i] = 1
 genvar i;
 generate
-for (i=0; i < merged_logging_bus.LOGB_CHANNEL_CNT; i=i+1)
-  assign unpacked_replay_bus.ready[i] = 1;
+  `FAKE_READY_REPLAY_BUS(rr_pcim_replay_bus);
+  `FAKE_READY_REPLAY_BUS(rr_dma_pcis_replay_bus);
+  `FAKE_READY_REPLAY_BUS(rr_sda_replay_bus);
+  `FAKE_READY_REPLAY_BUS(rr_ocl_replay_bus);
+  `FAKE_READY_REPLAY_BUS(rr_bar1_replay_bus);
 endgenerate
 // placeholder for rr_cfg_bus
 assign rr_cfg_bus.awready = 1'b1;

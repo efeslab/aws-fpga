@@ -162,6 +162,33 @@ parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
   rr_stream_bus_t #( \
     .FULL_WIDTH(plog_bus.LOGB_CHANNEL_CNT + plog_bus.LOGE_CHANNEL_CNT + \
       plog_bus.FULL_WIDTH)) wbbus()
+// about the replay part
+`define REPLAY_BUS_JOIN2(name, outA, outB) \
+  rr_replay_bus_t #( \
+    .LOGB_CHANNEL_CNT(outA.LOGB_CHANNEL_CNT + outB.LOGB_CHANNEL_CNT), \
+    .CHANNEL_WIDTHS({outB.CHANNEL_WIDTHS, outA.CHANNEL_WIDTHS}), \
+    .LOGE_CHANNEL_CNT(outA.LOGE_CHANNEL_CNT)) name()
+`define AXI_MSTR_REPLAY_BUS(name, NLOGE) \
+  rr_replay_bus_t #( \
+    .LOGB_CHANNEL_CNT(3), \
+    .CHANNEL_WIDTHS({{AXI_RR_AR_WIDTH}, {AXI_RR_W_WIDTH}, {AXI_RR_AW_WIDTH}}), \
+    .LOGE_CHANNEL_CNT(NLOGE)) name()
+`define AXI_SLV_REPLAY_BUS(name, NLOGE) \
+  rr_replay_bus_t #( \
+    .LOGB_CHANNEL_CNT(2), \
+    .CHANNEL_WIDTHS({{AXI_RR_B_WIDTH}, {AXI_RR_R_WIDTH}}), \
+    .LOGE_CHANNEL_CNT(NLOGE)) name()
+`define AXIL_MSTR_REPLAY_BUS(name, NLOGE) \
+  rr_replay_bus_t #( \
+    .LOGB_CHANNEL_CNT(3), \
+    .CHANNEL_WIDTHS({ \
+      {AXIL_RR_AR_WIDTH}, {AXIL_RR_W_WIDTH}, {AXIL_RR_AW_WIDTH}}), \
+    .LOGE_CHANNEL_CNT(NLOGE)) name()
+`define AXIL_SLV_REPLAY_BUS(name, NLOGE) \
+  rr_replay_bus_t #( \
+    .LOGB_CHANNEL_CNT(2), \
+    .CHANNEL_WIDTHS({{AXIL_RR_B_WIDTH}, {AXIL_RR_R_WIDTH}}), \
+    .LOGE_CHANNEL_CNT(NLOGE)) name()
 
 // template
 ////////////////////////////////////////////////////////////////////////////////
