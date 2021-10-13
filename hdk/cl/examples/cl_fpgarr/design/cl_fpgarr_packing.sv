@@ -272,6 +272,7 @@ for (i=0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin: logb_gen
    );
 end
 for (i=0; i < in.LOGE_CHANNEL_CNT; i=i+1) begin: loge_gen
+   // loge_valid are never shuffled
    transkidbuf_pipeline #(
       .DATA_WIDTH(0),
       .PIPE_DEPTH(QUEUE_NSTAGES),

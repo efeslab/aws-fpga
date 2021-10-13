@@ -121,6 +121,9 @@ generate
            LOGB_CHANNEL_CNT, LOGE_CHANNEL_CNT,
            "logb_data W%d, packed_replay_bus W%d\n",
            FULL_WIDTH, packed_replay_bus.FULL_WIDTH);
+  if (LOGE_CHANNEL_CNT != packed_replay_bus.LOGE_CHANNEL_CNT)
+    $error("LOGE_CHANNEL_CNT mismatch: replay_bus %d, packed replay_bus %d\n",
+      LOGE_CHANNEL_CNT, packed_replay_bus.LOGE_CHANNEL_CNT);
 endgenerate
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -128,6 +131,7 @@ endgenerate
 // According to the SHUFFLE_PLAN
 // The shuffled rr_replay_bus is the output of the demarshaller tree structure
 // This generate creates the leaf nodes of the demarshaller tree.
+// Note that the loge_valid are never shuffled, so I just leave it be.
 ////////////////////////////////////////////////////////////////////////////////
 generate
   for (i=0; i < LOGB_CHANNEL_CNT; i=i+1) begin: packed_replay_gen
@@ -142,11 +146,14 @@ generate
       .LOGB_CHANNEL_CNT(1),
       .CHANNEL_WIDTHS(CHANNEL_WIDTHS[IDX]),
       .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)) bus();
+    $info("decoder converting packed_replay_gen[%d] to replay_bus[%d] (W%d)\n",
+      i, IDX, CHANNEL_WIDTHS[IDX]);
+    // FIXME: revisit here since valid should also represent loge_valid
     // bus.valid == bus.logb_valid[0], since (LOGB_CHANNEL_CNT == 1)
-    assign replay_bus.logb_valid[IDX] = bus.valid;
+    assign replay_bus.logb_valid[IDX] = bus.valid && bus.logb_valid[0];
     assign replay_bus.logb_data[GET_OFFSET(IDX) +: CHANNEL_WIDTHS[IDX]] =
       bus.logb_data;
-    assign replay_bus.loge_valid[IDX] = bus.loge_valid;
+    assign replay_bus.loge_valid[IDX] = bus.valid? bus.loge_valid: 0;
     assign bus.ready = replay_bus.ready[IDX];
   end
 endgenerate
@@ -177,7 +184,7 @@ for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
         `TREE_DEMARSHALLER2(prbus,
           packed_replay_gen[LID].bus,
           packed_replay_gen[RID].bus);
-        $info("Layer %d, splitting Node %d(W%d) to Leaf %d(W%d) and Leaf %d(W%d).\n",
+        $info("Decoder Layer %d, splitting Node %d(W%d) to Leaf %d(W%d) and Leaf %d(W%d).\n",
            h, i, prbus.FULL_WIDTH,
            LID, packed_replay_gen[LID].bus.FULL_WIDTH,
            RID, packed_replay_gen[RID].bus.FULL_WIDTH);
@@ -186,7 +193,7 @@ for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
         `TREE_DEMARSHALLER2(prbus,
           tree_gen[h-1].level_gen[LID].split_or_q.node.prbus,
           tree_gen[h-1].level_gen[RID].split_or_q.node.prbus);
-        $info("Layer %d, splitting Node %d(W%d) to Leaf %d(W%d) and Leaf %d(W%d).\n",
+        $info("Decoder Layer %d, splitting Node %d(W%d) to Leaf %d(W%d) and Leaf %d(W%d).\n",
           h, i, prbus.FULL_WIDTH,
           LID, tree_gen[h-1].level_gen[LID].split_or_q.node.prbus.FULL_WIDTH,
           RID, tree_gen[h-1].level_gen[RID].split_or_q.node.prbus.FULL_WIDTH);
@@ -196,14 +203,14 @@ for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
       // queue
       if (h==1) begin: node
         `TREE_QUEUE(prbus, packed_replay_gen[LID].bus);
-        $info("Layer %d, Node %d(W%d), queue Leaf %d(W%d).\n",
+        $info("Decoder Layer %d, Node %d(W%d), queue Leaf %d(W%d).\n",
           h, i, prbus.FULL_WIDTH,
           packed_replay_gen[LID].bus.FULL_WIDTH);
       end
       else begin: node
         `TREE_QUEUE(prbus,
           tree_gen[h-1].level_gen[LID].split_or_q.node.prbus);
-        $info("Layer %d, Node %d(W%d), queue Leaf %d(W%d).\n",
+        $info("Decoder Layer %d, Node %d(W%d), queue Leaf %d(W%d).\n",
           h, i, prbus.FULL_WIDTH,
           tree_gen[h-1].level_gen[LID].split_or_q.node.prbus.FULL_WIDTH);
       end
@@ -231,7 +238,11 @@ endmodule
 // The input packed replay will be demarshalled to two subtree/leaves
 // The lower LOGB_LEFT_CNT will go to the left subtree.
 // The higher LOGB_RIGHT_CNT will go to the rigth subtree.
-// The LOGE_CHANNEL_CNT does not aggregate, loge_valid is duplicated
+// The LOGE_CHANNEL_CNT does not aggregate, loge_valid is duplicated and goes to
+// both subtrees.
+// Note that the logb_valid and loge_valid are equally important. There are
+// "valid" data to distribute from the root packed replay bus to subtrees even
+// there is no logb packets to replay, since you still need to care loge_valid.
 module rr_trace_demarshaller2 (
   input wire clk,
   input wire rstn,
@@ -278,25 +289,6 @@ generate
     $error("LOGE_CHANNEL_CNT mismatch: from paramete %d, outB %d\n",
       LOGE_CHANNEL_CNT, outB.LOGE_CHANNEL_CNT);
 endgenerate
-// stall logic: handle cases if only one downstream channel finishes the
-// transaction
-logic stall_A;
-logic stall_B;
-always @(posedge clk)
-  if (!rstn) begin
-    stall_A <= 0;
-    stall_B <= 0;
-  end
-  else begin
-    if (stall_A)
-      stall_A <= !(in.valid && in.ready);
-    else
-      stall_A <= (outA.valid && outA.ready) && !(in.valid && in.ready);
-    if (stall_B)
-      stall_B <= !(in.valid && in.ready);
-    else
-      stall_B <= (outB.valid && outB.ready) && !(in.valid && in.ready);
-  end
 
 // register the input replay bus via a normal skidbuf (unlike recording, no need
 // to synchronize timing here)
@@ -308,14 +300,30 @@ rr_packed_replay_bus_sbuf in_sbuf (
   .clk(clk), .rstn(rstn), .in(in), .out(in_q)
 );
 
+// stall logic: handle cases if only one downstream channel finishes the
+// transaction
+logic stall_A;
+logic stall_B;
+always @(posedge clk)
+  if (!rstn) begin
+    stall_A <= 0;
+    stall_B <= 0;
+  end
+  else begin
+    if (stall_A)
+      stall_A <= !(in_q.valid && in_q.ready);
+    else
+      stall_A <= (outA.valid && outA.ready) && !(in_q.valid && in_q.ready);
+    if (stall_B)
+      stall_B <= !(in_q.valid && in_q.ready);
+    else
+      stall_B <= (outB.valid && outB.ready) && !(in_q.valid && in_q.ready);
+  end
+
 logic i_outA_ready; // internal ready abstraction
 logic i_outB_ready; // internal ready abstraction
-// When outX is not valid, it is also not required to be ready.
-// This is to avoid unnecessary stalls when there is no valid data to a full
-// channel but valid data to another empty channel.
-// TODO: Here should be a good candidate to be double-checked by jg
-assign i_outA_ready = stall_A || outA.ready || !outA.valid;
-assign i_outB_ready = stall_B || outB.ready || !outB.valid;
+assign i_outA_ready = stall_A || outA.ready;
+assign i_outB_ready = stall_B || outB.ready;
 assign in_q.ready = i_outA_ready && i_outB_ready;
 
 // Duplicate loge_valid
@@ -325,19 +333,14 @@ assign outB.loge_valid = in_q.loge_valid;
 ////// The de-marshaller
 // The left subtree
 logic [LOGB_LEFT_CNT-1:0] logb_valid_L;
-logic any_valid_L;
 assign logb_valid_L = in_q.logb_valid[LOGB_LEFT_CNT-1:0];
-assign any_valid_L = |logb_valid_L;
-assign outA.valid = stall_A? 0: in_q.valid && any_valid_L;
+assign outA.valid = stall_A? 0: in_q.valid;
 assign outA.logb_valid = logb_valid_L;
-assign outA.logb_data = any_valid_L? in_q.logb_data[LEFT_WIDTH-1:0] : 0;
+assign outA.logb_data = in_q.logb_data[LEFT_WIDTH-1:0];
 // The right subtree
 logic [LOGB_RIGHT_CNT-1:0] logb_valid_R;
-logic any_valid_R;
 assign logb_valid_R = in_q.logb_valid[LOGB_CHANNEL_CNT-1:LOGB_LEFT_CNT];
-assign any_valid_R = |logb_valid_R;
-assign outB.valid = stall_B? 0: in_q.valid && any_valid_R;
+assign outB.valid = stall_B? 0: in_q.valid;
 assign outB.logb_valid = logb_valid_R;
-assign outB.logb_data = any_valid_R?
-  in_q.logb_data[get_len_L(logb_valid_L) +: RIGHT_WIDTH] : 0;
+assign outB.logb_data = in_q.logb_data[get_len_L(logb_valid_L) +: RIGHT_WIDTH];
 endmodule
