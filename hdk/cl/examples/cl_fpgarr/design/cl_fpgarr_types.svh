@@ -152,7 +152,6 @@ parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
     /*{MSB, LSB }*/                                                            \
     .CHANNEL_WIDTHS({inB.CHANNEL_WIDTHS, inA.CHANNEL_WIDTHS}),                 \
     .LOGE_CHANNEL_CNT(inA.LOGE_CHANNEL_CNT + inB.LOGE_CHANNEL_CNT)) name()
-`endif
 `define LOGGING_BUS_UNPACK2PACK(unpackedname, packedname) \
   rr_packed_logging_bus_t #(\
     .LOGB_CHANNEL_CNT(unpackedname.LOGB_CHANNEL_CNT), \
@@ -190,6 +189,13 @@ parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
     .CHANNEL_WIDTHS({{AXIL_RR_B_WIDTH}, {AXIL_RR_R_WIDTH}}), \
     .LOGE_CHANNEL_CNT(NLOGE)) name()
 
+typedef struct packed {
+  logic [63:0] write_buf_addr;
+  logic [63:0] write_buf_size;
+  logic write_buf_update;
+  logic record_force_finish;
+} storage_axi_csr_t;
+`endif
 // template
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////     garbage      ////////////////////////////////////

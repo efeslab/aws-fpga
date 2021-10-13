@@ -18,7 +18,8 @@ module rr_storage_backend_axi #(
   rr_axi_lite_bus_t.master rr_cfg_bus,
   rr_axi_bus_t.slave storage_backend_bus,
   rr_stream_bus_t.C record_bus,
-  rr_stream_bus_t.P replay_bus
+  rr_stream_bus_t.P replay_bus,
+  input storage_axi_csr_t csr
 );
 
 // rr_steam_bus_t, packed data structure, LSB to MSB:
@@ -56,10 +57,6 @@ generate
       FULL_WIDTH, replay_bus.FULL_WIDTH);
 endgenerate
 
-logic [63:0] write_buf_addr;
-logic [63:0] write_buf_size;
-logic write_buf_update, record_force_finish;
-
 rr_writeback #(
   .WIDTH(record_bus.FULL_WIDTH),
   .AXI_WIDTH(512),
@@ -75,20 +72,10 @@ rr_writeback #(
   .record_din(record_bus.data),
   .record_din_width(record_bus.len),
   .axi_out(storage_backend_bus),
-  .write_buf_addr(write_buf_addr),
-  .write_buf_size(write_buf_size),
-  .write_buf_update(write_buf_update),
+  .write_buf_addr(csr.write_buf_addr),
+  .write_buf_size(csr.write_buf_size),
+  .write_buf_update(csr.write_buf_update),
   .interrupt()
-);
-
-rr_csrs csrs (
-    .clk(clk),
-    .rstn(rstn),
-    .rr_cfg_bus(rr_cfg_bus),
-    .write_buf_addr(write_buf_addr),
-    .write_buf_size(write_buf_size),
-    .write_buf_update(write_buf_update),
-    .record_force_finish(record_force_finish)
 );
 
 `ifdef WRITEBACK_DEBUG

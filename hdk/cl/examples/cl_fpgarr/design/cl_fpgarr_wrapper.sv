@@ -229,6 +229,22 @@ rr_replay_bus_ungroup2 top_ungroup(
   .outA(rp2), .outB(rr_dma_pcis_replay_bus));
 
 ////////////////////////////////////////////////////////////////////////////////
+// Process rr_csrs and output configurations to other modules
+////////////////////////////////////////////////////////////////////////////////
+rr_axi_lite_bus_t rr_cfg_bus();
+storage_axi_csr_t storage_axi_csr;
+rr_csrs csrs (
+    .clk(clk),
+    .rstn(rstn),
+    .rr_cfg_bus(rr_cfg_bus),
+    .storage_axi_csr(storage_axi_csr)
+);
+
+rr_axi_bus_t rr_storage_bus();
+// With TEST_BRIDGE_REC_REP, the packed recording data will be directly used as
+// packed replay data (without going to the backend storage)
+`ifndef TEST_BRIDGE_REC_REP
+////////////////////////////////////////////////////////////////////////////////
 // Connect packed record and replay bus to the storage backend
 ////////////////////////////////////////////////////////////////////////////////
 // TODO: Storage backend is not implemented yet.
@@ -236,13 +252,8 @@ rr_replay_bus_ungroup2 top_ungroup(
 // TODO: need an integration test
 // rr_cfg_bus is the higher 1MB of the bar1 bus.
 // It expects RW addresses in 0x100000~0x1FFFFF.
-rr_axi_lite_bus_t rr_cfg_bus();
-rr_axi_bus_t rr_storage_bus();
 rr_stream_bus_t #(.FULL_WIDTH(record_bus.FULL_WIDTH)) packed_replay_bus();
 
-// With TEST_BRIDGE_REC_REP, the packed recording data will be directly used as
-// packed replay data (without going to the backend storage)
-`ifndef TEST_BRIDGE_REC_REP
 rr_storage_backend_axi #(
   .LOGB_CHANNEL_CNT(merged_logging_bus.LOGB_CHANNEL_CNT),
   .CHANNEL_WIDTHS(top_group.SHUFFLED_CHANNEL_WIDTHS),
@@ -252,7 +263,8 @@ rr_storage_backend_axi #(
   .rr_cfg_bus(rr_cfg_bus),
   .storage_backend_bus(rr_storage_bus),
   .record_bus(record_bus),
-  .replay_bus(packed_replay_bus)
+  .replay_bus(packed_replay_bus),
+  .csr(storage_axi_csr)
 );
 
 rr_tracedecoder top_decoder(
@@ -279,15 +291,12 @@ generate
   `FAKE_READY_REPLAY_BUS(rr_ocl_replay_bus);
   `FAKE_READY_REPLAY_BUS(rr_bar1_replay_bus);
 endgenerate
-// placeholder for rr_cfg_bus
-assign rr_cfg_bus.awready = 1'b1;
-assign rr_cfg_bus.wready = 1'b1;
-assign rr_cfg_bus.arready = 1'b1;
-assign rr_cfg_bus.rvalid = 1'b1;
-assign rr_cfg_bus.rdata = 32'b0;
-assign rr_cfg_bus.rresp = 2'b0; // OKAY
-assign rr_cfg_bus.bvalid = 1'b1;
-assign rr_cfg_bus.bresp = 2'b0; // OKAY
+// placeholder for rr_storage_bus dummy signals
+assign rr_storage_bus.awvalid = 0;
+assign rr_storage_bus.wvalid = 0;
+assign rr_storage_bus.arvalid = 0;
+assign rr_storage_bus.bready = 1;
+assign rr_storage_bus.rready = 1;
 `endif
 
 // AXI Interconnect for the logging pcim traffic and user pcim traffic

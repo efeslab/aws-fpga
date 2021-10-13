@@ -216,4 +216,19 @@ parameter RR_CHANNEL_WIDTH_BITS=32;
   .s``_``m``pfx``rresp(b.rresp),                                               \
   .s``_``m``pfx``rvalid(b.rvalid),                                             \
   .m``_``s``pfx``rready(b.rready)
+
+// RR CSRS
+
+parameter int RR_CSR_CNT = 16;
+parameter int RR_CSR_WIDTH = $clog2(RR_CSR_CNT);
+typedef enum bit [RR_CSR_WIDTH-1:0] {
+  BUF_ADDR_HI,       // 0
+  BUF_ADDR_LO,       // 1
+  BUF_SIZE_HI,       // 2
+  BUF_SIZE_LO,       // 3
+  BUF_UPDATE,        // 4
+  FORCE_FINISH,      // 5
+  RR_CSR_LAST_DONT_USE = RR_CSR_CNT - 1
+} rr_csr_enum;
+`define RR_CSR_ADDR(idx) (idx << 2)
 `endif // CL_FPGARR_DEFS

@@ -4,11 +4,7 @@ module rr_csrs (
     input wire clk,
     input wire rstn,
     rr_axi_lite_bus_t.master rr_cfg_bus,
-
-    output logic [63:0] write_buf_addr,
-    output logic [63:0] write_buf_size,
-    output logic write_buf_update,
-    output logic record_force_finish
+    output storage_axi_csr_t storage_axi_csr
 );
 
     // Address Map:
@@ -19,11 +15,11 @@ module rr_csrs (
     // 0x000010 --> BUF_UPDATE
     // 0x000014 --> FORCE_FINISH
 
-    logic [31:0] csrs [15:0];
+    logic [31:0] csrs [RR_CSR_CNT-1:0];
 
     logic al_aw_transmitted, al_a_transmitted, al_write_transmitted;
     logic al_write_transmitted_q, al_write_transmitted_qq;
-    logic [3:0] al_addr, al_addr_q;
+    rr_csr_enum al_addr, al_addr_q;
     logic [31:0] al_data, csr_reg;
     logic [31:0] al_strb_ext;
     logic al_aw_handled, al_w_handled;
@@ -65,7 +61,10 @@ module rr_csrs (
             end
 
             if (al_aw_transmitted) begin
-                al_addr <= rr_cfg_bus.awaddr[5:2];
+                // the 32-bit addresses address 32-bit, or 4-byte registers
+                // Since we use aligned addresses for csr, the lower 2 bit of
+                // the address will always be 0 thus not part of the csr index.
+                al_addr <= rr_cfg_bus.awaddr[2 +: RR_CSR_WIDTH];
             end
             if (al_w_transmitted) begin
                 al_data <= rr_cfg_bus.wdata;
@@ -145,12 +144,12 @@ module rr_csrs (
         end
     end
 
-    assign write_buf_addr[63:32] = csrs[0];
-    assign write_buf_addr[31:0] = csrs[1];
-    assign write_buf_size[63:32] = csrs[2];
-    assign write_buf_size[31:0] = csrs[3];
-    assign write_buf_update = al_write_transmitted_q && (al_addr == 4);
-    assign record_force_finish = al_write_transmitted_q && (al_addr == 5);
+    assign storage_axi_csr = '{
+        write_buf_addr: {csrs[BUF_ADDR_HI], csrs[BUF_ADDR_LO]},
+        write_buf_size: {csrs[BUF_SIZE_HI], csrs[BUF_SIZE_LO]},
+        write_buf_update: al_write_transmitted_q && (al_addr == BUF_UPDATE),
+        record_force_finish: al_write_transmitted_q && (al_addr == FORCE_FINISH)
+    };
 
 `ifdef WRITEBACK_DEBUG
     always_ff @(posedge clk) begin
