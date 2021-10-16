@@ -223,6 +223,7 @@ endgenerate
 // rr_stream_bus_t:
 // from LSB to MSB:
 // logb_valid, loge_valid, packed_logb_data
+`undef TREE_TOP
 `define TREE_TOP \
   tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].split_or_q.node.prbus
 assign `TREE_TOP.valid = packed_replay_bus.valid;

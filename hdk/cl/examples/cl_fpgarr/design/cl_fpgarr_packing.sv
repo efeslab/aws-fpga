@@ -244,13 +244,12 @@ end
 endgenerate
 
 // output packed_logb_bus
-assign out.plogb.any_valid =
-   tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.any_valid;
-assign out.plogb.data =
-   tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.data;
-assign out.plogb.len =
-   tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.len;
-assign tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb.ready = out.ready;
+`undef TREE_TOP
+`define TREE_TOP tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb
+assign out.plogb.any_valid = `TREE_TOP.any_valid;
+assign out.plogb.data = `TREE_TOP.data;
+assign out.plogb.len = `TREE_TOP.len;
+assign `TREE_TOP.ready = out.ready;
 
 localparam QUEUE_NSTAGES = MERGE_TREE_HEIGHT-1;
 // Queue logb_valid and loge_valid for the correct number of cycles
