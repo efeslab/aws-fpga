@@ -148,12 +148,11 @@ generate
       .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)) bus();
     $info("decoder converting packed_replay_gen[%d] to replay_bus[%d] (W%d)\n",
       i, IDX, CHANNEL_WIDTHS[IDX]);
-    // FIXME: revisit here since valid should also represent loge_valid
-    // bus.valid == bus.logb_valid[0], since (LOGB_CHANNEL_CNT == 1)
-    assign replay_bus.logb_valid[IDX] = bus.valid && bus.logb_valid[0];
+    assign replay_bus.valid[IDX] = bus.valid;
+    assign replay_bus.logb_valid[IDX] = bus.logb_valid[0];
     assign replay_bus.logb_data[GET_OFFSET(IDX) +: CHANNEL_WIDTHS[IDX]] =
       bus.logb_data;
-    assign replay_bus.loge_valid[IDX] = bus.valid? bus.loge_valid: 0;
+    assign replay_bus.loge_valid[IDX] = bus.loge_valid;
     assign bus.ready = replay_bus.ready[IDX];
   end
 endgenerate

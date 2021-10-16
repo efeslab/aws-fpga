@@ -102,6 +102,7 @@ genvar i;
 generate
   for (i=0; i < LOGB_LEFT_CNT; i=i+1) begin
     assign in.ready[i] = outA.ready[i];
+    assign outA.valid[i] = in.valid[i];
     assign outA.logb_valid[i] = in.logb_valid[i];
     assign outA.loge_valid[i] = in.loge_valid[i];
   end
@@ -109,6 +110,7 @@ generate
   for (i=0; i < LOGB_RIGHT_CNT; i=i+1) begin
     localparam IDX = LOGB_LEFT_CNT + i;
     assign in.ready[IDX] = outB.ready[i];
+    assign outB.valid[i] = in.valid[IDX];
     assign outB.logb_valid[i] = in.logb_valid[IDX];
     assign outB.loge_valid[i] = in.loge_valid[IDX];
   end

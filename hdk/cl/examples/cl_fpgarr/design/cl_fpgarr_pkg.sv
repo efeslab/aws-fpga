@@ -173,12 +173,25 @@
    endinterface
 
    // rr_replay_bus_t holds the unpacked logb_data
-   // Unlike rr_logging_bus_t, which has a shared ready signal across all
-   // channels, rr_replay_bus_t has a unique ready signal for each channel.
-   // This is because during record, we rely on the timing of each transaction
-   // begin/end events to infer the happen-before relation.
-   // But during replay, given the known happen-before relation, the flow of
-   // replay packets can be asynchronous.
+   // Q: Why I have ready for each LOGB channel?
+   // During record, there was only one consumer of the logb/loge data, which is
+   // the aggregator/top_packer, etc.
+   // During replay, there are N consumers, each consumes one channel of the
+   // logb/loge data.
+   // There is no centralized ready so I need N ready for N channels.
+   // Q: Why I have valid for each LOGB channel?
+   // During record, the logb and loge valid signals are transmitted as
+   // individual valid but paired with the shared ready signal. The
+   // stall-passing transkid pipelines keeps logb in-sync with loge in terms of
+   // clock timestamps (i.e. logb/loge happens first will arrive to the
+   // aggregator first. Those who happen at the same cycle will arrive the
+   // aggregator too).
+   // But during replay, I no longer need to sync logb/loge of multiple channels
+   // so I can use no-stall-passing (to remove bubbles) skidbuffer pipeline to
+   // send replay data to each channel. However, the logb/loge for a single
+   // channel should still be synced somehow (so I know that loge is the
+   // corresponding logb expecting). Here comes the valid signals.
+   //
    // In this interface, we assume the loge_valid has already be duplicated for
    // each channel, so the parameter LOGE_CHANNEL_CNT specifies the number of
    // loge for each channel, not in total.
@@ -193,12 +206,13 @@
    // This FULL_WIDTH does not include logb_valid
    parameter int FULL_WIDTH = GET_FULL_WIDTH();
 
+   logic valid [LOGB_CHANNEL_CNT-1:0];
    logic logb_valid [LOGB_CHANNEL_CNT-1:0];
    logic [FULL_WIDTH-1:0] logb_data;
    logic [LOGE_CHANNEL_CNT-1:0] loge_valid [LOGB_CHANNEL_CNT-1:0];
    logic ready [LOGB_CHANNEL_CNT-1:0];
 
-   modport P(output logb_valid, logb_data, loge_valid, input ready);
-   modport C(input logb_valid, logb_data, loge_valid, output ready);
+   modport P(output valid, logb_valid, logb_data, loge_valid, input ready);
+   modport C(input valid, logb_valid, logb_data, loge_valid, output ready);
    endinterface
 `endif
