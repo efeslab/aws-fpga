@@ -1,0 +1,20 @@
+[tasks]
+prfc prf
+
+[options]
+prf: mode prove
+prf: depth 20
+
+[engines]
+smtbmc
+
+[script]
+verific -vlog-define TWOWAYHANDSHAKE_REPLAYER_SELF
+verific -formal twowayhandshake_replayer.sv
+prep -top twowayhandshake_replayer
+
+[files]
+../../twowayhandshake_replayer.sv
+../../cl_fpgarr_packing_cfg.svh
+../../cl_fpgarr_defs.svh
+formal/properties.sv ../properties.sv
