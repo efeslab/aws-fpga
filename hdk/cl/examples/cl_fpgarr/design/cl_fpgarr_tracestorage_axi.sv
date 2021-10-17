@@ -15,7 +15,6 @@ module rr_storage_backend_axi #(
 ) (
   input wire clk,
   input wire rstn,
-  rr_axi_lite_bus_t.master rr_cfg_bus,
   rr_axi_bus_t.slave storage_backend_bus,
   rr_stream_bus_t.C record_bus,
   rr_stream_bus_t.P replay_bus,

@@ -195,6 +195,13 @@ typedef struct packed {
   logic write_buf_update;
   logic record_force_finish;
 } storage_axi_csr_t;
+
+// rr_mode_csr_t is a interpretation of the RR_MODE csr
+typedef struct packed {
+  logic recordEn;             // bit 0
+  logic replayEn;             // bit 1
+  logic replay_PCIM_WR_En;    // bit 2 reserved
+} rr_mode_csr_t;
 `endif
 // template
 ////////////////////////////////////////////////////////////////////////////////

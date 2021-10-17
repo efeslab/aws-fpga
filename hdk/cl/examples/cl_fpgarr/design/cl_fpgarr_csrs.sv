@@ -4,7 +4,8 @@ module rr_csrs (
     input wire clk,
     input wire rstn,
     rr_axi_lite_bus_t.master rr_cfg_bus,
-    output storage_axi_csr_t storage_axi_csr
+    output storage_axi_csr_t storage_axi_csr,
+    output rr_mode_csr_t rr_mode_csr
 );
 
     // Address Map:
@@ -149,6 +150,12 @@ module rr_csrs (
         write_buf_size: {csrs[BUF_SIZE_HI], csrs[BUF_SIZE_LO]},
         write_buf_update: al_write_transmitted_q && (al_addr == BUF_UPDATE),
         record_force_finish: al_write_transmitted_q && (al_addr == FORCE_FINISH)
+    };
+    
+    assign rr_mode_csr = '{
+        recordEn: csrs[RR_MODE][0],
+        replayEn: csrs[RR_MODE][1],
+        replay_PCIM_WR_En: csrs[RR_MODE][2]
     };
 
 `ifdef WRITEBACK_DEBUG

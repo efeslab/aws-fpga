@@ -229,6 +229,7 @@ typedef enum bit [RR_CSR_WIDTH-1:0] {
   BUF_SIZE_LO,       // 3
   BUF_UPDATE,        // 4
   FORCE_FINISH,      // 5
+  RR_MODE,           // 6
   RR_CSR_LAST_DONT_USE = RR_CSR_CNT - 1
 } rr_csr_enum;
 `define RR_CSR_ADDR(idx) (idx << 2)
