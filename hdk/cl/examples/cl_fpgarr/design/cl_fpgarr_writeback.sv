@@ -13,10 +13,17 @@ generate
       in.LOGB_CHANNEL_CNT, in.LOGE_CHANNEL_CNT, in.FULL_WIDTH, out.FULL_WIDTH);
 endgenerate
 
-// loge_valid_output is the signal outputting to the writeback_bus
-// loge_valid_output[i] shows whether one (and can only be one) transaction has
-// finished on channel[i] between now (some logb_valid are true) and the last
-// time some logb are valid.
+// loge_valid_output is the signal outputting to the writeback_bus, it should be
+// in-sync with out.valid
+// Invariant description of loge_valid_output:
+// 1. loge_valid_output[i] shows whether one (and can only be one) transaction
+// has finished on channel[i] between now (some logb_valid are true, but
+// excluding the loge_valid happens at the same cycle) and the last time some
+// logb are valid.
+// 2. In other words, when out.valid is asserted, loge_valid_output[i] together
+// with all historical loge_valid_output values, represents the number of
+// transactions finished in each channel (count the 1s) before the start of the
+// logb_{valid, data} in the out.data.
 // if logb_valid[i] && loge_valid[i], which only happen if the transaction
 // really lasts for only one cycle (ready was asserted in advance)
 logic [in.LOGE_CHANNEL_CNT-1:0] loge_valid_out;
@@ -36,16 +43,24 @@ if (!rstn)
    loge_valid_out <= 0;
 else
    for (int i=0; i < in.LOGE_CHANNEL_CNT; i=i+1)
-      if (out.valid && in.loge_valid[i])
+      // loge_valid_out can only be updated when
+      //   (out.valid && out.ready): loge_valid accumulated so far is recorded
+      //   in the trace, I should restart the accumulation.
+      //   (!out.valid): I cannot write to trace at this moment, any standalone
+      //   loge_valid should be accumulated and wait for the next write to the
+      //   trace.
+      if (out.valid && out.ready)
+         // the incoming loge_valid is not related to the happen-before of
+         // the current logb_valid. That will be deferred to the next
+         // transmission
+         loge_valid_out[i] <= in.loge_valid[i];
+      else if (!out.valid && in.loge_valid[i] && out.ready) begin
+         // a standlone loge_valid comes
          loge_valid_out[i] <= 1;
-      else if (out.valid && !in.loge_valid[i])
-         loge_valid_out[i] <= 0;
-      else if (!out.valid && in.loge_valid[i]) begin
-         loge_valid_out[i] <= 1;
+         // there could only be at most 1 transaction finished between two
+         // logging unit in the trace.
          no_loge_overwrite: assert(!loge_valid_out[i]);
       end
-      else // !out.valid && !in.loge_valid[i]
-         loge_valid_out[i] <= loge_valid_out[i];
 endmodule
 
 ////////////////////////////////////////////////////////////////////////////
