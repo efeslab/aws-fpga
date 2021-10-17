@@ -248,3 +248,192 @@ axichannel_logger #(
    .loge_ready(axil_log.ready)
 );
 endmodule
+
+module axil_mstr_replayer #(
+   parameter int NUM_INTERFACES
+) (
+   input clk,
+   input sync_rst_n,
+   rr_replay_bus_t.C rbus,
+   rr_axi_lite_bus_t.slave outM,
+   output logic [LOGE_PER_AXI-1:0] o_rt_loge_valid,
+   input logic [NUM_INTERFACES-1:0] [LOGE_PER_AXI-1:0] i_rt_loge_valid
+);
+localparam LOGB_CHANNEL_CNT = rbus.LOGB_CHANNEL_CNT;
+localparam [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
+   CHANNEL_WIDTHS = rbus.CHANNEL_WIDTHS;
+// the LOGE_CHANNEL_CNT here is for all channels from all interfaces
+localparam LOGE_CHANNEL_CNT = rbus.LOGE_CHANNEL_CNT;
+`DEF_GET_OFFSET(GET_OFFSET, CHANNEL_WIDTHS)
+
+// parameter check
+generate
+   if (LOGB_CHANNEL_CNT != 3)
+      $error("Wrong LOGB_CHANNEL_CNT %d\n", LOGB_CHANNEL_CNT);
+   if (CHANNEL_WIDTHS[LOGB_AW] != AXIL_RR_AW_WIDTH)
+      $error("AW Width mismatches: see %d, expected %d\n",
+         CHANNEL_WIDTHS[LOGB_AW], AXIL_RR_AW_WIDTH);
+   if (CHANNEL_WIDTHS[LOGB_W] != AXIL_RR_W_WIDTH)
+      $error("W Width mismatches: see %d, expected %d\n",
+         CHANNEL_WIDTHS[LOGB_W], AXIL_RR_W_WIDTH);
+   if (CHANNEL_WIDTHS[LOGB_AR] != AXIL_RR_AR_WIDTH)
+      $error("AR Width mismatches: see %d, expected %d\n",
+         CHANNEL_WIDTHS[LOGB_AR], AXIL_RR_AR_WIDTH);
+   if (LOGE_PER_AXI != 5)
+      $error("Wrong LOGE_PER_AXI %d\n", LOGE_PER_AXI);
+   if (LOGE_CHANNEL_CNT != NUM_INTERFACES * LOGE_PER_AXI)
+      $error("Wrong LOGE_CHANNEL_CN %d, NUM_INTERFACES %d, LOGE_PER_AXI %d\n",
+         LOGE_CHANNEL_CNT, NUM_INTERFACES, LOGE_PER_AXI);
+endgenerate
+
+logic rstn;
+assign rstn = sync_rst_n;
+// AW Channel
+axichannel_replayer #(
+   .DATA_WIDTH(AXIL_RR_AW_WIDTH),
+   .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
+   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
+) AW_replayer (
+   .clk(clk), .rstn(rstn),
+   .in_valid(rbus.valid[LOGB_AW]),
+   .logb_valid(rbus.logb_valid[LOGB_AW]),
+   .logb_data(rbus.logb_data[GET_OFFSET(LOGB_AW) +: CHANNEL_WIDTHS[LOGB_AW]]),
+   .loge_valid(rbus.loge_valid[LOGB_AW]),
+   .in_ready(rbus.ready[LOGB_AW]),
+   .rt_loge_valid(i_rt_loge_valid),
+   .out_valid(outM.awvalid),
+   .out_ready(outM.awready),
+   .out_data(axil_rr_AW_t'{outM.awaddr})
+);
+assign o_rt_loge_valid[LOGE_AW] = outM.awvalid && outM.awready;
+
+// W  Channel
+axichannel_replayer #(
+   .DATA_WIDTH(AXIL_RR_W_WIDTH),
+   .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
+   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
+) W_replayer (
+   .clk(clk), .rstn(rstn),
+   .in_valid(rbus.valid[LOGB_W]),
+   .logb_valid(rbus.logb_valid[LOGB_W]),
+   .logb_data(rbus.logb_data[GET_OFFSET(LOGB_W) +: CHANNEL_WIDTHS[LOGB_W]]),
+   .loge_valid(rbus.loge_valid[LOGB_W]),
+   .in_ready(rbus.ready[LOGB_W]),
+   .rt_loge_valid(i_rt_loge_valid),
+   .out_valid(outM.wvalid),
+   .out_ready(outM.wready),
+   .out_data(axil_rr_W_t'{outM.wdata, outM.wstrb})
+);
+assign o_rt_loge_valid[LOGE_W] = outM.wvalid && outM.wready;
+
+// AR Channel
+axichannel_replayer #(
+   .DATA_WIDTH(AXIL_RR_AR_WIDTH),
+   .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
+   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
+) AR_replayer (
+   .clk(clk), .rstn(rstn),
+   .in_valid(rbus.valid[LOGB_AR]),
+   .logb_valid(rbus.logb_valid[LOGB_AR]),
+   .logb_data(rbus.logb_data[GET_OFFSET(LOGB_AR) +: CHANNEL_WIDTHS[LOGB_AR]]),
+   .loge_valid(rbus.loge_valid[LOGB_AR]),
+   .in_ready(rbus.ready[LOGB_AR]),
+   .rt_loge_valid(i_rt_loge_valid),
+   .out_valid(outM.arvalid),
+   .out_ready(outM.arready),
+   .out_data(axil_rr_AR_t'{outM.araddr})
+);
+assign o_rt_loge_valid[LOGE_AR] = outM.arvalid && outM.arready;
+
+// ignore slave response during master replay
+// B  Channel
+assign outM.bready = 1;
+assign o_rt_loge_valid[LOGE_B] = outM.bvalid && outM.bready;
+// R  Channel
+assign outM.rready = 1;
+assign o_rt_loge_valid[LOGE_R] = outM.rvalid && outM.rready;
+endmodule
+
+module axil_slv_replayer #(
+   parameter int NUM_INTERFACES
+) (
+   input clk,
+   input sync_rst_n,
+   rr_replay_bus_t.C rbus,
+   rr_axi_lite_bus_t.master outS,
+   output logic [LOGE_PER_AXI-1:0] o_rt_loge_valid,
+   input logic [NUM_INTERFACES-1:0] [LOGE_PER_AXI-1:0] i_rt_loge_valid
+);
+localparam LOGB_CHANNEL_CNT = rbus.LOGB_CHANNEL_CNT;
+localparam [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
+   CHANNEL_WIDTHS = rbus.CHANNEL_WIDTHS;
+localparam LOGE_CHANNEL_CNT = rbus.LOGE_CHANNEL_CNT;
+`DEF_GET_OFFSET(GET_OFFSET, CHANNEL_WIDTHS)
+
+// parameter check
+generate
+   if (LOGB_CHANNEL_CNT != 2)
+      $error("Wrong LOGB_CHANNEL_CNT %d\n", LOGB_CHANNEL_CNT);
+   if (CHANNEL_WIDTHS[LOGB_B] != AXIL_RR_B_WIDTH)
+      $error("B Width mismatches: see %d, expected %d\n",
+         CHANNEL_WIDTHS[LOGB_B], AXIL_RR_B_WIDTH);
+   if (CHANNEL_WIDTHS[LOGB_R] != AXIL_RR_R_WIDTH)
+      $error("R Width mismatches: see %d, expected %d\n",
+         CHANNEL_WIDTHS[LOGB_R], AXIL_RR_R_WIDTH);
+   if (LOGE_PER_AXI != 5)
+      $error("Wrong LOGE_PER_AXI %d\n", LOGE_PER_AXI);
+   if (LOGE_CHANNEL_CNT != NUM_INTERFACES * LOGE_PER_AXI)
+      $error("Wrong LOGE_CHANNEL_CN %d, NUM_INTERFACES %d, LOGE_PER_AXI %d\n",
+         LOGE_CHANNEL_CNT, NUM_INTERFACES, LOGE_PER_AXI);
+endgenerate
+
+logic rstn;
+assign rstn = sync_rst_n;
+// AW Channel
+assign outS.awready = 1;
+assign o_rt_loge_valid[LOGE_AW] = outS.awvalid && outS.awready;
+// W  Channel
+assign outS.wready = 1;
+assign o_rt_loge_valid[LOGE_W] = outS.wvalid && outS.wready;
+// AR Channel
+assign outS.arready = 1;
+assign o_rt_loge_valid[LOGE_AR] = outS.arvalid && outS.arready;
+
+// B  Channel
+axichannel_replayer #(
+   .DATA_WIDTH(AXIL_RR_B_WIDTH),
+   .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
+   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
+) B_replayer (
+   .clk(clk), .rstn(rstn),
+   .in_valid(rbus.valid[LOGB_B]),
+   .logb_valid(rbus.logb_valid[LOGB_B]),
+   .logb_data(rbus.logb_data[GET_OFFSET(LOGB_B) +: CHANNEL_WIDTHS[LOGB_B]]),
+   .loge_valid(rbus.loge_valid[LOGB_B]),
+   .in_ready(rbus.ready[LOGB_B]),
+   .rt_loge_valid(i_rt_loge_valid),
+   .out_valid(outS.bvalid),
+   .out_ready(outS.bready),
+   .out_data(axil_rr_B_t'{outS.bresp})
+);
+assign o_rt_loge_valid[LOGE_B] = outS.bvalid && outS.bready;
+
+// R  Channel
+axichannel_replayer #(
+   .DATA_WIDTH(AXIL_RR_R_WIDTH),
+   .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
+   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
+) R_replayer (
+   .clk(clk), .rstn(rstn),
+   .in_valid(rbus.valid[LOGB_R]),
+   .logb_valid(rbus.logb_valid[LOGB_R]),
+   .logb_data(rbus.logb_data[GET_OFFSET(LOGB_R) +: CHANNEL_WIDTHS[LOGB_R]]),
+   .loge_valid(rbus.loge_valid[LOGB_R]),
+   .in_ready(rbus.valid[LOGB_R]),
+   .rt_loge_valid(i_rt_loge_valid),
+   .out_valid(outS.rvalid),
+   .out_ready(outS.rready),
+   .out_data(axil_rr_R_t'{outS.rdata, outS.rresp})
+);
+assign o_rt_loge_valid[LOGE_R] = outS.rvalid && outS.rready;
+endmodule

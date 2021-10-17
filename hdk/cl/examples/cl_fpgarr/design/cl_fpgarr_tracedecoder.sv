@@ -203,14 +203,14 @@ for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
       if (h==1) begin: node
         `TREE_QUEUE(prbus, packed_replay_gen[LID].bus);
         $info("Decoder Layer %d, Node %d(W%d), queue Leaf %d(W%d).\n",
-          h, i, prbus.FULL_WIDTH,
+          h, i, prbus.FULL_WIDTH, LID,
           packed_replay_gen[LID].bus.FULL_WIDTH);
       end
       else begin: node
         `TREE_QUEUE(prbus,
           tree_gen[h-1].level_gen[LID].split_or_q.node.prbus);
         $info("Decoder Layer %d, Node %d(W%d), queue Leaf %d(W%d).\n",
-          h, i, prbus.FULL_WIDTH,
+          h, i, prbus.FULL_WIDTH, LID,
           tree_gen[h-1].level_gen[LID].split_or_q.node.prbus.FULL_WIDTH);
       end
     end

@@ -152,6 +152,11 @@ parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
     /*{MSB, LSB }*/                                                            \
     .CHANNEL_WIDTHS({inB.CHANNEL_WIDTHS, inA.CHANNEL_WIDTHS}),                 \
     .LOGE_CHANNEL_CNT(inA.LOGE_CHANNEL_CNT + inB.LOGE_CHANNEL_CNT)) name()
+`define LOGGING_BUS_DUP(src, dup) \
+  rr_logging_bus_t #(\
+    .LOGB_CHANNEL_CNT(src.LOGB_CHANNEL_CNT), \
+    .CHANNEL_WIDTHS(src.CHANNEL_WIDTHS), \
+    .LOGE_CHANNEL_CNT(src.LOGE_CHANNEL_CNT)) dup()
 `define LOGGING_BUS_UNPACK2PACK(unpackedname, packedname) \
   rr_packed_logging_bus_t #(\
     .LOGB_CHANNEL_CNT(unpackedname.LOGB_CHANNEL_CNT), \

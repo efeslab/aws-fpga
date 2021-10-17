@@ -233,4 +233,30 @@ typedef enum bit [RR_CSR_WIDTH-1:0] {
   RR_CSR_LAST_DONT_USE = RR_CSR_CNT - 1
 } rr_csr_enum;
 `define RR_CSR_ADDR(idx) (idx << 2)
+
+// PLACEMENT_VEC for runtime loge_valid crossbar
+// From aws-fpga doc:
+//   MID SLR:
+//       CL_SH_DDR
+//       BAR1
+//       PCIM
+//   BOTTOM SLR:
+//       PCIS
+//       OCL
+//       DDR STAT3
+//   MID/BOTTOM
+//       DDR STAT0
+//       DDR STAT1
+//       SDA
+// The order of the PLACEMENT_VEC is determined by the above tree of
+// merged_logging_bus: sda ocl bar1 pcim pcis
+parameter int LOGE_PER_AXI = 5;
+parameter int AWSF1_NUM_INTERFACES = 5;
+parameter int AWSF1_PLACEMENT_VEC[AWSF1_NUM_INTERFACES-1:0] = '{
+  5, // sda
+  3, // ocl
+  0, // bar1
+  1, // pcim
+  4  // pcis
+};
 `endif // CL_FPGARR_DEFS

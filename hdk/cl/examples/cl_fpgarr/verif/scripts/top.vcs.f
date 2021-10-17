@@ -82,15 +82,19 @@ ${CL_ROOT}/design/cl_fpgarr_utils.sv
 ${CL_ROOT}/design/cl_fpgarr_axi_rr.sv
 ${CL_ROOT}/design/cl_fpgarr_axil_rr.sv
 ${CL_ROOT}/design/twowayhandshake_logger.sv
+${CL_ROOT}/design/twowayhandshake_replayer.sv
 ${CL_ROOT}/design/transkidbuf.sv
 ${CL_ROOT}/design/transkidbuf_pipeline.sv
 ${CL_ROOT}/design/axichannel_logger.sv
+${CL_ROOT}/design/axichannel_replayer.sv
 ${CL_ROOT}/design/cl_fpgarr_packing.sv
 ${CL_ROOT}/design/cl_fpgarr_writeback.sv
 ${CL_ROOT}/design/cl_fpgarr_csrs.sv
 ${CL_ROOT}/design/cl_fpgarr_tracestorage_axi.sv
 ${CL_ROOT}/design/cl_fpgarr_tracedecoder.sv
 ${CL_ROOT}/design/cl_fpgarr_chgrouping.sv
+${CL_ROOT}/design/cl_fpgarr_rr_sel.sv
+${CL_ROOT}/design/cl_fpgarr_rt_loge_crossbar.sv
 
 # start of rr_pcim_axi_interconnect
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/sim/rr_pcim_axi_interconnect.v
