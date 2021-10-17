@@ -69,6 +69,8 @@ class MergePlan(object):
     h = len(self.plan)
     nodes_per_layer = [len(x) for x in self.plan]
     max_N = max(nodes_per_layer)
+    f.write("`ifndef CL_FPGARR_PACKING_CFG_H\n")
+    f.write("`define CL_FPGARR_PACKING_CFG_H\n")
     f.write("// height of the merge tree, layer 0 is for reorder input\n")
     f.write("parameter MERGE_TREE_HEIGHT=%d;\n" % h)
     f.write("// max number of nodes across all layers/height\n")
@@ -90,6 +92,7 @@ class MergePlan(object):
     f.write("// a shortcut to the shuffling plan (MERGE_PLAN[0])\n")
     f.write("parameter int SHUFFLE_PLAN [0:MERGE_TREE_MAX_NODES-1] [0:1] = "
             "MERGE_PLAN[0];\n")
+    f.write("`endif // CL_FPGARR_PACKING_CFG_H\n")
 
 # CW: all channel widths
 # idxs: the index of leafs to consider

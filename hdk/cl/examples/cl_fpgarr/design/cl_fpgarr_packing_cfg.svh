@@ -1,3 +1,5 @@
+`ifndef CL_FPGARR_PACKING_CFG_H
+`define CL_FPGARR_PACKING_CFG_H
 // height of the merge tree, layer 0 is for reorder input
 parameter MERGE_TREE_HEIGHT=6;
 // max number of nodes across all layers/height
@@ -16,3 +18,4 @@ parameter int MERGE_PLAN [0:MERGE_TREE_HEIGHT-1] [0:MERGE_TREE_MAX_NODES-1] [0:1
 };
 // a shortcut to the shuffling plan (MERGE_PLAN[0])
 parameter int SHUFFLE_PLAN [0:MERGE_TREE_MAX_NODES-1] [0:1] = MERGE_PLAN[0];
+`endif // CL_FPGARR_PACKING_CFG_H
