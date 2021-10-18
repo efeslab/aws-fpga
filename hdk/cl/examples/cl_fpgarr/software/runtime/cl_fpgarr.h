@@ -1,6 +1,6 @@
 #define CL_FPGARR_CSR_BASE 0x100000
 typedef enum {
-  BUF_ADDR_HI = 0,       // 0
+  BUF_ADDR_HI = 0,   // 0
   BUF_ADDR_LO,       // 1
   BUF_SIZE_HI,       // 2
   BUF_SIZE_LO,       // 3
