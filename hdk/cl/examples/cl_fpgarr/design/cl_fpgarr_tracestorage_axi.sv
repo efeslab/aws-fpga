@@ -83,7 +83,7 @@ rr_writeback #(
 `ifdef WRITEBACK_DEBUG
 always_ff @(posedge clk) begin
     if (record_bus.valid & record_bus.ready)
-        $display("[record_bus]: width\t%d\tdata\t%x", record_bus.len, record_bus.data);
+        $display("[record_bus]: width\t%d\tcalculated width\t%d\tdata\t%x", record_bus.len, GET_LEN(record_bus.data), record_bus.data);
 end
 `endif
 

@@ -661,7 +661,8 @@ module rr_writeback #(
 
     assign replay_current_in = replay_in_fifo_out;
     assign replay_current_in_valid = replay_in_fifo_rd_en;
-    assign replay_in_fifo_rd_en = ~replay_in_fifo_empty && ~replay_out_fifo_almfull && replay_leftover_do_step;
+    assign replay_in_fifo_rd_en = ~replay_in_fifo_empty && ~replay_out_fifo_almfull
+                                  && replay_leftover_size - replay_shift_size <= AXI_WIDTH;
 
     // *replay_leftover* should pass output whenever the next output size is less than
     // the size of the current leftover buffer, i.e., there are enough stuff to output.
@@ -669,7 +670,7 @@ module rr_writeback #(
         if (replay_leftover_size > AXI_WIDTH) begin
             // If leftover size is larger than AXI_WIDTH, we can output anyway.
             replay_leftover_do_step = 1;
-        end else if (replay_left_size < replay_leftover_size) begin
+        end else if (replay_left_size <= replay_leftover_size) begin
             // If leftover size is larger than the size of the remaining bits of the current
             // transaction, we can always output.
             replay_leftover_do_step = 1;
