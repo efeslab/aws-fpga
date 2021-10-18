@@ -69,15 +69,18 @@ endgenerate
 rr_writeback #(
   .WIDTH(record_bus.FULL_WIDTH),
   .AXI_WIDTH(512),
-  .OFFSETWIDTH(16),
-  .AXI_ADDR_WIDTH(64)
+  .OFFSET_WIDTH(16),
+  .AXI_ADDR_WIDTH(64),
+  .LOGB_CHANNEL_CNT(LOGB_CHANNEL_CNT),
+  .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
+  .CHANNEL_WIDTHS(CHANNEL_WIDTHS)
 ) writeback (
   .clk(clk),
   .sync_rst_n(rstn),
   .cfg_max_payload(0),
   .record_din_valid(record_bus.valid),
   .record_din_ready(record_bus.ready),
-  .record_finish(write_force_finish),
+  .record_finish(record_force_finish),
   .record_din(record_bus.data),
   .record_din_width(record_bus.len),
   .axi_out(storage_backend_bus),
