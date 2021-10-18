@@ -172,18 +172,29 @@ always @(posedge clk)
 // OK to replay if replay counter <= runtime counter
 ////////////////////////////////////////////////////////////////////////////////
 // TODO: This might have timing issue
-// the two's complement of runtime packet counter
-wire [PKT_CNT_WIDTH-1:0] rt_loge_cnt_neg [LOGE_CHANNEL_CNT-1:0];
+// It is OK to replay if runtime packet counter >= replay packet counter
+// In an unpacked logging bus, when logb_valid and loge_valid happen at the same
+// time, the loge_valid is not counted towards to the replay packet counter of
+// the logb_valid at the same cycle.
+// But during the conversion from unpacked logging bus to a packed writeback
+// bus, the loge_valid is counted towards to the replay packet counter of the
+// logb_valid at the same cycle. This is to only encode loge_valid when there
+// are some logb_valid to record.
+// So the replay packet counter should be loge_cnt_next, which is only valid if
+// in_valid.
+// the two's complement of replay packet counter
+wire [PKT_CNT_WIDTH-1:0] loge_cnt_neg [LOGE_CHANNEL_CNT-1:0];
 wire [PKT_CNT_WIDTH-1:0] pkt_cnt_sub [LOGE_CHANNEL_CNT-1:0];
 logic [LOGE_CHANNEL_CNT-1:0] pkt_cnt_sub_sign;
 logic ok_to_replay;
 generate 
   for (i=0; i < LOGE_CHANNEL_CNT; i=i+1) begin
-    assign rt_loge_cnt_neg[i] = ~rt_loge_cnt[i] + PKT_CNT_WIDTH'(1);
-    assign pkt_cnt_sub[i] = loge_cnt_next[i] + rt_loge_cnt_neg[i];
-    // sign is 1 --> replay cnt - runtime cnt is negative, OK to replay
+    assign loge_cnt_neg[i] = ~loge_cnt_next[i] + PKT_CNT_WIDTH'(1);
+    assign pkt_cnt_sub[i] = rt_loge_cnt[i] + loge_cnt_neg[i];
+    // sign is 0 --> runtime cnt - replay cnt is positive or zero, 
+    // runtime cnt >= replay cnt, thus OK to replay
     // else, should wait for the happen-before to be enforced
-    assign pkt_cnt_sub_sign[i] = pkt_cnt_sub[i][PKT_CNT_WIDTH-1];
+    assign pkt_cnt_sub_sign[i] = !pkt_cnt_sub[i][PKT_CNT_WIDTH-1];
   end
 endgenerate
 assign ok_to_replay = &pkt_cnt_sub_sign;
