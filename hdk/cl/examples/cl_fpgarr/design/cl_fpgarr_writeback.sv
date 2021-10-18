@@ -225,8 +225,12 @@ endmodule
 module rr_writeback #(
     parameter WIDTH = 2500,
     parameter AXI_WIDTH = 512,
-    parameter OFFSETWIDTH = 32,
-    parameter AXI_ADDR_WIDTH = 64) (
+    parameter OFFSET_WIDTH = 32,
+    parameter AXI_ADDR_WIDTH = 64,
+    parameter int LOGB_CHANNEL_CNT = 25,
+    parameter int LOGE_CHANNEL_CNT = 25,
+    parameter bit [LOGB_CHANNEL_CNT-1:0]
+      [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS) (
     input clk,
     input sync_rst_n,
     // cfg_max_payload: see https://github.com/aws/aws-fpga/blob/master/hdk/docs/AWS_Shell_Interface_Specification.md#pcim-interface----axi-4-for-outbound-pcie-transactions-cl-is-master-shell-is-slave-512-bit
@@ -236,30 +240,54 @@ module rr_writeback #(
     output logic record_din_ready,
     input logic record_finish,
     input logic [WIDTH-1:0] record_din,
-    input logic [OFFSETWIDTH-1:0] record_din_width,
+    input logic [OFFSET_WIDTH-1:0] record_din_width,
+
+    output logic replay_dout_valid,
+    input logic replay_dout_ready,
+    output logic [WIDTH-1:0] replay_dout,
+    output logic [OFFSET_WIDTH-1:0] replay_dout_width,
 
     rr_axi_bus_t.slave axi_out,
+
     input logic [AXI_ADDR_WIDTH-1:0] write_buf_addr,
     input logic [AXI_ADDR_WIDTH-1:0] write_buf_size,
     input logic write_buf_update,
 
-    // When there's a buffer overflow, the interrupt will be triggerred
-    output logic interrupt
+    input logic [AXI_ADDR_WIDTH-1:0] read_buf_addr,
+    input logic [AXI_ADDR_WIDTH-1:0] read_buf_size,
+    input logic read_buf_update,
+
+    // When there's a buffer overflow, an interrupt will be triggerred
+    output logic write_interrupt,
+    output logic read_interrupt
 );
 
     localparam NSTAGES = (WIDTH - 1) / AXI_WIDTH + 1;
     localparam EXT_WIDTH = NSTAGES * AXI_WIDTH;
 
+    // To parse one logging unit at a time from the backend storage, here is an
+    // helper function to tell how long a logging unit is.
+    // This function decodes the valid bitmap of logb_valid and aims to finish
+    // LOGB_CHANNEL_CNT constant additions in a cycle.
+    function automatic [OFFSET_WIDTH-1:0] GET_LEN(logic [AXI_WIDTH-1:0] packed_data);
+        logic [LOGB_CHANNEL_CNT-1:0] logb_bitmap;
+        logb_bitmap = packed_data[LOGB_CHANNEL_CNT-1:0];
+        GET_LEN = LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT;
+        for (int i=0; i < LOGB_CHANNEL_CNT; i=i+1)
+            if (logb_bitmap[i])
+                GET_LEN += OFFSET_WIDTH'(CHANNEL_WIDTHS[i]);
+    endfunction
+
     logic [WIDTH-1:0] record_in_fifo_out;
     logic [EXT_WIDTH-1:0] record_in_fifo_out_wrap;
-    logic [OFFSETWIDTH-1:0] record_in_fifo_out_width;
+    logic [OFFSET_WIDTH-1:0] record_in_fifo_out_width;
     logic record_in_fifo_rd_en;
     logic record_in_fifo_full, record_in_fifo_almfull, record_in_fifo_empty;
 
     assign record_in_fifo_out_wrap = EXT_WIDTH'(record_in_fifo_out);
 
     merged_fifo #(
-        .WIDTH(WIDTH+OFFSETWIDTH),
+        .WIDTH(WIDTH+OFFSET_WIDTH),
         .ALMFULL_THRESHOLD(12))
     mfifo_inst_record_in(
         .clk(clk),
@@ -304,69 +332,70 @@ module rr_writeback #(
         .empty(record_out_fifo_empty)
     );
 
-    logic [OFFSETWIDTH-1:0] unhandled_size;
-    logic [AXI_WIDTH-1:0] unhandled [NSTAGES-1:0];
-    logic [AXI_WIDTH-1:0] current_unhandled;
-    logic [OFFSETWIDTH-1:0] current_unhandled_size;
-    logic [AXI_WIDTH*2-1:0] leftover, leftover_next;
-    logic [$clog2(AXI_WIDTH):0] leftover_size;
-    logic [$clog2(NSTAGES):0] curr;
+    logic [OFFSET_WIDTH-1:0] record_unhandled_size;
+    logic [AXI_WIDTH-1:0] record_unhandled [NSTAGES-1:0];
+    logic [AXI_WIDTH-1:0] current_record_unhandled;
+    logic [OFFSET_WIDTH-1:0] current_record_unhandled_size;
+    logic [AXI_WIDTH*2-1:0] record_leftover, record_leftover_next;
+    logic [$clog2(AXI_WIDTH):0] record_leftover_size;
+    logic [$clog2(NSTAGES):0] record_curr;
     logic do_record_finish;
 
-    assign record_in_fifo_rd_en = ~record_in_fifo_empty && ~record_out_fifo_almfull && unhandled_size <= AXI_WIDTH;
+    assign record_in_fifo_rd_en = ~record_in_fifo_empty && ~record_out_fifo_almfull && record_unhandled_size <= AXI_WIDTH;
 
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
-            unhandled_size <= 0;
-            leftover_size <= 0;
-            curr <= NSTAGES;
+            record_unhandled_size <= 0;
+            record_leftover_size <= 0;
+            record_curr <= NSTAGES;
             do_record_finish <= 0;
             record_out_fifo_in <= 0;
             record_out_fifo_wr_en <= 0;
-            current_unhandled_size <= 0;
+            current_record_unhandled_size <= 0;
         end else begin
             if (record_finish) begin
                 do_record_finish <= 1;
             end
 
             if (record_in_fifo_rd_en) begin
-                curr <= 0;
-                unhandled_size <= record_in_fifo_out_width;
+                record_curr <= 0;
+                record_unhandled_size <= record_in_fifo_out_width;
                 for (int i = 0; i < NSTAGES; i++) begin
-                    unhandled[i] <= record_in_fifo_out_wrap[i*AXI_WIDTH+:AXI_WIDTH];
+                    record_unhandled[i] <= record_in_fifo_out_wrap[i*AXI_WIDTH+:AXI_WIDTH];
                 end
-            end else if (curr + 1 <= NSTAGES) begin
-                curr <= curr + 1;
-                if (unhandled_size >= AXI_WIDTH) begin
-                    unhandled_size <= unhandled_size - AXI_WIDTH;
+            end else if (record_curr + 1 <= NSTAGES) begin
+                record_curr <= record_curr + 1;
+                if (record_unhandled_size >= AXI_WIDTH) begin
+                    record_unhandled_size <= record_unhandled_size - AXI_WIDTH;
                 end else begin
-                    unhandled_size <= 0;
+                    record_unhandled_size <= 0;
                 end
             end
 
-            if (unhandled_size >= AXI_WIDTH) begin
-                current_unhandled_size <= AXI_WIDTH;
+            if (record_unhandled_size >= AXI_WIDTH) begin
+                current_record_unhandled_size <= AXI_WIDTH;
             end else begin
-                current_unhandled_size <= unhandled_size;
+                current_record_unhandled_size <= record_unhandled_size;
             end
-            current_unhandled <= unhandled[curr];
+            current_record_unhandled <= record_unhandled[record_curr];
 
-            leftover_next = leftover;
-            leftover_next[leftover_size +: AXI_WIDTH] = current_unhandled;
-            if (leftover_size + current_unhandled_size >= AXI_WIDTH) begin
-                leftover[0 +: AXI_WIDTH] <= leftover_next[AXI_WIDTH +: AXI_WIDTH];
-                leftover_size <= leftover_size + current_unhandled_size - AXI_WIDTH;
-                record_out_fifo_in <= leftover_next[0 +: AXI_WIDTH];
+            record_leftover_next = record_leftover;
+            record_leftover_next[record_leftover_size +: AXI_WIDTH] = current_record_unhandled;
+            if (record_leftover_size + current_record_unhandled_size >= AXI_WIDTH) begin
+                record_leftover[0 +: AXI_WIDTH] <= record_leftover_next[AXI_WIDTH +: AXI_WIDTH];
+                record_leftover_size <= record_leftover_size + current_record_unhandled_size - AXI_WIDTH;
+                record_out_fifo_in <= record_leftover_next[0 +: AXI_WIDTH];
                 record_out_fifo_wr_en <= 1;
             end else if (do_record_finish && record_in_fifo_empty && ~record_din_valid) begin
-                if (leftover_size > 0) begin
+                if (record_leftover_size > 0) begin
                     record_out_fifo_wr_en <= 1;
-                    record_out_fifo_in <= leftover[0 +: AXI_WIDTH];
+                    record_out_fifo_in <= record_leftover[0 +: AXI_WIDTH];
                     do_record_finish <= 0;
+                    record_leftover_size <= 0;
                 end
             end else begin
-                leftover <= leftover_next;
-                leftover_size <= leftover_size + current_unhandled_size;
+                record_leftover <= record_leftover_next;
+                record_leftover_size <= record_leftover_size + current_record_unhandled_size;
                 record_out_fifo_wr_en <= 0;
             end
         end
@@ -380,8 +409,7 @@ module rr_writeback #(
         end
     end
 
-    logic [AXI_ADDR_WIDTH-1:0] write_buf_curr;
-    logic [AXI_ADDR_WIDTH-1:0] write_buf_end;
+    logic [AXI_ADDR_WIDTH-1:0] write_buf_curr, write_buf_end;
     logic write_buf_write_en;
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
@@ -394,7 +422,7 @@ module rr_writeback #(
             write_buf_curr <= write_buf_curr + AXI_WIDTH/8;
         end
 
-        interrupt <= (write_buf_curr == write_buf_end);
+        write_interrupt <= (write_buf_curr == write_buf_end);
     end
 
     logic axi_aw_transmitted, axi_w_transmitted, axi_write_transmitted;
@@ -488,9 +516,7 @@ module rr_writeback #(
     assign axi_out.wstrb = -1;
     assign axi_out.wlast = 1;
 
-    // Read and write response are always ready
     assign axi_out.bready = 1;
-    assign axi_out.rready = 1;
 
 `ifdef WRITEBACK_DEBUG
     // Debugging info for AXI write
@@ -506,5 +532,339 @@ module rr_writeback #(
             $stop;
     end
 `endif
+
+    logic [AXI_WIDTH-1:0] replay_in_fifo_in, replay_in_fifo_out;
+    logic replay_in_fifo_wr_en, replay_in_fifo_rd_en;
+    logic replay_in_fifo_full, replay_in_fifo_almfull, replay_in_fifo_empty;
+
+    merged_fifo #(
+        .WIDTH(AXI_WIDTH),
+        .ALMFULL_THRESHOLD(12))
+    mfifo_inst_replay_in(
+        .clk(clk),
+        .rst(~sync_rst_n),
+        .din(replay_in_fifo_in),
+        .dout(replay_in_fifo_out),
+        .wr_en(replay_in_fifo_wr_en),
+        .rd_en(replay_in_fifo_rd_en),
+        .full(replay_in_fifo_full),
+        .almfull(replay_in_fifo_almfull),
+        .empty(replay_in_fifo_empty)
+    );
+
+    logic [WIDTH-1:0] replay_out_fifo_in, replay_out_fifo_out;
+    logic replay_out_fifo_wr_en, replay_out_fifo_rd_en;
+    logic replay_out_fifo_full, replay_out_fifo_almfull, replay_out_fifo_empty;
+
+    merged_fifo #(
+        .WIDTH(WIDTH+OFFSET_WIDTH),
+        .ALMFULL_THRESHOLD(12))
+    mfifo_inst_replay_out(
+        .clk(clk),
+        .rst(~sync_rst_n),
+        .din(replay_out_fifo_in),
+        .dout(replay_out_fifo_out),
+        .wr_en(replay_out_fifo_wr_en),
+        .rd_en(replay_out_fifo_rd_en),
+        .full(replay_out_fifo_full),
+        .almfull(replay_out_fifo_almfull),
+        .empty(replay_out_fifo_empty)
+    );
+
+    logic [7:0] read_balance;
+    logic axi_ar_transmitted, axi_r_transmitted;
+    logic axi_ar_working;
+    assign axi_ar_transmitted = axi_out.arvalid & axi_out.arready;
+    assign axi_r_transmitted = axi_out.rvalid & axi_out.rready;
+    assign axi_ar_working = axi_out.arvalid & ~axi_out.arready;
+
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            read_balance <= 0;
+        end else begin
+            if (axi_ar_transmitted && replay_in_fifo_rd_en) begin
+                read_balance <= read_balance;
+            end else if (axi_ar_transmitted) begin
+                read_balance <= read_balance + 1;
+            end else if (replay_in_fifo_rd_en) begin
+                read_balance <= read_balance - 1;
+            end
+        end
+    end
+
+    logic [AXI_ADDR_WIDTH-1:0] read_buf_curr, read_buf_end;
+    logic read_buf_read_en;
+    assign read_buf_read_en = axi_out.arvalid & axi_out.arready;
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            read_buf_curr <= 0;
+            read_buf_end <= 0;
+        end else if (read_buf_update) begin
+            read_buf_curr <= read_buf_addr;
+            read_buf_end <= read_buf_addr + read_buf_size;
+        end else if (read_buf_read_en) begin
+            read_buf_curr <= read_buf_curr + AXI_WIDTH/8;
+        end
+
+        read_interrupt <= (read_buf_curr == read_buf_end);
+    end
+
+`ifndef TEST_REPLAY
+    // Read request
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            axi_out.arvalid <= 0;
+        end else begin
+            if (read_balance <= 120) begin
+                axi_out.arvalid <= 1;
+            end else begin
+                axi_out.arvalid <= 0;
+            end
+        end
+    end
+`else
+    assign axi_out.arvalid = 0;
+`endif
+
+    assign axi_out.araddr = read_buf_curr;
+    assign axi_out.arlen = 0;
+    assign axi_out.arid = 0;
+    assign axi_out.arsize = 3'b110;
+    assign axi_out.rready = 1;
+
+    // Read response
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            replay_in_fifo_in <= 0;
+            replay_in_fifo_wr_en <= 0;
+        end else begin
+`ifndef TEST_REPLAY
+            replay_in_fifo_in <= axi_out.rdata;
+            replay_in_fifo_wr_en <= axi_r_transmitted;
+`else
+            replay_in_fifo_in <= record_out_fifo_out;
+            replay_in_fifo_wr_en <= record_out_fifo_rd_en;
+`endif
+        end
+    end
+
+    logic [AXI_WIDTH-1:0] replay_current_in;
+    logic replay_current_in_valid;
+
+    logic [AXI_WIDTH*2-1:0] replay_leftover;
+    logic [AXI_WIDTH*3-1:0] replay_leftover_next_assigned, replay_leftover_next_unassigned;
+    logic [OFFSET_WIDTH-1:0] replay_leftover_size;
+    logic [OFFSET_WIDTH-1:0] replay_total_size, replay_total_size_tmp, replay_total_size_reg;
+    logic [OFFSET_WIDTH-1:0] replay_left_size, replay_left_size_tmp, replay_left_size_reg;
+    logic [OFFSET_WIDTH-1:0] replay_shift_size;
+    logic replay_is_first_packet, replay_leftover_do_step;
+
+    assign replay_current_in = replay_in_fifo_out;
+    assign replay_current_in_valid = replay_in_fifo_rd_en;
+    assign replay_in_fifo_rd_en = ~replay_in_fifo_empty && ~replay_out_fifo_almfull && replay_leftover_do_step;
+
+    // *replay_leftover* should pass output whenever the next output size is less than
+    // the size of the current leftover buffer, i.e., there are enough stuff to output.
+    always_comb begin
+        if (replay_leftover_size > AXI_WIDTH) begin
+            // If leftover size is larger than AXI_WIDTH, we can output anyway.
+            replay_leftover_do_step = 1;
+        end else if (replay_left_size < replay_leftover_size) begin
+            // If leftover size is larger than the size of the remaining bits of the current
+            // transaction, we can always output.
+            replay_leftover_do_step = 1;
+        end else begin
+            // Otherwise, we cannot output anyway. If the size of the remaining bits in the
+            // current transaction is larger than what's remaining in the leftover buffer,
+            // we must wait for more data to be inserted to the leftover buffer, because all
+            // outputs other than the last one in a transaction should have AXI_WIDTH bits.
+            replay_leftover_do_step = 0;
+        end
+    end
+
+    // *replay_total_size* is the number of bits in the whole transaction. It's calculated when
+    // the first few bits of a transaction is decoded, and used until the next transaction.
+    assign replay_total_size_tmp = GET_LEN(replay_leftover[0 +: AXI_WIDTH]);
+    assign replay_total_size = replay_is_first_packet ? replay_total_size_tmp : replay_total_size_reg;
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            replay_total_size_reg <= 0;
+        end else begin
+            if (replay_is_first_packet) begin
+                replay_total_size_reg <= replay_total_size_tmp;
+            end
+        end
+    end
+
+    // *replay_left_size* is the number of bits left in a transaction. When handling the first
+    // packet of a transaction, it equals replay_total_size. Then it is decreased by AXI_WIDTH
+    // until there's nothing left in the packet.
+    assign replay_left_size_tmp = replay_total_size_tmp;
+    assign replay_left_size = replay_is_first_packet ? replay_total_size_tmp : replay_left_size_reg;
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            replay_left_size_reg <= 0;
+        end else begin
+            if (replay_leftover_do_step) begin
+                if (replay_left_size <= AXI_WIDTH) begin
+                    // In this case, replay_left_size_reg is not used, we assign it to 0 to ease
+                    // debugging. We can remove the following line if there's a timing issue.
+                    replay_left_size_reg <= 0;
+                end else begin
+                    replay_left_size_reg <= replay_left_size - AXI_WIDTH;
+                end
+            end
+        end
+    end
+
+    // *replay_shift_size* is the size of the next valid output from *replay_leftover*. The
+    // *replay_leftover* register will be shifted by *replay_shift_size* after/while outputing.
+    // ~replay_leftover_do_step* ensures that there are enough bits to output in *replay_leftover*.
+    always_comb begin
+        if (replay_leftover_do_step) begin
+            if (replay_left_size > AXI_WIDTH) begin
+                replay_shift_size = AXI_WIDTH;
+            end else begin
+                replay_shift_size = replay_left_size;
+            end
+        end else begin
+            // If there are not enough bits for output, we must set it to 0, because this variable
+            // will be used when calculating the value of *replay_is_first_packet*, which is used to
+            // determine whether a new transaction begins (and whether the previous one ends).
+            replay_shift_size = 0;
+        end
+    end
+
+    // *replay_is_first_packet* is determined under the following to facts:
+    // 1. The previous packet is finishing in the current cycle, which means there are
+    //    less than or equal to AXI_WIDTH bits left.
+    // 2. There will be enough bits for width calculation, which means there are more than
+    //    LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT bits in replay_leftover buffer in the next
+    //    cycle.
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            replay_is_first_packet <= 0;
+        end else begin
+            if (replay_left_size <= AXI_WIDTH) begin
+                if (replay_current_in_valid) begin
+                    if (replay_leftover_size + AXI_WIDTH - replay_shift_size >= LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT) begin
+                        replay_is_first_packet <= 1;
+                    end else begin
+                        replay_is_first_packet <= 0;
+                    end
+                end else begin
+                    if (replay_leftover_size - replay_shift_size >= LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT) begin
+                        replay_is_first_packet <= 1;
+                    end else begin
+                        replay_is_first_packet <= 0;
+                    end
+                end
+            end else begin
+                replay_is_first_packet <= 0;
+            end
+        end
+    end
+
+    always_comb begin
+        replay_leftover_next_assigned = replay_leftover;
+        replay_leftover_next_assigned[replay_leftover_size +: AXI_WIDTH] = replay_current_in;
+        replay_leftover_next_unassigned = {AXI_WIDTH'(0), replay_leftover};
+    end
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            replay_leftover_size <= 0;
+        end else begin
+            if (replay_leftover_do_step) begin
+                if (replay_current_in_valid) begin
+                    replay_leftover_size <= replay_leftover_size + AXI_WIDTH - replay_shift_size;
+                    replay_leftover <= replay_leftover_next_assigned[replay_shift_size +: AXI_WIDTH*2];
+                end else begin
+                    replay_leftover_size <= replay_leftover_size - replay_shift_size;
+                    replay_leftover <= replay_leftover_next_unassigned[replay_shift_size +: AXI_WIDTH*2];
+                end
+            end
+        end
+    end
+
+    logic [AXI_WIDTH-1:0] replay_split_out;
+    logic [OFFSET_WIDTH-1:0] replay_split_out_total_size, replay_split_out_total_size_q, replay_split_out_total_size_qq;
+    logic [OFFSET_WIDTH-1:0] replay_split_out_curr_size, replay_split_out_cumulated_size;
+    logic [$clog2(NSTAGES):0] replay_curr;
+    logic replay_out_curr_valid, replay_out_total_valid;
+
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            replay_split_out_total_size <= 0;
+            replay_split_out_total_size_q <= 0;
+            replay_split_out_total_size_qq <= 0;
+            replay_split_out_curr_size <= 0;
+            replay_split_out_cumulated_size <= 0;
+            replay_curr <= 0;
+            replay_out_curr_valid <= 0;
+        end else begin
+            if (replay_is_first_packet && replay_leftover_do_step) begin
+                replay_split_out_total_size <= replay_total_size;
+                replay_split_out_curr_size <= replay_shift_size;
+                replay_split_out_cumulated_size <= 0;
+                replay_curr <= 0;
+            end else if (replay_leftover_do_step) begin
+                replay_split_out_cumulated_size <= replay_split_out_cumulated_size + replay_shift_size;
+                replay_split_out_curr_size <= replay_shift_size;
+                replay_curr <= replay_curr + 1;
+            end
+
+            if (replay_leftover_do_step) begin
+                replay_split_out <= replay_leftover[0 +: AXI_WIDTH];
+                replay_out_curr_valid <= 1;
+            end else begin
+                replay_out_curr_valid <= 0;
+            end
+
+            replay_split_out_total_size_q <= replay_split_out_total_size;
+            replay_split_out_total_size_qq <= replay_split_out_total_size_q;
+        end
+    end
+
+    always_ff @(posedge clk) begin
+        // *replay_split_out_cumulated_size is 1 cycle behind *replay_split_out*, which makes
+        // *replay_out_total_valid* two cycles behind *replay_split_out*.
+        if (replay_split_out_cumulated_size >= replay_split_out_total_size_q) begin
+            replay_out_total_valid <= 1;
+        end else begin
+            replay_out_total_valid <= 0;
+        end
+    end
+    assign replay_out_fifo_wr_en = replay_out_total_valid;
+
+    logic [EXT_WIDTH-1:0] replay_out_fifo_in_wrap;
+    logic [AXI_WIDTH-1:0] replay_handled [NSTAGES-1:0];
+
+    // *replay_out_fifo_in* is 2 cycles behind *replay_split_out*;
+    assign replay_out_fifo_in = {replay_split_out_total_size_qq, WIDTH'(replay_out_fifo_in_wrap)};
+    always_ff @(posedge clk) begin
+        for (int i = 0; i < NSTAGES; i++) begin
+            replay_out_fifo_in_wrap[i*AXI_WIDTH +: AXI_WIDTH] <= replay_handled[i];
+        end
+    end
+
+    // *replay_handled* is 1 cycle behind replay_split_out;
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            for (int i = 0; i < NSTAGES; i++) begin
+                replay_handled[i] <= 0;
+            end
+        end else begin
+            if (replay_out_curr_valid) begin
+                replay_handled[replay_curr] <= replay_split_out;
+            end
+        end
+    end
+
+    always_comb begin
+        replay_dout_valid = ~replay_out_fifo_empty;
+        replay_dout = replay_out_fifo_out[0 +: WIDTH];
+        replay_dout_width = replay_out_fifo_out[WIDTH +: OFFSET_WIDTH];
+        replay_out_fifo_rd_en = replay_dout_valid & replay_dout_ready;
+    end
 
 endmodule
