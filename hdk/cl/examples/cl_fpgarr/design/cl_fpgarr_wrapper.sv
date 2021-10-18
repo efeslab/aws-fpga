@@ -351,7 +351,7 @@ rr_axi_bus_t rr_storage_bus();
 // It can be the bus connected to the shell, or the corresponding replay bus
 ////////////////////////////////////////////////////////////////////////////////
 // I need rr_mode_csr to synchronously arrive at all channels
-lib_pipe #(.DATA_WIDTH($bits(rr_mode_csr_t)), .STAGES(4)) rr_mode_csr_pipe (
+lib_pipe #(.WIDTH($bits(rr_mode_csr_t)), .STAGES(4)) rr_mode_csr_pipe (
   .clk(clk), .rst_n(rstn),
   .in_bus(rr_mode_csr),
   .out_bus(rr_mode_csr_q)

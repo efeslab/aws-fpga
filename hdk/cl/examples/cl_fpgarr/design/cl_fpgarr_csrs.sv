@@ -20,7 +20,7 @@ module rr_csrs (
 
     logic al_aw_transmitted, al_a_transmitted, al_write_transmitted;
     logic al_write_transmitted_q, al_write_transmitted_qq;
-    rr_csr_enum al_addr, al_addr_q;
+    logic [RR_CSR_ADDR_WIDTH-1:0] al_addr, al_addr_q;
     logic [31:0] al_data, csr_reg;
     logic [31:0] al_strb_ext;
     logic al_aw_handled, al_w_handled;
@@ -65,7 +65,7 @@ module rr_csrs (
                 // the 32-bit addresses address 32-bit, or 4-byte registers
                 // Since we use aligned addresses for csr, the lower 2 bit of
                 // the address will always be 0 thus not part of the csr index.
-                al_addr <= rr_cfg_bus.awaddr[2 +: RR_CSR_WIDTH];
+                al_addr <= rr_cfg_bus.awaddr[2 +: RR_CSR_ADDR_WIDTH];
             end
             if (al_w_transmitted) begin
                 al_data <= rr_cfg_bus.wdata;

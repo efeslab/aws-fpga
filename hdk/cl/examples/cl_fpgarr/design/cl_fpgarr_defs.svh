@@ -221,8 +221,8 @@ parameter RR_CHANNEL_WIDTH_BITS=32;
 // RR CSRS
 
 parameter int RR_CSR_CNT = 16;
-parameter int RR_CSR_WIDTH = $clog2(RR_CSR_CNT);
-typedef enum bit [RR_CSR_WIDTH-1:0] {
+parameter int RR_CSR_ADDR_WIDTH = $clog2(RR_CSR_CNT);
+typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
   BUF_ADDR_HI,       // 0
   BUF_ADDR_LO,       // 1
   BUF_SIZE_HI,       // 2
