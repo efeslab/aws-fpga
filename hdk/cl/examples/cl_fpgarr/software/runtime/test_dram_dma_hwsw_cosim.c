@@ -34,6 +34,7 @@
 #endif
 
 #include "test_dram_dma_common.h"
+#include "cl_fpgarr.h"
 
 #define MEM_16G              (1ULL << 34)
 
@@ -170,11 +171,12 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     uint64_t trace_buffer_size_lo = 0x1000000;
 
     // configure csrs via rr_cfg_bus
-    cl_poke_bar1(0x100000, trace_buffer_hi);
-    cl_poke_bar1(0x100004, trace_buffer_lo);
-    cl_poke_bar1(0x100008, trace_buffer_size_hi);
-    cl_poke_bar1(0x10000c, trace_buffer_size_lo);
-    cl_poke_bar1(0x100010, 1);
+    cl_poke_bar1(RR_CSR_ADDR(BUF_ADDR_HI), trace_buffer_hi);
+    cl_poke_bar1(RR_CSR_ADDR(BUF_ADDR_LO), trace_buffer_lo);
+    cl_poke_bar1(RR_CSR_ADDR(BUF_SIZE_HI), trace_buffer_size_hi);
+    cl_poke_bar1(RR_CSR_ADDR(BUF_SIZE_LO), trace_buffer_size_lo);
+    cl_poke_bar1(RR_CSR_ADDR(BUF_UPDATE), 1);
+    cl_poke_bar1(RR_CSR_ADDR(RR_MODE), 0x1); // 0b001
 
     //init_ddr();
     deselect_atg_hw();
@@ -190,9 +192,9 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     cl_poke_ocl(0x02c,0x5);
     //cl_poke_ocl(0x008,0x1);
     //sv_pause(500);
-    for (uint8_t i = 0; i < 100; ++i) {
-        printf("[%p]=%#x\n", host_mem+i, host_memory_getc(host_mem+i));
-    }
+    //for (uint8_t i = 0; i < 100; ++i) {
+    //    printf("[%p]=%#x\n", host_mem+i, host_memory_getc(host_mem+i));
+    //}
     rc = 0;
 #endif
 
