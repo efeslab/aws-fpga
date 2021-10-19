@@ -95,6 +95,7 @@ ${CL_ROOT}/design/cl_fpgarr_tracedecoder.sv
 ${CL_ROOT}/design/cl_fpgarr_chgrouping.sv
 ${CL_ROOT}/design/cl_fpgarr_rr_sel.sv
 ${CL_ROOT}/design/cl_fpgarr_rt_loge_crossbar.sv
+${CL_ROOT}/design/merged_fifo.sv
 
 # start of rr_pcim_axi_interconnect
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/sim/rr_pcim_axi_interconnect.v
