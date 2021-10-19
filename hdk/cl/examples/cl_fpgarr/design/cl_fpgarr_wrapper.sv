@@ -232,7 +232,7 @@ rr_packed2writeback_bus wb_inst(
 ////////////////////////////////////////////////////////////////////////////////
 // Unpack the replay bus
 ////////////////////////////////////////////////////////////////////////////////
-localparam REPLAY_NLOGE = unpacked_record_bus.LOGE_CHANNEL_CNT;
+parameter int REPLAY_NLOGE = LOGE_PER_AXI * AWSF1_NUM_INTERFACES;
 // Declare the rr_replay_bus for all channels
 `AXI_SLV_REPLAY_BUS(rr_pcim_replay_bus, REPLAY_NLOGE);
 `AXI_MSTR_REPLAY_BUS(rr_dma_pcis_replay_bus, REPLAY_NLOGE);

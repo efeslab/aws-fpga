@@ -121,9 +121,6 @@ generate
            LOGB_CHANNEL_CNT, LOGE_CHANNEL_CNT,
            "logb_data W%d, packed_replay_bus W%d\n",
            FULL_WIDTH, packed_replay_bus.FULL_WIDTH);
-  if (LOGE_CHANNEL_CNT != packed_replay_bus.LOGE_CHANNEL_CNT)
-    $error("LOGE_CHANNEL_CNT mismatch: replay_bus %d, packed replay_bus %d\n",
-      LOGE_CHANNEL_CNT, packed_replay_bus.LOGE_CHANNEL_CNT);
 endgenerate
 
 ////////////////////////////////////////////////////////////////////////////////
