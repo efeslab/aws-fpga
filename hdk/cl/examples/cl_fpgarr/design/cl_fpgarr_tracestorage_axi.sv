@@ -6,7 +6,7 @@
 // It may consume logging data in the record mode, or producing logging data in
 // the replay mode. In both mode, it uses the rr_stream_bus_t interface.
 // This module is offloaded to mjc to implement
-// The parameter CHANNEL_WIDTHS should be the shuffled one
+// The parameter CHANNEL_WIDTHS is the original one instead of the shuffled one
 module rr_storage_backend_axi #(
   parameter int LOGB_CHANNEL_CNT,
   parameter bit [LOGB_CHANNEL_CNT-1:0]
@@ -32,10 +32,20 @@ function automatic int GET_FULL_WIDTH;
 endfunction
 localparam FULL_WIDTH = GET_FULL_WIDTH();
 localparam OFFSET_WIDTH = $clog2(FULL_WIDTH+1);
+
 // To parse one logging unit at a time from the backend storage, here is an
 // helper function to tell how long a logging unit is.
 // This function decodes the valid bitmap of logb_valid and aims to finish
 // LOGB_CHANNEL_CNT constant additions in a cycle.
+// The SHUFFLE_PLAN is used here to reorder CHANNEL_WIDTHS
+function automatic bit [LOGB_CHANNEL_CNT-1:0]
+  [RR_CHANNEL_WIDTH_BITS-1:0] GET_SHUFFLED_CHANNEL_WIDTHS();
+  for (int i=0; i < LOGB_CHANNEL_CNT; i=i+1) begin
+    GET_SHUFFLED_CHANNEL_WIDTHS[i] = CHANNEL_WIDTHS[SHUFFLE_PLAN[i][0]];
+  end
+endfunction
+localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
+  SHUFFLED_CHANNEL_WIDTHS = GET_SHUFFLED_CHANNEL_WIDTHS();
 function automatic [OFFSET_WIDTH-1:0] GET_LEN
   (logic [FULL_WIDTH-1:0] packed_data);
   logic [LOGB_CHANNEL_CNT-1:0] logb_bitmap;
@@ -43,7 +53,7 @@ function automatic [OFFSET_WIDTH-1:0] GET_LEN
   GET_LEN = LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT;
   for (int i=0; i < LOGB_CHANNEL_CNT; i=i+1)
     if (logb_bitmap[i])
-      GET_LEN += OFFSET_WIDTH'(CHANNEL_WIDTHS[i]);
+      GET_LEN += OFFSET_WIDTH'(SHUFFLED_CHANNEL_WIDTHS[i]);
 endfunction
 
 // parameter check
