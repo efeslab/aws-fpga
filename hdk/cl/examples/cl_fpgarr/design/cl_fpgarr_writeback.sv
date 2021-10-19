@@ -552,7 +552,7 @@ module rr_writeback #(
         .empty(replay_in_fifo_empty)
     );
 
-    logic [WIDTH-1:0] replay_out_fifo_in, replay_out_fifo_out;
+    logic [OFFSET_WIDTH+WIDTH-1:0] replay_out_fifo_in, replay_out_fifo_out;
     logic replay_out_fifo_wr_en, replay_out_fifo_rd_en;
     logic replay_out_fifo_full, replay_out_fifo_almfull, replay_out_fifo_empty;
 
@@ -670,7 +670,7 @@ module rr_writeback #(
         if (replay_leftover_size > AXI_WIDTH) begin
             // If leftover size is larger than AXI_WIDTH, we can output anyway.
             replay_leftover_do_step = 1;
-        end else if (replay_left_size <= replay_leftover_size) begin
+        end else if (replay_left_size <= replay_leftover_size && replay_leftover_size > 0) begin
             // If leftover size is larger than the size of the remaining bits of the current
             // transaction, we can always output.
             replay_leftover_do_step = 1;
