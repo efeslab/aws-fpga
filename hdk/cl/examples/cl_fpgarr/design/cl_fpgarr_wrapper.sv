@@ -405,7 +405,7 @@ rr_stream_bus_t #(.FULL_WIDTH(record_bus.FULL_WIDTH)) packed_replay_bus();
 
 rr_storage_backend_axi #(
   .LOGB_CHANNEL_CNT(unpacked_record_bus.LOGB_CHANNEL_CNT),
-  .CHANNEL_WIDTHS(top_group.SHUFFLED_CHANNEL_WIDTHS),
+  .CHANNEL_WIDTHS(unpacked_record_bus.CHANNEL_WIDTHS),
   .LOGE_CHANNEL_CNT(unpacked_record_bus.LOGE_CHANNEL_CNT)
 ) trace_storage (
   .clk(clk), .rstn(rstn),
