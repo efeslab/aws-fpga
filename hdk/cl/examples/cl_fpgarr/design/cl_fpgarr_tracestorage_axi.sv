@@ -87,7 +87,11 @@ rr_writeback #(
   .write_buf_addr(csr.write_buf_addr),
   .write_buf_size(csr.write_buf_size),
   .write_buf_update(csr.write_buf_update),
-  .interrupt()
+  .read_buf_addr(csr.write_buf_addr),
+  .read_buf_size(csr.write_buf_size),
+  .read_buf_update(csr.write_buf_update),
+  .write_interrupt(),
+  .read_interrupt()
 );
 
 `ifdef WRITEBACK_DEBUG
