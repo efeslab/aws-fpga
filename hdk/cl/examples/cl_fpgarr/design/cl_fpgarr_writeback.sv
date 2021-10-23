@@ -202,6 +202,16 @@ module rr_storage_pcim_axi_interconnect (
 );
 endmodule
 
+/* idea to optimize replay timing/resource
+ * Two buffers: shifting buffer and output buffer
+ * shifting buffer: [2*AXI_WIDTH], say hi and lo part. perform two operations
+ *   1. send [k +: AXI_WIDTH] to the output buffer
+ *   2. Move [AXI_WIDTH +: AXI_WIDTH] to [0 +: AXI_WIDTH]
+ * output buffer: [FULL_WIDTH], only get assigned aligned to AXI_WIDTH
+ *   Wait for the whole replay unit to be ready, receive data from the shifting
+ *   buffer and put it to [i*AXI_WIDTH +: AXI_WIDTH], i = [0..2]
+ */
+
 /*
  * A better structure in my mind.
  * Summary of the requirement:
