@@ -670,7 +670,7 @@ module rr_writeback #(
         if (replay_leftover_size > AXI_WIDTH) begin
             // If leftover size is larger than AXI_WIDTH, we can output anyway.
             replay_leftover_do_step = 1;
-        end else if (replay_left_size <= replay_leftover_size && replay_leftover_size > 0) begin
+        end else if (replay_left_size <= replay_leftover_size && replay_left_size > 0) begin
             // If leftover size is larger than the size of the remaining bits of the current
             // transaction, we can always output.
             replay_leftover_do_step = 1;
@@ -775,7 +775,7 @@ module rr_writeback #(
         if (~sync_rst_n) begin
             replay_leftover_size <= 0;
         end else begin
-            if (replay_leftover_do_step) begin
+            if (replay_leftover_do_step || replay_current_in_valid) begin
                 if (replay_current_in_valid) begin
                     replay_leftover_size <= replay_leftover_size + AXI_WIDTH - replay_shift_size;
                     replay_leftover <= replay_leftover_next_assigned[replay_shift_size +: AXI_WIDTH*2];
@@ -791,7 +791,7 @@ module rr_writeback #(
     logic [OFFSET_WIDTH-1:0] replay_split_out_total_size, replay_split_out_total_size_q, replay_split_out_total_size_qq;
     logic [OFFSET_WIDTH-1:0] replay_split_out_curr_size, replay_split_out_cumulated_size;
     logic [$clog2(NSTAGES):0] replay_curr;
-    logic replay_out_curr_valid, replay_out_total_valid;
+    logic replay_out_curr_valid, replay_out_total_valid, replay_out_total_valid_q;
 
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
@@ -827,15 +827,21 @@ module rr_writeback #(
     end
 
     always_ff @(posedge clk) begin
-        // *replay_split_out_cumulated_size is 1 cycle behind *replay_split_out*, which makes
-        // *replay_out_total_valid* two cycles behind *replay_split_out*.
-        if (replay_split_out_cumulated_size >= replay_split_out_total_size_q) begin
-            replay_out_total_valid <= 1;
-        end else begin
+        if (~sync_rst_n) begin
             replay_out_total_valid <= 0;
+            replay_out_total_valid_q <= 0;
+        end else begin
+            if (replay_split_out_total_size > 0 && replay_out_curr_valid &&
+                replay_split_out_cumulated_size + replay_split_out_curr_size >= replay_split_out_total_size) begin
+                replay_out_total_valid <= 1;
+            end else begin
+                replay_out_total_valid <= 0;
+            end
+
+            replay_out_total_valid_q <= replay_out_total_valid;
         end
     end
-    assign replay_out_fifo_wr_en = replay_out_total_valid;
+    assign replay_out_fifo_wr_en = replay_out_total_valid_q;
 
     logic [EXT_WIDTH-1:0] replay_out_fifo_in_wrap;
     logic [AXI_WIDTH-1:0] replay_handled [NSTAGES-1:0];
