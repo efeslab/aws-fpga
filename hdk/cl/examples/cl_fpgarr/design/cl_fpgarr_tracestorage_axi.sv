@@ -86,7 +86,7 @@ rr_writeback #(
   .replay_dout_valid(replay_bus.valid),
   .replay_dout_ready(replay_bus.ready),
   .replay_dout(replay_bus.data),
-  .replay_dout(),
+  .replay_dout_width(replay_bus.len),
   .axi_out(storage_backend_bus),
   .write_buf_addr(csr.write_buf_addr),
   .write_buf_size(csr.write_buf_size),
@@ -102,6 +102,8 @@ rr_writeback #(
 always_ff @(posedge clk) begin
     if (record_bus.valid & record_bus.ready)
         $display("[record_bus]: width\t%d\tcalculated width\t%d\tdata\t%x", record_bus.len, GET_LEN(record_bus.data), record_bus.data);
+    if (replay_bus.valid & replay_bus.ready)
+        $display("[replay_bus]: width\t%d\tcalculated width\t%d\tdata\t%x", replay_bus.len, GET_LEN(replay_bus.data), replay_bus.data);
 end
 `endif
 
