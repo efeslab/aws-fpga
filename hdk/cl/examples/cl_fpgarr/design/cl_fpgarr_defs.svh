@@ -223,13 +223,15 @@ parameter RR_CHANNEL_WIDTH_BITS=32;
 parameter int RR_CSR_CNT = 16;
 parameter int RR_CSR_ADDR_WIDTH = $clog2(RR_CSR_CNT);
 typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
-  BUF_ADDR_HI,       // 0
-  BUF_ADDR_LO,       // 1
-  BUF_SIZE_HI,       // 2
-  BUF_SIZE_LO,       // 3
-  BUF_UPDATE,        // 4
-  FORCE_FINISH,      // 5
-  RR_MODE,           // 6
+  BUF_ADDR_HI,              // 0
+  BUF_ADDR_LO,              // 1
+  BUF_SIZE_HI,              // 2
+  BUF_SIZE_LO,              // 3
+  WRITE_BUF_UPDATE,         // 4
+  READ_BUF_UPDATE,          // 5
+  RECORD_FORCE_FINISH,      // 6
+  REPLAY_START,             // 7, currently not used
+  RR_MODE,                  // 8
   RR_CSR_LAST_DONT_USE = RR_CSR_CNT - 1
 } rr_csr_enum;
 `define RR_CSR_ADDR(idx) (idx << 2)

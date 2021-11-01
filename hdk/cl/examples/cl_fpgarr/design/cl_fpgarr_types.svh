@@ -195,10 +195,12 @@ parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
     .LOGE_CHANNEL_CNT(NLOGE)) name()
 
 typedef struct packed {
-  logic [63:0] write_buf_addr;
-  logic [63:0] write_buf_size;
+  logic [63:0] buf_addr;
+  logic [63:0] buf_size;
   logic write_buf_update;
   logic record_force_finish;
+  logic read_buf_update;
+  // logic replay_start;
 } storage_axi_csr_t;
 
 // rr_mode_csr_t is a interpretation of the RR_MODE csr

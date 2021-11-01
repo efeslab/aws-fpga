@@ -8,14 +8,6 @@ module rr_csrs (
     output rr_mode_csr_t rr_mode_csr
 );
 
-    // Address Map:
-    // 0x000000 --> BUF_ADDR_HI
-    // 0x000004 --> BUF_ADDR_LO
-    // 0x000008 --> BUF_SIZE_HI
-    // 0x00000C --> BUF_SIZE_LO
-    // 0x000010 --> BUF_UPDATE
-    // 0x000014 --> FORCE_FINISH
-
     logic [31:0] csrs [RR_CSR_CNT-1:0];
 
     logic al_aw_transmitted, al_a_transmitted, al_write_transmitted;
@@ -146,10 +138,12 @@ module rr_csrs (
     end
 
     assign storage_axi_csr = '{
-        write_buf_addr: {csrs[BUF_ADDR_HI], csrs[BUF_ADDR_LO]},
-        write_buf_size: {csrs[BUF_SIZE_HI], csrs[BUF_SIZE_LO]},
-        write_buf_update: al_write_transmitted_q && (al_addr == BUF_UPDATE),
-        record_force_finish: al_write_transmitted_q && (al_addr == FORCE_FINISH)
+        buf_addr: {csrs[BUF_ADDR_HI], csrs[BUF_ADDR_LO]},
+        buf_size: {csrs[BUF_SIZE_HI], csrs[BUF_SIZE_LO]},
+        write_buf_update: al_write_transmitted_q && (al_addr == WRITE_BUF_UPDATE),
+        read_buf_update: al_write_transmitted_q && (al_addr == READ_BUF_UPDATE),
+        record_force_finish: al_write_transmitted_q && (al_addr == RECORD_FORCE_FINISH)
+        // replay_start: al_write_transmitted_q && (al_addr == REPLAY_START)
     };
     
     assign rr_mode_csr = '{

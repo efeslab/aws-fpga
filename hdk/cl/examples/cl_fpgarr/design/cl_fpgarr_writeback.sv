@@ -508,7 +508,7 @@ module rr_writeback #(
     logic [15:0] tid;
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
-            tid <= 0;
+            tid <= 1;
         end else begin
             if (axi_write_transmitted) begin
                 tid <= tid + 1;
@@ -604,6 +604,7 @@ module rr_writeback #(
 
     logic [AXI_ADDR_WIDTH-1:0] read_buf_curr, read_buf_end;
     logic read_buf_read_en;
+    logic do_replay;
     assign read_buf_read_en = axi_out.arvalid & axi_out.arready;
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
@@ -618,13 +619,22 @@ module rr_writeback #(
 
         read_interrupt <= (read_buf_curr == read_buf_end);
     end
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            do_replay <= 0;
+        end else if (read_buf_update) begin
+            do_replay <= 1;
+        end else if (read_buf_curr == read_buf_end) begin
+            do_replay <= 0;
+        end
+    end
 
 `ifndef TEST_REPLAY
     // Read request
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
             axi_out.arvalid <= 0;
-        end else begin
+        end else if (do_replay) begin
             if (read_balance <= 120) begin
                 axi_out.arvalid <= 1;
             end else begin
