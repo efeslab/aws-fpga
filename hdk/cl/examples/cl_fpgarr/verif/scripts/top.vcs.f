@@ -115,4 +115,3 @@ ${CL_ROOT}/design/cl_fpgarr_wrapper.sv
 ${TEST_NAME}
 
 +define+WRITEBACK_DEBUG
-+define+TEST_REPLAY
