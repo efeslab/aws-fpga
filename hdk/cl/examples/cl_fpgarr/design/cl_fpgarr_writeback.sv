@@ -240,7 +240,7 @@ module rr_trace_rw #(
     parameter int LOGB_CHANNEL_CNT = 25,
     parameter int LOGE_CHANNEL_CNT = 25,
     parameter bit [LOGB_CHANNEL_CNT-1:0]
-      [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS) (
+      [RR_CHANNEL_WIDTH_BITS-1:0] SHUFFLED_CHANNEL_WIDTHS) (
     input clk,
     input sync_rst_n,
     // cfg_max_payload: see https://github.com/aws/aws-fpga/blob/master/hdk/docs/AWS_Shell_Interface_Specification.md#pcim-interface----axi-4-for-outbound-pcie-transactions-cl-is-master-shell-is-slave-512-bit
@@ -305,8 +305,7 @@ module rr_trace_rw #(
         .OFFSET_WIDTH(OFFSET_WIDTH),
         .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH),
         .LOGB_CHANNEL_CNT(LOGB_CHANNEL_CNT),
-        .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
-        .CHANNEL_WIDTHS(CHANNEL_WIDTHS))
+        .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT))
     trace_merge(
         .clk(clk),
         .sync_rst_n(sync_rst_n),
@@ -611,7 +610,7 @@ module rr_trace_rw #(
         .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH),
         .LOGB_CHANNEL_CNT(LOGB_CHANNEL_CNT),
         .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
-        .CHANNEL_WIDTHS(CHANNEL_WIDTHS))
+        .SHUFFLED_CHANNEL_WIDTHS(SHUFFLED_CHANNEL_WIDTHS))
     trace_split(
         .clk(clk),
         .sync_rst_n(sync_rst_n),
@@ -634,9 +633,7 @@ module rr_trace_merge #(
     parameter OFFSET_WIDTH = 32,
     parameter AXI_ADDR_WIDTH = 64,
     parameter int LOGB_CHANNEL_CNT = 25,
-    parameter int LOGE_CHANNEL_CNT = 25,
-    parameter bit [LOGB_CHANNEL_CNT-1:0]
-      [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS) (
+    parameter int LOGE_CHANNEL_CNT = 25) (
     input clk,
     input sync_rst_n,
 
@@ -754,7 +751,7 @@ module rr_trace_split #(
     parameter int LOGB_CHANNEL_CNT = 25,
     parameter int LOGE_CHANNEL_CNT = 25,
     parameter bit [LOGB_CHANNEL_CNT-1:0]
-      [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS) (
+      [RR_CHANNEL_WIDTH_BITS-1:0] SHUFFLED_CHANNEL_WIDTHS) (
     input clk,
     input sync_rst_n,
 
@@ -773,29 +770,11 @@ module rr_trace_split #(
 
     localparam NSTAGES = (WIDTH - 1) / AXI_WIDTH + 1;
     localparam EXT_WIDTH = NSTAGES * AXI_WIDTH;
-
-    // To parse one logging unit at a time from the backend storage, here is an
-    // helper function to tell how long a logging unit is.
-    // This function decodes the valid bitmap of logb_valid and aims to finish
-    // LOGB_CHANNEL_CNT constant additions in a cycle.
-    // The SHUFFLE_PLAN is used here to reorder CHANNEL_WIDTHS
-    function automatic bit [LOGB_CHANNEL_CNT-1:0]
-      [RR_CHANNEL_WIDTH_BITS-1:0] GET_SHUFFLED_CHANNEL_WIDTHS();
-      for (int i=0; i < LOGB_CHANNEL_CNT; i=i+1) begin
-        GET_SHUFFLED_CHANNEL_WIDTHS[i] = CHANNEL_WIDTHS[SHUFFLE_PLAN[i][0]];
-      end
-    endfunction
-    localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
-      SHUFFLED_CHANNEL_WIDTHS = GET_SHUFFLED_CHANNEL_WIDTHS();
-    function automatic [OFFSET_WIDTH-1:0] GET_LEN
-      (logic [WIDTH-1:0] packed_data);
-      logic [LOGB_CHANNEL_CNT-1:0] logb_bitmap;
-      logb_bitmap = packed_data[LOGB_CHANNEL_CNT-1:0];
-      GET_LEN = LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT;
-      for (int i=0; i < LOGB_CHANNEL_CNT; i=i+1)
-        if (logb_bitmap[i])
-          GET_LEN += OFFSET_WIDTH'(SHUFFLED_CHANNEL_WIDTHS[i]);
-    endfunction
+      
+    `DEF_SUM_WIDTH(GET_FULL_WIDTH, SHUFFLED_CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
+    localparam FULL_WIDTH = GET_FULL_WIDTH() + LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT;
+    `DEF_GET_LEN(GET_LEN, LOGB_CHANNEL_CNT, $clog2(FULL_WIDTH+1),
+       SHUFFLED_CHANNEL_WIDTHS)
 
     logic [AXI_WIDTH-1:0] replay_current_in;
     logic replay_current_in_valid;
@@ -834,7 +813,7 @@ module rr_trace_split #(
 
     // *replay_total_size* is the number of bits in the whole transaction. It's calculated when
     // the first few bits of a transaction is decoded, and used until the next transaction.
-    assign replay_total_size_tmp = GET_LEN(replay_leftover[0 +: AXI_WIDTH]);
+    assign replay_total_size_tmp = GET_LEN(replay_leftover[0 +: LOGB_CHANNEL_CNT]);
     assign replay_total_size = replay_is_first_packet ? replay_total_size_tmp : replay_total_size_reg;
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin

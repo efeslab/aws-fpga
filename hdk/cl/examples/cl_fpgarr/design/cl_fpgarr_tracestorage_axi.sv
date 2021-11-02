@@ -21,23 +21,6 @@ module rr_storage_backend_axi #(
   input storage_axi_csr_t csr
 );
 
-// rr_steam_bus_t, packed data structure, LSB to MSB:
-// logb_valid, loge_valid, packed_logb_data
-function automatic int GET_FULL_WIDTH;
-   GET_FULL_WIDTH = 0;
-   for (int i=0; i < LOGB_CHANNEL_CNT; ++i)
-      GET_FULL_WIDTH += CHANNEL_WIDTHS[i];
-   GET_FULL_WIDTH += LOGB_CHANNEL_CNT;
-   GET_FULL_WIDTH += LOGE_CHANNEL_CNT;
-endfunction
-localparam FULL_WIDTH = GET_FULL_WIDTH();
-localparam OFFSET_WIDTH = $clog2(FULL_WIDTH+1);
-
-// To parse one logging unit at a time from the backend storage, here is an
-// helper function to tell how long a logging unit is.
-// This function decodes the valid bitmap of logb_valid and aims to finish
-// LOGB_CHANNEL_CNT constant additions in a cycle.
-// The SHUFFLE_PLAN is used here to reorder CHANNEL_WIDTHS
 function automatic bit [LOGB_CHANNEL_CNT-1:0]
   [RR_CHANNEL_WIDTH_BITS-1:0] GET_SHUFFLED_CHANNEL_WIDTHS();
   for (int i=0; i < LOGB_CHANNEL_CNT; i=i+1) begin
@@ -46,15 +29,19 @@ function automatic bit [LOGB_CHANNEL_CNT-1:0]
 endfunction
 localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
   SHUFFLED_CHANNEL_WIDTHS = GET_SHUFFLED_CHANNEL_WIDTHS();
-function automatic [OFFSET_WIDTH-1:0] GET_LEN
-  (logic [FULL_WIDTH-1:0] packed_data);
-  logic [LOGB_CHANNEL_CNT-1:0] logb_bitmap;
-  logb_bitmap = packed_data[LOGB_CHANNEL_CNT-1:0];
-  GET_LEN = LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT;
-  for (int i=0; i < LOGB_CHANNEL_CNT; i=i+1)
-    if (logb_bitmap[i])
-      GET_LEN += OFFSET_WIDTH'(SHUFFLED_CHANNEL_WIDTHS[i]);
-endfunction
+
+// rr_steam_bus_t, packed data structure, LSB to MSB:
+// logb_valid, loge_valid, packed_logb_data
+`DEF_SUM_WIDTH(GET_FULL_WIDTH, SHUFFLED_CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
+localparam FULL_WIDTH = GET_FULL_WIDTH() + LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT;
+localparam OFFSET_WIDTH = $clog2(FULL_WIDTH+1);
+
+// To parse one logging unit at a time from the backend storage, here is an
+// helper function to tell how long a logging unit is.
+// This function decodes the valid bitmap of logb_valid and aims to finish
+// LOGB_CHANNEL_CNT constant additions in a cycle.
+`DEF_GET_LEN(GET_LEN, LOGB_CHANNEL_CNT, OFFSET_WIDTH,
+  SHUFFLED_CHANNEL_WIDTHS)
 
 // parameter check
 generate
@@ -73,7 +60,7 @@ rr_trace_rw #(
   .AXI_ADDR_WIDTH(64),
   .LOGB_CHANNEL_CNT(LOGB_CHANNEL_CNT),
   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
-  .CHANNEL_WIDTHS(CHANNEL_WIDTHS)
+  .SHUFFLED_CHANNEL_WIDTHS(SHUFFLED_CHANNEL_WIDTHS)
 ) trace_rw (
   .clk(clk),
   .sync_rst_n(rstn),
@@ -101,9 +88,9 @@ rr_trace_rw #(
 `ifdef WRITEBACK_DEBUG
 always_ff @(posedge clk) begin
     if (record_bus.valid & record_bus.ready)
-        $display("[record_bus]: width\t%d\tcalculated width\t%d\tdata\t%x", record_bus.len, GET_LEN(record_bus.data), record_bus.data);
+        $display("[record_bus]: width\t%d\tcalculated width\t%d\tdata\t%x", record_bus.len, GET_LEN(record_bus.data[0 +: LOGB_CHANNEL_CNT]), record_bus.data);
     if (replay_bus.valid & replay_bus.ready)
-        $display("[replay_bus]: width\t%d\tcalculated width\t%d\tdata\t%x", replay_bus.len, GET_LEN(replay_bus.data), replay_bus.data);
+        $display("[replay_bus]: width\t%d\tcalculated width\t%d\tdata\t%x", replay_bus.len, GET_LEN(replay_bus.data[0 +: LOGB_CHANNEL_CNT]), replay_bus.data);
 end
 `endif
 

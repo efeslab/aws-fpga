@@ -40,6 +40,22 @@ parameter RR_CHANNEL_WIDTH_BITS=32;
       fname += aname[i];                                                       \
   endfunction
 
+// This is to reuse the function definition of getting the total length of
+// a logging unit (fixed-length logb plus loge, and variable-length logb data)
+// This is mainly used to parse one logging unit at a time from the backend
+// storage This helper function can tell how long a logging unit is.
+//
+// This function decodes the valid bitmap of logb_valid and aims to finish
+// LOGB_CHANNEL_CNT constant additions in a cycle.
+`define DEF_GET_LEN(fname, LOGB_CHANNEL_CNT, OFFSET_WIDTH, CHANNEL_WIDTHS)     \
+function automatic [OFFSET_WIDTH-1:0] fname                                    \
+  (logic [LOGB_CHANNEL_CNT-1:0] logb_bitmap);                                  \
+  fname = LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT;                                 \
+  for (int i=0; i < LOGB_CHANNEL_CNT; i=i+1)                                   \
+    if (logb_bitmap[i])                                                        \
+      fname += OFFSET_WIDTH'(CHANNEL_WIDTHS[i]);                               \
+endfunction
+
 // macro utility to connect verilog wire signals to systemverilog interfaces
 // b for bus, m for master, s for slave
 // bus signals are accessed via `b.Xvalid`
