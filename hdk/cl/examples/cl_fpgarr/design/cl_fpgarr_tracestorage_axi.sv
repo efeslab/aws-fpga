@@ -66,7 +66,7 @@ generate
       FULL_WIDTH, replay_bus.FULL_WIDTH);
 endgenerate
 
-rr_writeback #(
+rr_trace_rw #(
   .WIDTH(record_bus.FULL_WIDTH),
   .AXI_WIDTH(512),
   .OFFSET_WIDTH(16),
@@ -74,7 +74,7 @@ rr_writeback #(
   .LOGB_CHANNEL_CNT(LOGB_CHANNEL_CNT),
   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
   .CHANNEL_WIDTHS(CHANNEL_WIDTHS)
-) writeback (
+) trace_rw (
   .clk(clk),
   .sync_rst_n(rstn),
   .cfg_max_payload(0),
