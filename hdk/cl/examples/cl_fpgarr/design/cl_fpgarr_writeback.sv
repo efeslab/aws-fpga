@@ -778,13 +778,23 @@ module rr_trace_split #(
     // helper function to tell how long a logging unit is.
     // This function decodes the valid bitmap of logb_valid and aims to finish
     // LOGB_CHANNEL_CNT constant additions in a cycle.
-    function automatic [OFFSET_WIDTH-1:0] GET_LEN(logic [AXI_WIDTH-1:0] packed_data);
-        logic [LOGB_CHANNEL_CNT-1:0] logb_bitmap;
-        logb_bitmap = packed_data[LOGB_CHANNEL_CNT-1:0];
-        GET_LEN = LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT;
-        for (int i=0; i < LOGB_CHANNEL_CNT; i=i+1)
-            if (logb_bitmap[i])
-                GET_LEN += OFFSET_WIDTH'(CHANNEL_WIDTHS[i]);
+    // The SHUFFLE_PLAN is used here to reorder CHANNEL_WIDTHS
+    function automatic bit [LOGB_CHANNEL_CNT-1:0]
+      [RR_CHANNEL_WIDTH_BITS-1:0] GET_SHUFFLED_CHANNEL_WIDTHS();
+      for (int i=0; i < LOGB_CHANNEL_CNT; i=i+1) begin
+        GET_SHUFFLED_CHANNEL_WIDTHS[i] = CHANNEL_WIDTHS[SHUFFLE_PLAN[i][0]];
+      end
+    endfunction
+    localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
+      SHUFFLED_CHANNEL_WIDTHS = GET_SHUFFLED_CHANNEL_WIDTHS();
+    function automatic [OFFSET_WIDTH-1:0] GET_LEN
+      (logic [WIDTH-1:0] packed_data);
+      logic [LOGB_CHANNEL_CNT-1:0] logb_bitmap;
+      logb_bitmap = packed_data[LOGB_CHANNEL_CNT-1:0];
+      GET_LEN = LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT;
+      for (int i=0; i < LOGB_CHANNEL_CNT; i=i+1)
+        if (logb_bitmap[i])
+          GET_LEN += OFFSET_WIDTH'(SHUFFLED_CHANNEL_WIDTHS[i]);
     endfunction
 
     logic [AXI_WIDTH-1:0] replay_current_in;

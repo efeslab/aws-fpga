@@ -150,9 +150,6 @@ void do_record_start() {
     trace_buffer_lo = ((uint64_t) trace_buffer) & 0xffffffff;
     trace_buffer_size_hi = 0;
     trace_buffer_size_lo = 0x1000000;
-    for (int i = 0; i < 1024; i++) {
-        trace_buffer[i] = 0xff;
-    }
 
     // configure csrs via rr_cfg_bus
     cl_poke_bar1(RR_CSR_ADDR(BUF_ADDR_HI), trace_buffer_hi);
