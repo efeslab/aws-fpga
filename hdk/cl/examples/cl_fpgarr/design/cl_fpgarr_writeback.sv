@@ -232,7 +232,7 @@ endmodule
  *    B_next[B_len - AXI_WIDTH +: WIDTH] = in
  *    out[AXI_WIDTH-1:0] = B[0 +: AXI_WIDTH]
  */
-module rr_writeback #(
+module rr_trace_rw #(
     parameter WIDTH = 2500,
     parameter AXI_WIDTH = 512,
     parameter OFFSET_WIDTH = 32,
