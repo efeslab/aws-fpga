@@ -30,6 +30,11 @@ current_dir=$(pwd)
 source $script_dir/shared/bin/set_common_functions.sh
 source $script_dir/shared/bin/set_common_env_vars.sh
 
+if [ "$AWS_FPGA_SKIP_SUDO_INSTALL" == "1" ]; then
+  echo "SKIP ALL SDK INSTALLATION REQURING SUDO"
+  return 0
+fi
+
 sudo rm -f /tmp/sdk_root_env.exp
 typeset -f allow_non_root > /tmp/sdk_root_env.exp
 echo "export AWS_FPGA_SDK_GROUP=${AWS_FPGA_SDK_GROUP}" >> /tmp/sdk_root_env.exp

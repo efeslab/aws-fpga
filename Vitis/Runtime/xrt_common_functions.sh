@@ -100,6 +100,10 @@ function setup_runtime {
         export PATH=$PATH:/opt/xilinx/xrt/bin
 
         export LD_LIBRARY_PATH=$XILINX_XRT/lib:$LD_LIBRARY_PATH
+        if [ "$AWS_FPGA_SKIP_SUDO_INSTALL" == "1" ]; then
+            echo "SKIP ALL XRT RUNTIME INSTALLATION REQURING SUDO"
+            return 0
+        fi
         # copy libstdc++ from $XILINX_VITIS/lib
         if [[ $(lsb_release -si) == "Ubuntu" ]]; then
             sudo cp $XILINX_VITIS/lib/lnx64.o/Ubuntu/libstdc++.so* /opt/xilinx/xrt/lib/
