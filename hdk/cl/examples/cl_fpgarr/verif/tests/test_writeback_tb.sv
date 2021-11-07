@@ -168,7 +168,7 @@ module test_writeback_tb;
         for (int i = 0; i < 5; i++) begin
             tmp_packet = GET_RANDOM_PKT();
             tmp_packet_len = GET_LEN(tmp_packet);
-            $display("[wb_tb]: width %d data %x\n", tmp_packet_len, tmp_packet);
+            $display("[wb_tb]: record width %d data %x", tmp_packet_len, tmp_packet);
             record_din <= tmp_packet;
             record_din_width <= tmp_packet_len;
             record_din_valid <= 1;
@@ -181,7 +181,7 @@ module test_writeback_tb;
         for (int i = 0; i < 5; i++) begin
             tmp_packet = GET_RANDOM_PKT();
             tmp_packet_len = GET_LEN(tmp_packet);
-            $display("[wb_tb]: width %d data %x\n", tmp_packet_len, tmp_packet);
+            $display("[wb_tb]: record width %d data %x", tmp_packet_len, tmp_packet);
             record_din <= tmp_packet;
             record_din_width <= tmp_packet_len;
             record_din_valid <= 1;
@@ -207,6 +207,49 @@ module test_writeback_tb;
         end
 
         $finish;
+    end
+
+    logic [WIDTH-1:0] record_trace [127:0];
+    logic [WIDTH-1:0] replay_trace [127:0];
+    int record_curr, replay_curr;
+    int len;
+
+    logic replay_dout_valid_q;
+
+    initial begin
+        record_curr = 0;
+        replay_curr = 0;
+        for (int i = 0; i < 128; i++) begin
+            record_trace[i] = 0;
+            replay_trace[i] = 0;
+        end
+        replay_dout_valid_q = 0;
+    end
+
+    always @(posedge clk) begin
+        replay_dout_valid_q <= replay_dout_valid;
+    end
+
+    always @(posedge clk) begin
+        if (replay_dout_valid) begin
+            $display("[wb_tb]: replay width %d data %x", replay_dout_width, replay_dout);
+        end
+
+        if (record_din_valid) begin
+            record_trace[record_curr] <= record_din;
+            record_curr <= record_curr + 1;
+        end
+
+        if (replay_dout_valid) begin
+            replay_trace[replay_curr] <= replay_dout;
+            replay_curr <= replay_curr + 1;
+        end
+
+        if (replay_dout_valid_q) begin
+            assert(replay_curr <= record_curr);
+            assert(GET_LEN(record_trace[replay_curr-1]) == GET_LEN(replay_trace[replay_curr-1]));
+        end
+
     end
 
 `endif
