@@ -622,7 +622,8 @@ module rr_trace_rw #(
         replay_dout_width = replay_out_fifo_out[0 +: OFFSET_WIDTH];
         replay_out_fifo_rd_en = replay_dout_valid & replay_dout_ready;
     end
-
+`define TEST_NEW_REPLAY_TIMING
+`ifndef TEST_NEW_REPLAY_TIMING
     rr_trace_split #(
         .WIDTH(ALIGNED_WIDTH),
         .AXI_WIDTH(AXI_WIDTH),
@@ -645,6 +646,29 @@ module rr_trace_rw #(
         .replay_out_fifo_full(replay_out_fifo_full),
         .replay_out_fifo_almfull(replay_out_fifo_almfull),
         .replay_out_fifo_empty(replay_out_fifo_empty)
+`else
+    rr_parse_replay_trace #(
+        .LOGGING_UNIT_WIDTH(WIDTH),
+        .OFFSET_WIDTH(OFFSET_WIDTH),
+        .AXI_WIDTH(AXI_WIDTH),
+        .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH),
+        .LOGB_CHANNEL_CNT(LOGB_CHANNEL_CNT),
+        .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
+        .SHUFFLED_CHANNEL_WIDTHS(SHUFFLED_CHANNEL_WIDTHS))
+    trace_split(
+        .clk(clk),
+        .sync_rst_n(sync_rst_n),
+        .replay_in_fifo_out(replay_in_fifo_out),
+        .replay_in_fifo_rd_en(replay_in_fifo_rd_en),
+        .replay_in_fifo_full(replay_in_fifo_full),
+        .replay_in_fifo_almfull(replay_in_fifo_almfull),
+        .replay_in_fifo_empty(replay_in_fifo_empty),
+        .replay_out_fifo_in(replay_out_fifo_in),
+        .replay_out_fifo_wr_en(replay_out_fifo_wr_en),
+        .replay_out_fifo_full(replay_out_fifo_full),
+        .replay_out_fifo_almfull(replay_out_fifo_almfull),
+        .replay_out_fifo_empty(replay_out_fifo_empty)
+`endif
     );
 endmodule
 
@@ -1110,6 +1134,7 @@ module rr_parse_replay_trace #(
 localparam FULL_WIDTH = GET_FULL_WIDTH() + LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT;
 `DEF_GET_LEN(GET_LEN, LOGB_CHANNEL_CNT, $clog2(FULL_WIDTH+1),
    SHUFFLED_CHANNEL_WIDTHS)
+localparam AXI_OFFSET_WIDTH = $clog2(AXI_WIDTH);
 
 // parameter check
 generate
@@ -1130,7 +1155,6 @@ endgenerate
 // 2. assemble buffer, [LOGGING_UNIT_WIDTH-1:0], managed by ASM_FSM
 
 // AXI_OFFSET_WIDTH is used to index inside the shifting buffer
-localparam AXI_OFFSET_WIDTH = $clog2(AXI_WIDTH);
 logic [2*AXI_WIDTH-1:0] shift_buf;
 // HI_FSM declaration
 // EMPTY: init state
@@ -1144,7 +1168,6 @@ logic [AXI_WIDTH-1:0] hi_buf;
 logic [AXI_OFFSET_WIDTH-1:0] hi_valid_off;
 logic hi_in; // read data in to the hi buffer
 assign hi_in = replay_in_fifo_rd_en;
-assign hi_buf = shift_buf[AXI_WIDTH +: AXI_WIDTH];
 /// }}}
 
 // LO_FSM declaration
@@ -1159,28 +1182,36 @@ typedef enum { LO_EMPTY, LO_HEADER, LO_BODY } LO_FSM_t;
 LO_FSM_t lo_fsm, lo_fsm_next;
 logic [AXI_WIDTH-1:0] lo_buf;
 logic [AXI_OFFSET_WIDTH-1:0] lo_valid_off;
+logic hi_lo_shift;
+// output from the lo buffer to the ASM buffer
+// lo_out should be paired with asm_ready
+logic lo_out;
+logic [AXI_WIDTH-1:0] lo_out_data;
+assign lo_out_data = shift_buf[lo_valid_off +: AXI_WIDTH];
+// FIXME: rename lo_valid_len to lo_remain_len
 // the remaining len of the valid data of the current loging unit waiting to be
 // transmitted to the assemble buffer
 // Only valid if
-// 1. LO_HEADER && lo_hasheader
-// 2. LO_BODY
-logic [OFFSET_WIDTH-1:0] lo_valid_len;
-logic hi_lo_shift;
-logic lo_out; // output from the lo buffer to the ASM buffer
+// 1. HI_FULL && LO_HEADER (has to be calculated in one cycle, i.e. GET_LEN)
+// 2. LO_BODY (from a register)
+// NOTE that in the following usage, lo_valid_len is only used when lo_out,
+// which guarantees lo_valid_len has valid data.
+wire [OFFSET_WIDTH-1:0] lo_valid_len;
+reg [OFFSET_WIDTH-1:0] lo_valid_len_reg;
+assign lo_valid_len = (lo_fsm == LO_HEADER) ?
+    GET_LEN(lo_out_data[0 +: LOGB_CHANNEL_CNT]):
+    (lo_fsm == LO_BODY ? lo_valid_len_reg : 0);
 // all LO (valid) data has been transmitted to the ASM buffer
 // only valid when lo_out
 logic lo_exhaust;
-assign lo_exhaust = (lo_valid_len + OFFSET_WIDTH'lo_valid_off) >= AXI_WIDTH;
-logic lo_hasheader;
-assign lo_hasheader = lo_valid_off + LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT <= AXI_WIDTH;
-// Whether the remaining of LO contains the remaining of the logging unit
-// only valid when LO_HEADER and LO_BODY
+assign lo_exhaust = (lo_valid_len + OFFSET_WIDTH'(lo_valid_off)) >= AXI_WIDTH;
+// Whether the output of LO contains the remaining of the logging unit
+// only valid when lo_out
+// Note that I assume only output when HI and LO have continuous valid data
 // TODO: Double check what if LO only has part of the HEADER
 logic lo_valid_satisfied;
-assign lo_valid_satisfied = (hi_fsm == HI_FULL)?
-    lo_valid_len <= AXI_WIDTH :(
-    lo_hasheader ?
-    lo_valid_len + OFFSET_WIDTH'lo_valid_off <= AXI_WIDTH : 0);
+assign lo_valid_satisfied =
+    lo_valid_len <= AXI_WIDTH;
 /// }}}
 
 // ASM_FSM
@@ -1188,20 +1219,29 @@ assign lo_valid_satisfied = (hi_fsm == HI_FULL)?
 // WAIT_BODY: Have the header, wait for the rest of the logging unit
 // DONE: Have the entire logging unit, enqueue to the output
 // FULL: Have the entire logging unit, but also buffers the next header.
+// NOTE: due to the backpressure design, FULL is unnecessary thus not
+// implemented
 /// {{{
-typedef enum { ASM_WAIT_HEADER, ASM_WAIT_BODY, ASM_DONE, ASM_FULL } ASM_FSM_t;
+typedef enum { ASM_WAIT_HEADER, ASM_WAIT_BODY, ASM_DONE } ASM_FSM_t;
 ASM_FSM_t asm_fsm, asm_fsm_next;
 localparam NUM_AXI = (LOGGING_UNIT_WIDTH - 1)/AXI_WIDTH + 1;
 logic [NUM_AXI * AXI_WIDTH-1:0] trace_data;
+// trace_axi_cnt is the total number of axi units assembled in the buffer
+// trace_axi_cnt and trace_len are both valid when WAIT_BODY or DONE 
+logic [$clog2(NUM_AXI+1)-1:0] trace_axi_cnt;
 logic [OFFSET_WIDTH-1:0] trace_len;
 // ASM buffer can take in a new [AXI_WIDTH-1:0]. Make this register to improve
 // timing, the combinational path breaks here.
 reg asm_ready;
-// buffer part of the trace (should be the header) during ASM_FULL
-logic [AXI_WIDTH-1:0] r_ptrace;
+// FULL state is currently not implemented
+// buffer part of the trace (must be a header) during ASM_FULL
+// logic [AXI_WIDTH-1:0] r_ptrace;
 // buffer the length of the whole logging unit starting with the r_ptrace
-logic [OFFSET_WIDTH-1:0] r_ptrace_len;
+// logic [OFFSET_WIDTH-1:0] r_ptrace_len;
+logic asm_out;
 
+// the almful backpressure has been propogated to the input of the shift buffer
+assign replay_out_fifo_wr_en = asm_out;
 assign replay_out_fifo_in = {trace_len, trace_data};
 /// }}}
 
@@ -1209,7 +1249,7 @@ assign replay_out_fifo_in = {trace_len, trace_data};
 //                  /--\ +- flow
 //                  |  |
 //           load   |  v
-//  -------   +    ------ 
+//  -------    +   ------ 
 // |       | ---> |      |
 // | EMPTY |      | FULL |
 // |       | <--- |      |
@@ -1270,12 +1310,11 @@ always_ff @(posedge clk)
 //  -------   +    --------    +   ------
 // |       | ---> |        | ---> |      | ---\
 // | EMPTY |      | HEADER |      | BODY |    | +- body_flow
-// |       | <--- |        | <--- |      | <--/
-//  -------    -   --------    -   ------
-//     ˄    header           reload  |
-//     |   exhaust                   |
-//      -----------------------------
-//               body_exhaust
+// |       | <xx- |        | <--- |      | <--/
+//  -------        --------   +-   ------
+//     ˄                     reload  |
+//     |                             |
+//      ------xxxxxxxxxxxxxxxxxx-----
 always_ff @(posedge clk)
     if (!sync_rst_n)
         lo_fsm <= LO_EMPTY;
@@ -1286,31 +1325,29 @@ always_comb begin
         LO_EMPTY:
             if (hi_lo_shift)
                 // load
-                lo_fsm_next = LO_FULL;
-            else
                 lo_fsm_next = LO_HEADER;
+            else
+                lo_fsm_next = LO_EMPTY;
         LO_HEADER:
-            // hi_lo_shift && LO_HEADER |->
-            // HI_FULL && lo_out && lo_exhaust
+            // NOTE: I know there will be duplicated terms like hi_lo_shift and
+            // lo_valid_satisfied both means HI_FULL. But I prefer simpler code
+            // and count on the compiler optimizations.
             if (hi_lo_shift)
+                // hi_lo_shift && LO_HEADER |->
+                // HI_FULL && lo_out && lo_exhaust
                 if (lo_valid_satisfied)
                     // header_flow (lo_exhaust)
                     lo_fsm_next = LO_HEADER;
                 else
                     // extend
                     lo_fsm_next = LO_BODY;
-            else if (hi_fsm != HI_FULL && lo_out && lo_exhaust)
-                // This is the special case that HI_EMPTY but the rest of LO is
-                // a complete logging unit
-                // i.e. header_exhaust
-                lo_fsm_next = LO_EMPTY;
             else if (lo_out && !lo_exhaust)
-                // regardless of HI_EMPTY or HI_FULL
+                // lo_out && LO_HEADER |-> HI_FULL && lo_out && !lo_exhaust
                 // header_flow (!lo_exhaust)
                 lo_fsm_next = LO_HEADER;
             else
                 // !lo_out ==> stall
-                lo_fsm_next = LO_HEADER
+                lo_fsm_next = LO_HEADER;
         LO_BODY:
            if (hi_lo_shift)
                // i.e. HI_FULL && lo_out && lo_exhaust
@@ -1320,11 +1357,8 @@ always_comb begin
                else
                    // body_flow (lo_exhaust)
                    lo_fsm_next = LO_BODY;
-            else if (hi_fsm != HI_FULL && lo_out && lo_exhaust)
-                // special case, body_exhaust
-                lo_fsm_next = LO_EMPTY;
             else if (lo_out && !lo_exhaust)
-                // regardless of HI_EMPTY or HI_FULL
+                // i.e. HI_FULL && lo_out && !lo_exhaust
                 // reload (!lo_exhaust)
                 lo_fsm_next = LO_HEADER;
             else
@@ -1332,14 +1366,13 @@ always_comb begin
                 lo_fsm_next = LO_BODY;
     endcase
 end
-// One precondition of output from the shift buffer:
-// The remaining valid data of current logging unit is already contained in LO
-// OR
+// Only output from the shift buffer if
 // The remaining valid data are across HI and LO so the boundary across HI and
 // LO must have "continuous" valid data.
-// TODO: another option: pad one zero AXI_WIDTH when replay finishes
+// Note that in the case of last packet resides in LO and it contains a complete
+// logging unit, I assume an additional zero AXI_WIDTH to be padded.
 assign lo_out =
-    (hi_fsm == HI_FULL || lo_valid_satisfied) &&
+    (hi_fsm == HI_FULL) &&
     (lo_fsm != LO_EMPTY) &&
     asm_ready;
 // shift data from HI to LO when HI has valid data and either
@@ -1354,8 +1387,69 @@ assign hi_lo_shift =
 always_ff @(posedge clk)
     if (!sync_rst_n)
         lo_valid_off <= 0;
-        lo_valid_len <= 0;
+    else if (hi_lo_shift)
+        // load, header_flow (lo_exhaust), extend, 
+        lo_valid_off <= hi_valid_off;
+    else if (lo_out && !lo_exhaust)
+        // implies !LO_EMPTY
+        // header_flow (!lo_exhaust)
+        lo_valid_off <=
+            lo_valid_off - lo_valid_len[0 +: AXI_OFFSET_WIDTH];
+// note that lo_valid_len_reg is only valid when LO_BODY
+always_ff @(posedge clk)
+    if (!sync_rst_n)
+        lo_valid_len_reg <= 0;
+    else if (lo_fsm == LO_HEADER && hi_lo_shift && !lo_valid_satisfied)
+        // extend
+        lo_valid_len_reg <= lo_valid_len;
+    else if (lo_fsm == LO_BODY && hi_lo_shift && !lo_valid_satisfied)
+        // body_flow (lo_exhaust)
+        lo_valid_len_reg <= lo_valid_len_reg - AXI_WIDTH;
+
+// shift_buffer
+always_ff @(posedge clk) begin
+    // no need to reset shift_buffer since all control signals have reset (other
+    // state machine)
+    if (hi_in)
+        shift_buf[AXI_WIDTH +: AXI_WIDTH] <= replay_in_fifo_out;
+    if (hi_lo_shift)
+        shift_buf[0 +: AXI_WIDTH] <= shift_buf[AXI_WIDTH +: AXI_WIDTH];
+end
+
+// ASM_FSM input data
+logic asm_valid;
+logic [AXI_WIDTH-1:0] asm_data_in;
+logic [OFFSET_WIDTH-1:0] asm_valid_len_in;
+assign asm_valid = lo_out;
+assign asm_data_in = lo_out_data;
+assign asm_valid_len_in = lo_valid_len;
+
 // ASM_FSM definition
+//                     +
+//      ---------- full_load ---------    --
+//     |                              |  |  |
+//     |           +- body_cont       |  |  | +-
+//     |             /--\             |  |  | full reload
+//     |      part   |  |             |  |  |
+//     |      load   |  v    finish   ˅  |  ˅     fill
+//  --------   +    ------     +     ----------    +     ------
+// |        | ---> |      | ------> |          | -----> |      |
+// | WAIT   |      | WAIT |         |   DONE   |        | FULL |
+// | HEADER |      | BODY | <------ |          | <----- |      |
+//  --------        ------     +-    ----------    -     ------
+//     ˄               ˄      part     |       drain_full  |
+//     |      -        |     reload    |                   |
+//      -- exhaust ----|---------------                    |
+//                     *----------- drain_part ------------*
+//                                      -
+// NOTE: due to the backpressure design, in DONE state, you can always output
+// stuff so the FULL state is not implemented.
+// There is a register barrier between shift buffer and assemble buffer
+// to improve timing
+// input: lo_valid_len (only come with the HEADER)
+//        lo_out_data
+// output: asm_out
+//         asm_ready
 always_ff @(posedge clk)
     if (!sync_rst_n)
         asm_fsm <= ASM_WAIT_HEADER;
@@ -1364,11 +1458,58 @@ always_ff @(posedge clk)
 always_comb begin
     case (asm_fsm)
         ASM_WAIT_HEADER:
-            if (lo_out)
-                asm_fsm_next
+            if (asm_valid && asm_ready)
+                if (asm_valid_len_in <= AXI_WIDTH)
+                    asm_fsm_next = ASM_DONE;        // full load
+                else
+                    asm_fsm_next = ASM_WAIT_BODY;   // part load
+            else
+                asm_fsm_next = ASM_WAIT_HEADER;     // stall
         ASM_WAIT_BODY:
+            if (asm_valid && asm_ready)
+                if (trace_len <= (trace_axi_cnt+1) * AXI_WIDTH)
+                    asm_fsm_next = ASM_DONE;        // finish
+                else
+                    asm_fsm_next = ASM_WAIT_BODY;   // body_cont
+            else
+                asm_fsm_next = ASM_WAIT_BODY;       // stall
         ASM_DONE:
-        ASM_FULL:
+            if (asm_valid && asm_ready)
+                if (asm_valid_len_in <= AXI_WIDTH)
+                    asm_fsm_next = ASM_DONE;        // full reload
+                else
+                    asm_fsm_next = ASM_WAIT_BODY;   // part reload
+            else
+                asm_fsm_next = ASM_WAIT_HEADER;     // exhaust
+            // due to the backpressure design, no stall
     endcase
 end
+// ASM_FSM other states
+always_ff @(posedge clk)
+    if (!sync_rst_n) begin
+        trace_axi_cnt <= 0;
+        trace_len <= 0;
+    end
+    else begin
+        if (asm_valid && asm_ready)
+            if (asm_fsm != ASM_WAIT_BODY) begin
+                // full/part load, full/part reload
+                trace_len <= asm_valid_len_in;
+                trace_axi_cnt <= 1;
+            end
+            else
+                // body_cont or finish
+                trace_axi_cnt <= trace_axi_cnt + 1;
+    end
+always_ff @(posedge clk)
+    //  no need to reset trace_data since all control signals have reset
+    if (asm_valid && asm_ready)
+        if (asm_fsm != ASM_WAIT_BODY)
+            // full/part load, full/part reload
+            trace_data[0 +: AXI_WIDTH] <= asm_data_in;
+        else
+            // body_cont or finish
+            trace_data[trace_axi_cnt * AXI_WIDTH +: AXI_WIDTH] <= asm_data_in;
+assign asm_out = (asm_fsm == ASM_DONE);
+assign asm_ready = 1;
 endmodule
