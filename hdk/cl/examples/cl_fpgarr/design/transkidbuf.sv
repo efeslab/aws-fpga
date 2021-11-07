@@ -86,17 +86,12 @@ end
 // register buffer
 reg [DATA_WIDTH-1:0] r_data;
 always @(posedge clk)
-if (!rstn) begin
-  r_data <= 0;
-end
-else if ((state == BUSY) && (state_next == FULL))
+if ((state == BUSY) && (state_next == FULL))
   r_data <= in_data;
 
 // output chanenl register
 always @(posedge clk)
-if (!rstn)
-  out_data <= 0;
-else if (state_next == BUSY) begin
+if (state_next == BUSY) begin
   if (state == FULL)
     out_data <= r_data;
   else if (insert)
