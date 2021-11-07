@@ -816,8 +816,8 @@ module rr_trace_split #(
     // *replay_leftover* should pass output whenever the next output size is less than
     // the size of the current leftover buffer, i.e., there are enough stuff to output.
     always_comb begin
-        if (replay_leftover_size > AXI_WIDTH) begin
-            // If leftover size is larger than AXI_WIDTH, we can output anyway.
+        if (replay_leftover_size >= AXI_WIDTH) begin
+            // If leftover size is larger than or equal to AXI_WIDTH, we can output anyway.
             replay_leftover_do_step = 1;
         end else if (replay_left_size <= replay_leftover_size && replay_left_size > 0) begin
             // If leftover size is larger than the size of the remaining bits of the current
@@ -863,13 +863,15 @@ module rr_trace_split #(
                 end else begin
                     replay_left_size_reg <= replay_left_size - AXI_WIDTH;
                 end
+            end else begin
+                replay_left_size_reg <= replay_left_size;
             end
         end
     end
 
     // *replay_shift_size* is the size of the next valid output from *replay_leftover*. The
     // *replay_leftover* register will be shifted by *replay_shift_size* after/while outputing.
-    // ~replay_leftover_do_step* ensures that there are enough bits to output in *replay_leftover*.
+    // *replay_leftover_do_step* ensures that there are enough bits to output in *replay_leftover*.
     always_comb begin
         if (replay_leftover_do_step) begin
             if (replay_left_size > AXI_WIDTH) begin
@@ -895,21 +897,23 @@ module rr_trace_split #(
         if (~sync_rst_n) begin
             replay_is_first_packet <= 0;
         end else begin
-            if (replay_left_size <= AXI_WIDTH) begin
+            // A packet is the first one, if the previous one finishes and there's enough data to
+            // decode the packet size.
+            if (replay_left_size <= AXI_WIDTH && replay_leftover_size >= replay_left_size) begin
                 if (replay_current_in_valid) begin
                     if (replay_leftover_size + AXI_WIDTH - replay_shift_size >= LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT) begin
                         replay_is_first_packet <= 1;
-                    end else begin
+                    end else if (replay_leftover_do_step) begin
                         replay_is_first_packet <= 0;
                     end
                 end else begin
                     if (replay_leftover_size - replay_shift_size >= LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT) begin
                         replay_is_first_packet <= 1;
-                    end else begin
+                    end else if (replay_leftover_do_step) begin
                         replay_is_first_packet <= 0;
                     end
                 end
-            end else begin
+            end else if (replay_leftover_do_step) begin
                 replay_is_first_packet <= 0;
             end
         end
@@ -955,7 +959,7 @@ module rr_trace_split #(
             if (replay_is_first_packet && replay_leftover_do_step) begin
                 replay_split_out_total_size <= replay_total_size;
                 replay_split_out_curr_size <= replay_shift_size;
-                replay_split_out_cumulated_size <= 0;
+                replay_split_out_cumulated_size <= replay_shift_size;
                 replay_curr <= 0;
             end else if (replay_leftover_do_step) begin
                 replay_split_out_cumulated_size <= replay_split_out_cumulated_size + replay_shift_size;
@@ -981,7 +985,7 @@ module rr_trace_split #(
             replay_out_total_valid_q <= 0;
         end else begin
             if (replay_split_out_total_size > 0 && replay_out_curr_valid &&
-                replay_split_out_cumulated_size + replay_split_out_curr_size >= replay_split_out_total_size) begin
+                replay_split_out_cumulated_size >= replay_split_out_total_size) begin
                 replay_out_total_valid <= 1;
             end else begin
                 replay_out_total_valid <= 0;
