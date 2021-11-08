@@ -51,6 +51,8 @@ twowayhandshake_logger #(.DATA_WIDTH(DATA_WIDTH)) logger (
 );
 
 // logb pipe transparently pass all stalls
+// TODO: consider overhaul this transkidbuf_pipeline to BRAM fifo, together with
+// all the rest of the packing module
 transkidbuf_pipeline #(
   .DATA_WIDTH(DATA_WIDTH),
   .PIPE_DEPTH(PIPE_DEPTH),
