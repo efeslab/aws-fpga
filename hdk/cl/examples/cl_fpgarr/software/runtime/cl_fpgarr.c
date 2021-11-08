@@ -61,6 +61,15 @@ void do_record_stop() {
     cl_poke_bar1(RR_CSR_ADDR(RECORD_FORCE_FINISH), 1);
     sv_pause(1);
 
+    uint64_t record_bits;
+    uint32_t record_bits_lo, record_bits_hi;
+
+    cl_peek_bar1(RR_CSR_ADDR(RECORD_BITS_HI), &record_bits_hi);
+    cl_peek_bar1(RR_CSR_ADDR(RECORD_BITS_LO), &record_bits_lo);
+    record_bits = (record_bits_hi << 32) | record_bits_lo;
+
+    printf("record_bits: %d\n", record_bits);
+
     printf("Trace Buffer Dump:\n");
     for (int i = 0; i < 1024; i++) {
         printf("%02x", trace_buffer[i]);
@@ -74,6 +83,7 @@ void do_record_stop() {
     }
 
     int fd = open("record.dump", O_RDWR|O_CREAT, S_IRUSR|S_IWUSR);
+    write(fd, &record_bits, 8);
     write(fd, trace_buffer, 0x1000000);
     fsync(fd);
     close(fd);
@@ -87,7 +97,15 @@ void do_replay_start() {
     trace_buffer_size_hi = 0;
     trace_buffer_size_lo = 0x1000000;
 
+    uint64_t record_bits;
+
     int fd = open("record.dump", O_RDONLY);
+
+    read(fd, &record_bits, 8);
+    uint64_t trace_buffer_size = ((record_bits - 1) / 512 + 1) * 64;
+    trace_buffer_size_hi = (trace_buffer_size >> 32) & 0xffffffff;
+    trace_buffer_size_lo = trace_buffer_size & 0xffffffff;
+
     read(fd, trace_buffer, 0x1000000);
     close(fd);
     // configure csrs via rr_cfg_bus
@@ -95,7 +113,7 @@ void do_replay_start() {
     cl_poke_bar1(RR_CSR_ADDR(BUF_ADDR_LO), trace_buffer_lo);
     cl_poke_bar1(RR_CSR_ADDR(BUF_SIZE_HI), trace_buffer_size_hi);
     cl_poke_bar1(RR_CSR_ADDR(BUF_SIZE_LO), trace_buffer_size_lo);
-    cl_poke_bar1(RR_CSR_ADDR(RR_MODE), rr_mode.val); // 0b010
+    cl_poke_bar1(RR_CSR_ADDR(RR_MODE), 0x2); // 0b010
     cl_poke_bar1(RR_CSR_ADDR(READ_BUF_UPDATE), 1);
 }
 void do_replay_stop() {

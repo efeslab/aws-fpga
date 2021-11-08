@@ -99,6 +99,8 @@ rr_axi_lite_bus_t cl_bar1_bus();
 // the staging yourself if want to propogate them to somewhere else.
 // storage_axi_csr is used to configure the storage backend
 storage_axi_csr_t storage_axi_csr;
+// storage_axi_counter_csr is used to obtain statistics from the storage backend
+storage_axi_counter_csr_t storage_axi_counter_csr;
 // rr_mode_csr is used to control the record/replay behaviour
 rr_mode_csr_t rr_mode_csr;
 // rr_mode_csr_q is the flopped version for timing
@@ -340,6 +342,7 @@ rr_csrs csrs (
     .rstn(rstn),
     .rr_cfg_bus(rr_cfg_bus),
     .storage_axi_csr(storage_axi_csr),
+    .storage_axi_counter_csr(storage_axi_counter_csr),
     .rr_mode_csr(rr_mode_csr)
 );
 
@@ -412,7 +415,8 @@ rr_storage_backend_axi #(
   .storage_backend_bus(rr_storage_bus),
   .record_bus(record_bus),
   .replay_bus(packed_replay_bus),
-  .csr(storage_axi_csr)
+  .csr(storage_axi_csr),
+  .counter(storage_axi_counter_csr)
 );
 
 rr_tracedecoder top_decoder(
