@@ -100,7 +100,7 @@ module test_writeback_tb;
         .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH),
         .LOGB_CHANNEL_CNT(LOGB_CHANNEL_CNT),
         .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
-        .CHANNEL_WIDTHS(CHANNEL_WIDTHS))
+        .SHUFFLED_CHANNEL_WIDTHS(SHUFFLED_CHANNEL_WIDTHS))
     rr_trace_rw_inst(
         .clk(clk),
         .sync_rst_n(sync_rst_n),
@@ -250,6 +250,12 @@ module test_writeback_tb;
             assert(GET_LEN(record_trace[replay_curr-1]) == GET_LEN(replay_trace[replay_curr-1]));
         end
 
+    end
+`else
+
+    initial begin
+        $error(0 && "TEST_REPLAY should be defined to run this test");
+        $finish;
     end
 
 `endif

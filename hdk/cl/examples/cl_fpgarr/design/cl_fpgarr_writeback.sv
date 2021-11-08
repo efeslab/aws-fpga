@@ -278,8 +278,14 @@ module rr_trace_rw #(
     localparam NSTAGES = (WIDTH - 1) / AXI_WIDTH + 1;
     localparam EXT_WIDTH = NSTAGES * AXI_WIDTH;
 
+    localparam ALIGNED_WIDTH = `GET_ALIGNED_SIZE(WIDTH);
+    initial assert(OFFSET_WIDTH >= ($clog2(ALIGNED_WIDTH - 1) + 1));
+    initial assert(ALIGNED_WIDTH >= WIDTH);
+
     logic [WIDTH-1:0] record_in_fifo_out;
+    logic [ALIGNED_WIDTH-1:0] record_in_fifo_out_aligned;
     logic [OFFSET_WIDTH-1:0] record_in_fifo_out_width;
+    logic [OFFSET_WIDTH-1:0] record_in_fifo_out_width_aligned;
     logic record_in_fifo_rd_en;
     logic record_in_fifo_full, record_in_fifo_almfull, record_in_fifo_empty;
 
@@ -298,13 +304,16 @@ module rr_trace_rw #(
         .empty(record_in_fifo_empty)
     );
 
+    assign record_in_fifo_out_aligned = ALIGNED_WIDTH'(record_in_fifo_out);
+    assign record_in_fifo_out_width_aligned = `GET_ALIGNED_SIZE(record_in_fifo_out_width);
+
     logic [AXI_WIDTH-1:0] record_out_fifo_out, record_out_fifo_in_qq;
     logic record_out_fifo_rd_en, record_out_fifo_wr_en_qq;
     logic [OFFSET_WIDTH-1:0] record_out_fifo_in_size_qq, record_out_fifo_out_size;
     logic record_out_fifo_full, record_out_fifo_almfull, record_out_fifo_empty;
 
     rr_trace_merge #(
-        .WIDTH(WIDTH),
+        .WIDTH(ALIGNED_WIDTH),
         .AXI_WIDTH(AXI_WIDTH),
         .OFFSET_WIDTH(OFFSET_WIDTH),
         .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH),
@@ -313,8 +322,8 @@ module rr_trace_rw #(
     trace_merge(
         .clk(clk),
         .sync_rst_n(sync_rst_n),
-        .record_in_fifo_out(record_in_fifo_out),
-        .record_in_fifo_out_width(record_in_fifo_out_width),
+        .record_in_fifo_out(record_in_fifo_out_aligned),
+        .record_in_fifo_out_width(record_in_fifo_out_width_aligned),
         .record_in_fifo_rd_en(record_in_fifo_rd_en),
         .record_in_fifo_full(record_in_fifo_full),
         .record_in_fifo_almfull(record_in_fifo_almfull),
@@ -507,7 +516,8 @@ module rr_trace_rw #(
         .empty(replay_in_fifo_empty)
     );
 
-    logic [OFFSET_WIDTH+WIDTH-1:0] replay_out_fifo_in, replay_out_fifo_out;
+    logic [WIDTH-1:0] replay_out_fifo_in, replay_out_fifo_out;
+    logic [OFFSET_WIDTH-1:0] replay_out_fifo_in_width, replay_out_fifo_out_width;
     logic replay_out_fifo_wr_en, replay_out_fifo_rd_en;
     logic replay_out_fifo_full, replay_out_fifo_almfull, replay_out_fifo_empty;
 
@@ -517,8 +527,8 @@ module rr_trace_rw #(
     mfifo_inst_replay_out(
         .clk(clk),
         .rst(~sync_rst_n),
-        .din(replay_out_fifo_in),
-        .dout(replay_out_fifo_out),
+        .din({replay_out_fifo_in_width,replay_out_fifo_in}),
+        .dout({replay_out_fifo_out_width,replay_out_fifo_out}),
         .wr_en(replay_out_fifo_wr_en),
         .rd_en(replay_out_fifo_rd_en),
         .full(replay_out_fifo_full),
@@ -618,13 +628,13 @@ module rr_trace_rw #(
 
     always_comb begin
         replay_dout_valid = ~replay_out_fifo_empty;
-        replay_dout = replay_out_fifo_out[0 +: WIDTH];
-        replay_dout_width = replay_out_fifo_out[WIDTH +: OFFSET_WIDTH];
+        replay_dout = replay_out_fifo_out;
+        replay_dout_width = replay_out_fifo_out_width;
         replay_out_fifo_rd_en = replay_dout_valid & replay_dout_ready;
     end
 
     rr_trace_split #(
-        .WIDTH(WIDTH),
+        .WIDTH(ALIGNED_WIDTH),
         .AXI_WIDTH(AXI_WIDTH),
         .OFFSET_WIDTH(OFFSET_WIDTH),
         .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH),
@@ -640,6 +650,7 @@ module rr_trace_rw #(
         .replay_in_fifo_almfull(replay_in_fifo_almfull),
         .replay_in_fifo_empty(replay_in_fifo_empty),
         .replay_out_fifo_in(replay_out_fifo_in),
+        .replay_out_fifo_in_width(replay_out_fifo_in_width),
         .replay_out_fifo_wr_en(replay_out_fifo_wr_en),
         .replay_out_fifo_full(replay_out_fifo_full),
         .replay_out_fifo_almfull(replay_out_fifo_almfull),
@@ -677,6 +688,13 @@ module rr_trace_merge #(
 
     localparam NSTAGES = (WIDTH - 1) / AXI_WIDTH + 1;
     localparam EXT_WIDTH = NSTAGES * AXI_WIDTH;
+
+    // The width has to be aligned
+    initial assert(WIDTH % PACKET_ALIGNMENT == 0);
+    always_ff @(posedge clk) begin
+        if (sync_rst_n && record_in_fifo_rd_en)
+            assert(record_in_fifo_out_width % PACKET_ALIGNMENT == 0);
+    end
 
     logic [EXT_WIDTH-1:0] record_in_fifo_out_wrap;
     assign record_in_fifo_out_wrap = EXT_WIDTH'(record_in_fifo_out);
@@ -754,7 +772,7 @@ module rr_trace_merge #(
             current_record_unhandled <= record_unhandled[record_curr];
 
             record_leftover_next = record_leftover;
-            record_leftover_next[record_leftover_size +: AXI_WIDTH] = current_record_unhandled;
+            record_leftover_next[`GET_FORCE_ALIGNED_SIZE(record_leftover_size) +: AXI_WIDTH] = current_record_unhandled;
             if (record_leftover_size + current_record_unhandled_size >= AXI_WIDTH) begin
                 record_leftover[0 +: AXI_WIDTH] <= record_leftover_next[AXI_WIDTH +: AXI_WIDTH];
                 record_leftover_size <= record_leftover_size + current_record_unhandled_size - AXI_WIDTH;
@@ -796,7 +814,8 @@ module rr_trace_split #(
     input logic replay_in_fifo_almfull,
     input logic replay_in_fifo_empty,
 
-    output logic [WIDTH+OFFSET_WIDTH-1:0] replay_out_fifo_in,
+    output logic [WIDTH-1:0] replay_out_fifo_in,
+    output logic [OFFSET_WIDTH-1:0] replay_out_fifo_in_width,
     output logic replay_out_fifo_wr_en,
     input logic replay_out_fifo_full,
     input logic replay_out_fifo_almfull,
@@ -848,7 +867,7 @@ module rr_trace_split #(
 
     // *replay_total_size* is the number of bits in the whole transaction. It's calculated when
     // the first few bits of a transaction is decoded, and used until the next transaction.
-    assign replay_total_size_tmp = GET_LEN(replay_leftover[0 +: LOGB_CHANNEL_CNT]);
+    assign replay_total_size_tmp = `GET_ALIGNED_SIZE(GET_LEN(replay_leftover[0 +: LOGB_CHANNEL_CNT]));
     assign replay_total_size = replay_is_first_packet ? replay_total_size_tmp : replay_total_size_reg;
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
@@ -935,7 +954,7 @@ module rr_trace_split #(
 
     always_comb begin
         replay_leftover_next_assigned = replay_leftover;
-        replay_leftover_next_assigned[replay_leftover_size +: AXI_WIDTH] = replay_current_in;
+        replay_leftover_next_assigned[`GET_FORCE_ALIGNED_SIZE(replay_leftover_size) +: AXI_WIDTH] = replay_current_in;
         replay_leftover_next_unassigned = {AXI_WIDTH'(0), replay_leftover};
     end
     always_ff @(posedge clk) begin
@@ -945,12 +964,21 @@ module rr_trace_split #(
             if (replay_leftover_do_step || replay_current_in_valid) begin
                 if (replay_current_in_valid) begin
                     replay_leftover_size <= replay_leftover_size + AXI_WIDTH - replay_shift_size;
-                    replay_leftover <= replay_leftover_next_assigned[replay_shift_size +: AXI_WIDTH*2];
+                    replay_leftover <= replay_leftover_next_assigned[`GET_FORCE_ALIGNED_SIZE(replay_shift_size) +: AXI_WIDTH*2];
                 end else begin
                     replay_leftover_size <= replay_leftover_size - replay_shift_size;
-                    replay_leftover <= replay_leftover_next_unassigned[replay_shift_size +: AXI_WIDTH*2];
+                    replay_leftover <= replay_leftover_next_unassigned[`GET_FORCE_ALIGNED_SIZE(replay_shift_size) +: AXI_WIDTH*2];
                 end
             end
+        end
+    end
+
+    always_ff @(posedge clk) begin
+        if (sync_rst_n) begin
+            assert(`IS_ALIGNED_SIZE(replay_leftover_size));
+            assert(`IS_ALIGNED_SIZE(replay_left_size));
+            assert(`IS_ALIGNED_SIZE(replay_shift_size));
+            assert(`IS_ALIGNED_SIZE(replay_total_size));
         end
     end
 
@@ -1014,7 +1042,8 @@ module rr_trace_split #(
     logic [AXI_WIDTH-1:0] replay_handled [NSTAGES-1:0];
 
     // *replay_out_fifo_in* is 2 cycles behind *replay_split_out*;
-    assign replay_out_fifo_in = {replay_split_out_total_size_qq, WIDTH'(replay_out_fifo_in_wrap)};
+    assign replay_out_fifo_in = WIDTH'(replay_out_fifo_in_wrap);
+    assign replay_out_fifo_in_width = replay_split_out_total_size_qq;
     always_ff @(posedge clk) begin
         for (int i = 0; i < NSTAGES; i++) begin
             replay_out_fifo_in_wrap[i*AXI_WIDTH +: AXI_WIDTH] <= replay_handled[i];
