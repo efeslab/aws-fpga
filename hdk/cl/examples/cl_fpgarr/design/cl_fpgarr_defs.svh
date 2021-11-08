@@ -282,4 +282,11 @@ parameter int AWSF1_PLACEMENT_VEC[AWSF1_NUM_INTERFACES-1:0] = '{
   1, // pcim
   4  // pcis
 };
+// The alignment of packets
+parameter logic [63:0] PACKET_ALIGNMENT = 8;
+parameter logic [63:0] PACKET_ALIGNMENT_SHIFT = $clog2(PACKET_ALIGNMENT);
+parameter logic [63:0] PACKET_ALIGNMENT_MASK = PACKET_ALIGNMENT - 1;
+`define GET_ALIGNED_SIZE(size) (((size - 1) / PACKET_ALIGNMENT + 1) * PACKET_ALIGNMENT)
+`define GET_FORCE_ALIGNED_SIZE(size) (size & ~PACKET_ALIGNMENT_MASK)
+`define IS_ALIGNED_SIZE(size) ((size & PACKET_ALIGNMENT_MASK) == 0)
 `endif // CL_FPGARR_DEFS
