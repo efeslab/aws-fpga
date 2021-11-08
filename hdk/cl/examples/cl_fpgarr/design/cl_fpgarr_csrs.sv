@@ -5,7 +5,8 @@ module rr_csrs (
     input wire rstn,
     rr_axi_lite_bus_t.master rr_cfg_bus,
     output storage_axi_csr_t storage_axi_csr,
-    output rr_mode_csr_t rr_mode_csr
+    output rr_mode_csr_t rr_mode_csr,
+    input storage_axi_counter_csr_t storage_axi_counter_csr
 );
 
     logic [31:0] csrs [RR_CSR_CNT-1:0];
@@ -90,6 +91,11 @@ module rr_csrs (
             if (al_write_transmitted_qq) begin
                 csrs[al_addr_q] <= csr_reg;
             end
+
+            // RECORD_BITS_HI and RECORD_BITS_LO should not be written.
+            // They are the statistics from the tracestorage module.
+            csrs[RECORD_BITS_HI] <= storage_axi_counter_csr.record_bits[32 +: 32];
+            csrs[RECORD_BITS_LO] <= storage_axi_counter_csr.record_bits[0 +: 32];
         end
     end
 
@@ -142,10 +148,11 @@ module rr_csrs (
         buf_size: {csrs[BUF_SIZE_HI], csrs[BUF_SIZE_LO]},
         write_buf_update: al_write_transmitted_q && (al_addr == WRITE_BUF_UPDATE),
         read_buf_update: al_write_transmitted_q && (al_addr == READ_BUF_UPDATE),
-        record_force_finish: al_write_transmitted_q && (al_addr == RECORD_FORCE_FINISH)
+        record_force_finish: al_write_transmitted_q && (al_addr == RECORD_FORCE_FINISH),
         // replay_start: al_write_transmitted_q && (al_addr == REPLAY_START)
+        replay_bits: {csrs[REPLAY_BITS_HI], csrs[REPLAY_BITS_LO]}
     };
-    
+
     assign rr_mode_csr = '{
         recordEn: csrs[RR_MODE][0],
         replayEn: csrs[RR_MODE][1],

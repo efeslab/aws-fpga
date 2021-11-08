@@ -269,7 +269,10 @@ module rr_trace_rw #(
 
     // When there's a buffer overflow, an interrupt will be triggerred
     output logic write_interrupt,
-    output logic read_interrupt
+    output logic read_interrupt,
+
+    // The number of recorded bits, will used by the software
+    output logic [63:0] record_bits
 );
 
     localparam NSTAGES = (WIDTH - 1) / AXI_WIDTH + 1;
@@ -297,6 +300,7 @@ module rr_trace_rw #(
 
     logic [AXI_WIDTH-1:0] record_out_fifo_out, record_out_fifo_in_qq;
     logic record_out_fifo_rd_en, record_out_fifo_wr_en_qq;
+    logic [OFFSET_WIDTH-1:0] record_out_fifo_in_size_qq, record_out_fifo_out_size;
     logic record_out_fifo_full, record_out_fifo_almfull, record_out_fifo_empty;
 
     rr_trace_merge #(
@@ -318,6 +322,7 @@ module rr_trace_rw #(
         .record_in_fifo_empty(record_in_fifo_empty),
         .record_out_fifo_in_qq(record_out_fifo_in_qq),
         .record_out_fifo_wr_en_qq(record_out_fifo_wr_en_qq),
+        .record_out_fifo_in_size_qq(record_out_fifo_in_size_qq),
         .record_out_fifo_full(record_out_fifo_full),
         .record_out_fifo_almfull(record_out_fifo_almfull),
         .record_out_fifo_empty(record_out_fifo_empty),
@@ -326,13 +331,13 @@ module rr_trace_rw #(
     );
 
     merged_fifo #(
-        .WIDTH(AXI_WIDTH),
+        .WIDTH(AXI_WIDTH+OFFSET_WIDTH),
         .ALMFULL_THRESHOLD(12))
     mfifo_inst_record_out(
         .clk(clk),
         .rst(~sync_rst_n),
-        .din(record_out_fifo_in_qq),
-        .dout(record_out_fifo_out),
+        .din({record_out_fifo_in_size_qq, record_out_fifo_in_qq}),
+        .dout({record_out_fifo_out_size, record_out_fifo_out}),
         .wr_en(record_out_fifo_wr_en_qq),
         .rd_en(record_out_fifo_rd_en),
         .full(record_out_fifo_full),
@@ -432,7 +437,19 @@ module rr_trace_rw #(
                 axi_out.wdata <= record_out_fifo_out;
         end
     end
-    assign record_out_fifo_rd_en = ~axi_aw_working & ~axi_w_working & ~record_out_fifo_empty;
+    assign record_out_fifo_rd_en = ~axi_aw_working & ~axi_w_working & ~record_out_fifo_empty & (write_buf_curr != write_buf_end);
+
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            record_bits <= 0;
+        end else begin
+            if (write_buf_update) begin
+                record_bits <= 0;
+            end else if (record_out_fifo_rd_en) begin
+                record_bits <= record_bits + record_out_fifo_out_size;
+            end
+        end
+    end
 
     logic [15:0] tid;
     always_ff @(posedge clk) begin
@@ -548,27 +565,30 @@ module rr_trace_rw #(
 
         read_interrupt <= (read_buf_curr == read_buf_end);
     end
+
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
             do_replay <= 0;
         end else if (read_buf_update) begin
             do_replay <= 1;
-        end else if (read_buf_curr == read_buf_end) begin
+        end else if (read_buf_read_en && read_buf_curr + AXI_WIDTH/8 == read_buf_end) begin
             do_replay <= 0;
         end
     end
 
 `ifndef TEST_REPLAY
     // Read request
-    always_ff @(posedge clk) begin
+    always_comb begin
         if (~sync_rst_n) begin
-            axi_out.arvalid <= 0;
+            axi_out.arvalid = 0;
         end else if (do_replay) begin
             if (read_balance <= 120) begin
-                axi_out.arvalid <= 1;
+                axi_out.arvalid = 1;
             end else begin
-                axi_out.arvalid <= 0;
+                axi_out.arvalid = 0;
             end
+        end else begin
+            axi_out.arvalid = 0;
         end
     end
 `else
@@ -649,6 +669,7 @@ module rr_trace_merge #(
 
     output logic [AXI_WIDTH-1:0] record_out_fifo_in_qq,
     output logic record_out_fifo_wr_en_qq,
+    output logic [OFFSET_WIDTH-1:0] record_out_fifo_in_size_qq,
     input logic record_out_fifo_full,
     input logic record_out_fifo_almfull,
     input logic record_out_fifo_empty,
@@ -665,6 +686,7 @@ module rr_trace_merge #(
 
     logic [AXI_WIDTH-1:0] record_out_fifo_in, record_out_fifo_in_q;
     logic record_out_fifo_wr_en, record_out_fifo_wr_en_q;
+    logic [OFFSET_WIDTH-1:0] record_out_fifo_in_size, record_out_fifo_in_size_q;
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
             record_out_fifo_wr_en_q <= 0;
@@ -674,6 +696,8 @@ module rr_trace_merge #(
             record_out_fifo_in_qq <= record_out_fifo_in_q;
             record_out_fifo_wr_en_q <= record_out_fifo_wr_en;
             record_out_fifo_wr_en_qq <= record_out_fifo_wr_en_q;
+            record_out_fifo_in_size_q <= record_out_fifo_in_size;
+            record_out_fifo_in_size_qq <= record_out_fifo_in_size_q;
         end
     end
 
@@ -696,6 +720,7 @@ module rr_trace_merge #(
             record_out_fifo_in <= 0;
             record_out_fifo_wr_en <= 0;
             current_record_unhandled_size <= 0;
+            record_out_fifo_in_size <= 0;
         end else begin
             if (record_finish) begin
                 do_record_finish <= 1;
@@ -729,11 +754,13 @@ module rr_trace_merge #(
                 record_leftover[0 +: AXI_WIDTH] <= record_leftover_next[AXI_WIDTH +: AXI_WIDTH];
                 record_leftover_size <= record_leftover_size + current_record_unhandled_size - AXI_WIDTH;
                 record_out_fifo_in <= record_leftover_next[0 +: AXI_WIDTH];
+                record_out_fifo_in_size <= AXI_WIDTH;
                 record_out_fifo_wr_en <= 1;
             end else if (do_record_finish && record_in_fifo_empty && ~record_din_valid) begin
                 if (record_leftover_size > 0) begin
                     record_out_fifo_wr_en <= 1;
                     record_out_fifo_in <= record_leftover[0 +: AXI_WIDTH];
+                    record_out_fifo_in_size <= record_leftover_size;
                     do_record_finish <= 0;
                     record_leftover_size <= 0;
                 end

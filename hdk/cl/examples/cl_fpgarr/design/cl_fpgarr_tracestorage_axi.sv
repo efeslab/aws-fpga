@@ -18,7 +18,8 @@ module rr_storage_backend_axi #(
   rr_axi_bus_t.slave storage_backend_bus,
   rr_stream_bus_t.C record_bus,
   rr_stream_bus_t.P replay_bus,
-  input storage_axi_csr_t csr
+  input storage_axi_csr_t csr,
+  output storage_axi_counter_csr_t counter
 );
 
 // rr_steam_bus_t, packed data structure, LSB to MSB:
@@ -94,6 +95,7 @@ rr_trace_rw #(
   .read_buf_addr(csr.buf_addr),
   .read_buf_size(csr.buf_size),
   .read_buf_update(csr.read_buf_update),
+  .record_bits(counter.record_bits),
   .write_interrupt(),
   .read_interrupt()
 );
