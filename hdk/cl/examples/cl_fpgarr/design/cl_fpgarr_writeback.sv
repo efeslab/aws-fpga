@@ -269,8 +269,18 @@ module rr_trace_rw #(
     localparam EXT_WIDTH = NSTAGES * AXI_WIDTH;
 
     localparam ALIGNED_WIDTH = `GET_ALIGNED_SIZE(WIDTH + OFFSET_WIDTH);
-    initial assert(OFFSET_WIDTH >= ($clog2(ALIGNED_WIDTH - 1) + 1));
-    initial assert(ALIGNED_WIDTH >= WIDTH);
+    // parameter check
+    generate
+      if (OFFSET_WIDTH < $clog2(ALIGNED_WIDTH+1))
+         $error("WIDTH mismatch: OFFSET_WIDTH %d, ALIGNED_WIDTH %d\n",
+            OFFSET_WIDTH, ALIGNED_WIDTH);
+      if (ALIGNED_WIDTH < WIDTH)
+         $error("Invalid ALIGNED_WIDTH %d (WIDTH %d)\n",
+            ALIGNED_WIDTH, WIDTH);
+      if (2**$clog2(PACKET_ALIGNMENT) != PACKET_ALIGNMENT)
+         $error("PACKET_ALIGNMENT (%d) has to be a power of 2\n",
+            PACKET_ALIGNMENT);
+    endgenerate
 
     logic [WIDTH-1:0] record_in_fifo_out;
     logic [ALIGNED_WIDTH-1:0] record_in_fifo_out_aligned;
@@ -293,9 +303,12 @@ module rr_trace_rw #(
         .almfull(record_in_fifo_almfull),
         .empty(record_in_fifo_empty)
     );
-
+    // align the logging unit as well as its length
+    // The length of the logging unit is concat with the content before given to
+    // the trace_merge (record) module
     assign record_in_fifo_out_aligned = ALIGNED_WIDTH'({record_in_fifo_out,record_in_fifo_out_width_aligned});
-    assign record_in_fifo_out_width_aligned = `GET_ALIGNED_SIZE(record_in_fifo_out_width + OFFSET_WIDTH);
+    assign record_in_fifo_out_width_aligned = `GET_ALIGNED_SIZE_W(
+       OFFSET_WIDTH, record_in_fifo_out_width + OFFSET_WIDTH);
 
     logic [AXI_WIDTH-1:0] record_out_fifo_out, record_out_fifo_in_qq;
     logic record_out_fifo_rd_en, record_out_fifo_wr_en_qq;
@@ -648,7 +661,7 @@ module rr_trace_rw #(
         .replay_out_fifo_empty(replay_out_fifo_empty)
 `else
     rr_parse_replay_trace #(
-        .LOGGING_UNIT_WIDTH(WIDTH),
+        .LOGGING_UNIT_WIDTH(ALIGNED_WIDTH),
         .OFFSET_WIDTH(OFFSET_WIDTH),
         .AXI_WIDTH(AXI_WIDTH),
         .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH),
@@ -1094,16 +1107,13 @@ module rr_trace_split #(
 
 endmodule
 
-/* idea to optimize replay timing/resource
- * Two buffers: shifting buffer and output buffer
- * shifting buffer: [2*AXI_WIDTH], say hi and lo part. perform two operations
- *   1. send [k +: AXI_WIDTH] to the output buffer
- *   2. Move [AXI_WIDTH +: AXI_WIDTH] to [0 +: AXI_WIDTH]
- * output buffer: [FULL_WIDTH], only get assigned aligned to AXI_WIDTH
- *   Wait for the whole replay unit to be ready, receive data from the shifting
- *   buffer and put it to [i*AXI_WIDTH +: AXI_WIDTH], i = [0..2]
- */
-
+// rr_parse_replay_trace converts the format of trace, that comes in the unit of
+// AXI_WIDTH, to another format of trace, that comes out in the unit of
+// LOGGING_UNIT_WIDTH. LOGGING_UNIT_WIDTH consists of four parts (LSB to MSB):
+// [0 +: OFFSET_WIDTH] the length of this logging unit
+// [. +: LOGB_CHANNEL_CNT] the logb_valid
+// [. +: LOGE_CHANNEL_CNT] the loge_valid
+// [. +: LOGB_DATA_WIDTH] the logb_data
 module rr_parse_replay_trace #(
     parameter LOGGING_UNIT_WIDTH,
     parameter OFFSET_WIDTH,
@@ -1124,16 +1134,12 @@ module rr_parse_replay_trace #(
 
     // LSB->MSB: data then offset width
     // TODO: the offset width is unnecessary
-    output logic [LOGGING_UNIT_WIDTH+OFFSET_WIDTH-1:0] replay_out_fifo_in,
+    output logic [LOGGING_UNIT_WIDTH-1:0] replay_out_fifo_in,
     output logic replay_out_fifo_wr_en,
     input logic replay_out_fifo_full,
     input logic replay_out_fifo_almfull,
     input logic replay_out_fifo_empty
 );
-`DEF_SUM_WIDTH(GET_FULL_WIDTH, SHUFFLED_CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
-localparam FULL_WIDTH = GET_FULL_WIDTH() + LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT;
-`DEF_GET_LEN(GET_LEN, LOGB_CHANNEL_CNT, $clog2(FULL_WIDTH+1),
-   SHUFFLED_CHANNEL_WIDTHS)
 localparam AXI_OFFSET_WIDTH = $clog2(AXI_WIDTH);
 
 // parameter check
@@ -1186,31 +1192,26 @@ logic hi_lo_shift;  // transfer one axi unit from HI to LO
 logic lo_out;
 logic [AXI_WIDTH-1:0] lo_out_data;
 assign lo_out_data = shift_buf[lo_valid_off +: AXI_WIDTH];
-// FIXME: rename lo_valid_len to lo_remain_len
 // the remaining len of the valid data of the current loging unit waiting to be
 // transmitted to the assemble buffer
 // Only valid if
-// 1. HI_FULL && LO_HEADER (has to be calculated in one cycle, i.e. GET_LEN)
+// 1. HI_FULL && LO_HEADER (decoded from the trace)
 // 2. LO_BODY (from a register)
-// NOTE that in the following usage, lo_valid_len is only used when lo_out,
-// which guarantees lo_valid_len has valid data.
-wire [OFFSET_WIDTH-1:0] lo_valid_len;
-reg [OFFSET_WIDTH-1:0] lo_valid_len_reg;
-assign lo_valid_len = (lo_fsm == LO_HEADER) ?
-    GET_LEN(lo_out_data[0 +: LOGB_CHANNEL_CNT]):
-    (lo_fsm == LO_BODY ? lo_valid_len_reg : 0);
+// NOTE that in the following usage, lo_remain_len is only used when lo_out,
+// which guarantees lo_remain_len has valid data.
+logic [OFFSET_WIDTH-1:0] lo_remain_len;
 // all LO (valid) data has been transmitted to the ASM buffer
 // only valid when lo_out
 logic lo_exhaust;
 assign lo_exhaust =
-    (lo_valid_len + OFFSET_WIDTH'(lo_valid_off)) >= OFFSET_WIDTH'(AXI_WIDTH);
+    (lo_remain_len + OFFSET_WIDTH'(lo_valid_off)) >= OFFSET_WIDTH'(AXI_WIDTH);
 // Whether the output of LO contains the remaining of the logging unit
 // only valid when lo_out
 // Note that I assume only output when HI and LO have continuous valid data
 // TODO: Double check what if LO only has part of the HEADER
 logic lo_valid_satisfied;
 assign lo_valid_satisfied =
-    lo_valid_len <= AXI_WIDTH;
+    lo_remain_len <= AXI_WIDTH;
 /// }}}
 
 // ASM_FSM
@@ -1225,7 +1226,7 @@ typedef enum { ASM_WAIT_HEADER, ASM_WAIT_BODY, ASM_DONE } ASM_FSM_t;
 (* fsm_encoding = "one_hot" *) ASM_FSM_t asm_fsm, asm_fsm_next;
 localparam NUM_AXI = (LOGGING_UNIT_WIDTH - 1)/AXI_WIDTH + 1;
 logic [NUM_AXI * AXI_WIDTH-1:0] trace_data;
-logic [AXI_WIDTH-1:0] trace_data_per_axi [NUM_AXI-1:0];
+logic [NUM_AXI-1:0] [AXI_WIDTH-1:0] trace_data_per_axi;
 genvar i;
 generate
    for (i=0; i < NUM_AXI; i=i+1) begin
@@ -1248,7 +1249,7 @@ logic asm_out;
 
 // the almful backpressure has been propogated to the input of the shift buffer
 assign replay_out_fifo_wr_en = asm_out;
-assign replay_out_fifo_in = {trace_len, trace_data[0 +: LOGGING_UNIT_WIDTH]};
+assign replay_out_fifo_in = trace_data[0 +: LOGGING_UNIT_WIDTH];
 /// }}}
 
 // HI_FSM definition
@@ -1292,7 +1293,7 @@ end
 assign replay_in_fifo_rd_en =
     !replay_in_fifo_empty && // has data
     !replay_out_fifo_almfull && // rate limit
-    ( !hi_full || hi_lo_shift);
+    (!hi_full || hi_lo_shift);
 // HI_FSM other states
 always_ff @(posedge clk)
     if (!sync_rst_n) begin
@@ -1414,7 +1415,7 @@ always_ff @(posedge clk)
                     if (lo_valid_satisfied)
                         // LO_HEADER |-> header_flow (lo_exhaust)
                         // LO_BODY |-> reload (lo_exhaust)
-                        lo_valid_off <= lo_valid_len[0 +: AXI_OFFSET_WIDTH] +
+                        lo_valid_off <= lo_remain_len[0 +: AXI_OFFSET_WIDTH] +
                             lo_valid_off - AXI_WIDTH;
                     else
                         // LO_HEADER |-> extend
@@ -1424,7 +1425,7 @@ always_ff @(posedge clk)
                     // LO_HEADER |-> header_flow (!lo_exhaust)
                     // LO_BODY |-> reload (!lo_exhaust)
                     lo_valid_off <=
-                        lo_valid_off + lo_valid_len[0 +: AXI_OFFSET_WIDTH];
+                        lo_valid_off + lo_remain_len[0 +: AXI_OFFSET_WIDTH];
                 else
                     // LO_HEADER/LO_BODY |-> stall
                     lo_valid_off <= lo_valid_off;
@@ -1443,27 +1444,36 @@ always_ff @(posedge clk)
             default:
                 lo_empty <= 0;
         endcase
-// note that lo_valid_len_reg is only valid when LO_BODY
+reg [OFFSET_WIDTH-1:0] lo_remain_len_reg;
+always_comb
+    case (lo_fsm)
+        LO_HEADER:
+            lo_remain_len = lo_out_data[0 +: OFFSET_WIDTH];
+        LO_BODY:
+            lo_remain_len = lo_remain_len_reg;
+        default:
+            lo_remain_len = 0;
+    endcase
+// note that lo_remain_len_reg is only valid when LO_BODY
 always_ff @(posedge clk)
-    if (!sync_rst_n)
-        lo_valid_len_reg <= 0;
-    else
-        case (lo_fsm)
-            LO_HEADER:
-                if (hi_lo_shift && !lo_valid_satisfied)
-                    // extend
-                    lo_valid_len_reg <= lo_valid_len - AXI_WIDTH;
-                else
-                    lo_valid_len_reg <= lo_valid_len_reg;
-            LO_BODY:
-                if (hi_lo_shift && !lo_valid_satisfied)
-                    // body_flow (lo_exhaust)
-                    lo_valid_len_reg <= lo_valid_len_reg - AXI_WIDTH;
-                else
-                    lo_valid_len_reg <= lo_valid_len_reg;
-            default:
-                lo_valid_len_reg <= lo_valid_len_reg;
-        endcase
+    // no need to reset
+    // init lo_fsm invalidates lo_remain_len_reg
+    case (lo_fsm)
+        LO_HEADER:
+            if (hi_lo_shift && !lo_valid_satisfied)
+                // extend
+                lo_remain_len_reg <= lo_remain_len - AXI_WIDTH;
+            else
+                lo_remain_len_reg <= lo_remain_len_reg;
+        LO_BODY:
+            if (hi_lo_shift && !lo_valid_satisfied)
+                // body_flow (lo_exhaust)
+                lo_remain_len_reg <= lo_remain_len_reg - AXI_WIDTH;
+            else
+                lo_remain_len_reg <= lo_remain_len_reg;
+        default:
+            lo_remain_len_reg <= lo_remain_len_reg;
+    endcase
 
 // shift_buffer
 always_ff @(posedge clk) begin
@@ -1485,7 +1495,7 @@ always_ff @(posedge clk) begin
    else
       asm_valid <= lo_out;
    asm_data_in <= lo_out_data;
-   asm_valid_len_in <= lo_valid_len;
+   asm_valid_len_in <= lo_remain_len;
 end
 
 // ASM_FSM definition
@@ -1510,7 +1520,7 @@ end
 // stuff so the FULL state is not implemented.
 // There is a register barrier between shift buffer and assemble buffer
 // to improve timing
-// input: lo_valid_len (only come with the HEADER)
+// input: lo_remain_len (only come with the HEADER)
 //        lo_out_data
 // output: asm_out
 always_ff @(posedge clk)
@@ -1588,6 +1598,7 @@ always_comb
             asm_out = 0;
     endcase
 `ifdef TEST_REPLAY
+`DEF_GET_LEN(GET_LEN, LOGB_CHANNEL_CNT, OFFSET_WIDTH, SHUFFLED_CHANNEL_WIDTHS)
 // debug related
 logic [AXI_WIDTH-1:0] hi_buf;
 assign hi_buf = shift_buf[AXI_WIDTH +: AXI_WIDTH];

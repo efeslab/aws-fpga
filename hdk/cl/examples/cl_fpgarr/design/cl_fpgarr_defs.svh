@@ -284,13 +284,18 @@ parameter int AWSF1_PLACEMENT_VEC[AWSF1_NUM_INTERFACES-1:0] = '{
 };
 // The alignment of packets
 `ifndef OVERRIDE_PACKET_ALIGNMENT
-parameter logic [63:0] PACKET_ALIGNMENT = 8;
+parameter int PACKET_ALIGNMENT = 8;
 `else
-parameter logic [63:0] PACKET_ALIGNMENT = `OVERRIDE_PACKET_ALIGNMENT;
+parameter int PACKET_ALIGNMENT = `OVERRIDE_PACKET_ALIGNMENT;
 `endif
 parameter logic [63:0] PACKET_ALIGNMENT_SHIFT = $clog2(PACKET_ALIGNMENT);
-parameter logic [63:0] PACKET_ALIGNMENT_MASK = PACKET_ALIGNMENT - 1;
+parameter logic [63:0] PACKET_ALIGNMENT_MASK = 64'(PACKET_ALIGNMENT) - 1;
+// GET_ALIGNED_SIZE is to align constant parameters
 `define GET_ALIGNED_SIZE(size) (((size - 1) / PACKET_ALIGNMENT + 1) * PACKET_ALIGNMENT)
+// GET_ALIGNED_SIZE_W is to align known-width variables
+// It uses more efficient bit ops.
+`define GET_ALIGNED_SIZE_W(width, size)                                        \
+  (((size) + width'(PACKET_ALIGNMENT) - 1) & (~(width'(PACKET_ALIGNMENT) - 1)))
 `define GET_FORCE_ALIGNED_SIZE(size) (size & ~PACKET_ALIGNMENT_MASK)
 `define GET_FORCE_ALIGNED_FRAME(size) (size >> PACKET_ALIGNMENT_SHIFT)
 `define IS_ALIGNED_SIZE(size) ((size & PACKET_ALIGNMENT_MASK) == 0)
