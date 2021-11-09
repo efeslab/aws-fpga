@@ -65,7 +65,7 @@ rr_trace_rw #(
 ) trace_rw (
   .clk(clk),
   .sync_rst_n(rstn),
-  .cfg_max_payload(0),
+  .cfg_max_payload(2'b0),
   .record_din_valid(record_bus.valid),
   .record_din_ready(record_bus.ready),
   .record_finish(csr.record_force_finish),

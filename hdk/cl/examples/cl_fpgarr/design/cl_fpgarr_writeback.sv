@@ -202,26 +202,6 @@ module rr_storage_pcim_axi_interconnect (
 );
 endmodule
 
-/*
- * A better structure in my mind.
- * Summary of the requirement:
- * ===> Variable length input (0..WIDTH)
- *             Fixed 512 output (AXI_WIDTH) ===>
- * A [2*WIDTH-1:0] (shift register?) B
- * Four cases to consider:
- * B_next
- * B
- * 1. !in, !out B_next = B
- * 2. in, !out
- *    B_next[B_len +: WIDTH] = in
- * 3. !in, out
- *    B_next[0 +: WIDTH-AXI_WIDTH] = B[AXI_WIDTH +: WIDTH-AXI_WIDTH]
- *    out[AXI_WIDTH-1:0] = B[0 +: AXI_WIDTH]
- * 4. in, out
- *    B_next[0 +: WIDTH-AXI_WIDTH] = B[AXI_WIDTH +: WIDTH-AXI_WIDTH]
- *    B_next[B_len - AXI_WIDTH +: WIDTH] = in
- *    out[AXI_WIDTH-1:0] = B[0 +: AXI_WIDTH]
- */
 module rr_trace_rw #(
     parameter WIDTH = 2500,
     parameter AXI_WIDTH = 512,
@@ -856,7 +836,7 @@ module rr_trace_split #(
 
     localparam NSTAGES = (WIDTH - 1) / AXI_WIDTH + 1;
     localparam EXT_WIDTH = NSTAGES * AXI_WIDTH;
-      
+
     `DEF_SUM_WIDTH(GET_FULL_WIDTH, SHUFFLED_CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
     localparam FULL_WIDTH = GET_FULL_WIDTH() + LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT;
     `DEF_GET_LEN(GET_LEN, LOGB_CHANNEL_CNT, $clog2(FULL_WIDTH+1),
@@ -1133,7 +1113,6 @@ module rr_parse_replay_trace #(
     input logic replay_in_fifo_empty,
 
     // LSB->MSB: data then offset width
-    // TODO: the offset width is unnecessary
     output logic [LOGGING_UNIT_WIDTH-1:0] replay_out_fifo_in,
     output logic replay_out_fifo_wr_en,
     input logic replay_out_fifo_full,
@@ -1178,7 +1157,6 @@ logic hi_full; // single bit reg shortcut for hi_fsm == HI_FULL
 // EMPTY: init state
 // HEADER: have valid data (header of a logging unit) starting from
 // lo_valid_off, which may output to the assemble buffer
-// TODO: think about LO only has part of the HEADER
 // BODY: have valid data (body of a logging unit) from lo_valid_off, which
 // may output to the assemble buffer
 /// {{{
@@ -1208,7 +1186,6 @@ assign lo_exhaust =
 // Whether the output of LO contains the remaining of the logging unit
 // only valid when lo_out
 // Note that I assume only output when HI and LO have continuous valid data
-// TODO: Double check what if LO only has part of the HEADER
 logic lo_valid_satisfied;
 assign lo_valid_satisfied =
     lo_remain_len <= AXI_WIDTH;
@@ -1234,7 +1211,7 @@ generate
    end
 endgenerate
 // trace_axi_cnt is the total number of axi units assembled in the buffer
-// trace_axi_cnt and trace_len are both valid when WAIT_BODY or DONE 
+// trace_axi_cnt and trace_len are both valid when WAIT_BODY or DONE
 logic [$clog2(NUM_AXI+1)-1:0] trace_axi_cnt;
 logic [OFFSET_WIDTH-1:0] trace_len;
 // ASM buffer can take in a new [AXI_WIDTH-1:0]. Make this register to improve
@@ -1256,11 +1233,11 @@ assign replay_out_fifo_in = trace_data[0 +: LOGGING_UNIT_WIDTH];
 //                  /--\ +- flow
 //                  |  |
 //           load   |  v
-//  -------    +   ------ 
+//  -------    +   ------
 // |       | ---> |      |
 // | EMPTY |      | FULL |
 // |       | <--- |      |
-//  -------    -   ------ 
+//  -------    -   ------
 //          unload
 always_ff @(posedge clk)
     if (!sync_rst_n)
@@ -1394,7 +1371,7 @@ assign lo_out =
 // OR
 // 2. all of the LO is output to the assemble buffer
 assign hi_lo_shift =
-    hi_full && 
+    hi_full &&
         (lo_empty ||
         (lo_out && lo_exhaust));
 // LO_FSM other states
@@ -1409,7 +1386,7 @@ always_ff @(posedge clk)
                 // since even if !hi_lo_shift (stall), lo_valid_off is not valid
                 // in LO_EMPTY, so no harm to save a if
                 lo_valid_off <= 0;
-            default: 
+            default:
                 // unified LO_HEADER and LO_BODY
                 if (hi_lo_shift)
                     if (lo_valid_satisfied)
