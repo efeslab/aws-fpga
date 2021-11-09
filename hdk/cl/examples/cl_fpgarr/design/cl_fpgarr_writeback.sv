@@ -1163,7 +1163,6 @@ logic [2*AXI_WIDTH-1:0] shift_buf;
 /// {{{
 typedef enum { HI_EMPTY, HI_FULL} HI_FSM_t;
 (* fsm_encoding = "one_hot" *) HI_FSM_t hi_fsm, hi_fsm_next;
-logic [AXI_WIDTH-1:0] hi_buf;
 logic hi_in; // read data in to the hi buffer
 assign hi_in = replay_in_fifo_rd_en;
 logic hi_full; // single bit reg shortcut for hi_fsm == HI_FULL
@@ -1249,7 +1248,7 @@ logic asm_out;
 
 // the almful backpressure has been propogated to the input of the shift buffer
 assign replay_out_fifo_wr_en = asm_out;
-assign replay_out_fifo_in = {trace_len, trace_data};
+assign replay_out_fifo_in = {trace_len, trace_data[0 +: LOGGING_UNIT_WIDTH]};
 /// }}}
 
 // HI_FSM definition
@@ -1398,19 +1397,39 @@ assign hi_lo_shift =
         (lo_empty ||
         (lo_out && lo_exhaust));
 // LO_FSM other states
+// lo_valid_off is valid when LO_HEADER or LO_BODY
 always_ff @(posedge clk)
     if (!sync_rst_n)
         lo_valid_off <= 0;
-    else if (hi_lo_shift)
-        // load, header_flow (lo_exhaust), extend, 
-        lo_valid_off <=
-            lo_valid_len + OFFSET_WIDTH'(lo_valid_off) -
-            OFFSET_WIDTH'(AXI_WIDTH);
-    else if (lo_out && !lo_exhaust)
-        // implies !LO_EMPTY
-        // header_flow (!lo_exhaust)
-        lo_valid_off <=
-            lo_valid_off - lo_valid_len[0 +: AXI_OFFSET_WIDTH];
+    else
+        case (lo_fsm)
+            LO_EMPTY:
+                // here omit an if (hi_lo_shift) // load
+                // since even if !hi_lo_shift (stall), lo_valid_off is not valid
+                // in LO_EMPTY, so no harm to save a if
+                lo_valid_off <= 0;
+            default: 
+                // unified LO_HEADER and LO_BODY
+                if (hi_lo_shift)
+                    if (lo_valid_satisfied)
+                        // LO_HEADER |-> header_flow (lo_exhaust)
+                        // LO_BODY |-> reload (lo_exhaust)
+                        lo_valid_off <= lo_valid_len[0 +: AXI_OFFSET_WIDTH] +
+                            lo_valid_off - AXI_WIDTH;
+                    else
+                        // LO_HEADER |-> extend
+                        // LO_BODY |-> body_flow (lo_exhaust)
+                        lo_valid_off <= lo_valid_off;
+                else if (lo_out && !lo_exhaust)
+                    // LO_HEADER |-> header_flow (!lo_exhaust)
+                    // LO_BODY |-> reload (!lo_exhaust)
+                    lo_valid_off <=
+                        lo_valid_off + lo_valid_len[0 +: AXI_OFFSET_WIDTH];
+                else
+                    // LO_HEADER/LO_BODY |-> stall
+                    lo_valid_off <= lo_valid_off;
+        endcase
+
 always_ff @(posedge clk)
     if (!sync_rst_n)
         lo_empty <= 1;
@@ -1433,7 +1452,7 @@ always_ff @(posedge clk)
             LO_HEADER:
                 if (hi_lo_shift && !lo_valid_satisfied)
                     // extend
-                    lo_valid_len_reg <= lo_valid_len;
+                    lo_valid_len_reg <= lo_valid_len - AXI_WIDTH;
                 else
                     lo_valid_len_reg <= lo_valid_len_reg;
             LO_BODY:
@@ -1568,4 +1587,11 @@ always_comb
         default:
             asm_out = 0;
     endcase
+`ifdef TEST_REPLAY
+// debug related
+logic [AXI_WIDTH-1:0] hi_buf;
+assign hi_buf = shift_buf[AXI_WIDTH +: AXI_WIDTH];
+logic [AXI_WIDTH-1:0] lo_buf;
+assign lo_buf = shift_buf[0 +: AXI_WIDTH];
+`endif
 endmodule
