@@ -254,7 +254,7 @@ module test_writeback_tb;
 `else
 
     initial begin
-        $error(0 && "TEST_REPLAY should be defined to run this test");
+        assert(0 && "TEST_REPLAY should be defined to run this test");
         $finish;
     end
 

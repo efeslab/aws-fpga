@@ -278,7 +278,7 @@ module rr_trace_rw #(
     localparam NSTAGES = (WIDTH - 1) / AXI_WIDTH + 1;
     localparam EXT_WIDTH = NSTAGES * AXI_WIDTH;
 
-    localparam ALIGNED_WIDTH = `GET_ALIGNED_SIZE(WIDTH);
+    localparam ALIGNED_WIDTH = `GET_ALIGNED_SIZE(WIDTH + OFFSET_WIDTH);
     initial assert(OFFSET_WIDTH >= ($clog2(ALIGNED_WIDTH - 1) + 1));
     initial assert(ALIGNED_WIDTH >= WIDTH);
 
@@ -304,8 +304,8 @@ module rr_trace_rw #(
         .empty(record_in_fifo_empty)
     );
 
-    assign record_in_fifo_out_aligned = ALIGNED_WIDTH'(record_in_fifo_out);
-    assign record_in_fifo_out_width_aligned = `GET_ALIGNED_SIZE(record_in_fifo_out_width);
+    assign record_in_fifo_out_aligned = ALIGNED_WIDTH'({record_in_fifo_out,record_in_fifo_out_width_aligned});
+    assign record_in_fifo_out_width_aligned = `GET_ALIGNED_SIZE(record_in_fifo_out_width + OFFSET_WIDTH);
 
     logic [AXI_WIDTH-1:0] record_out_fifo_out, record_out_fifo_in_qq;
     logic record_out_fifo_rd_en, record_out_fifo_wr_en_qq;
@@ -516,19 +516,19 @@ module rr_trace_rw #(
         .empty(replay_in_fifo_empty)
     );
 
-    logic [WIDTH-1:0] replay_out_fifo_in, replay_out_fifo_out;
-    logic [OFFSET_WIDTH-1:0] replay_out_fifo_in_width, replay_out_fifo_out_width;
+    logic [ALIGNED_WIDTH-1:0] replay_out_fifo_in, replay_out_fifo_out;
+    logic [OFFSET_WIDTH-1:0] replay_out_fifo_in_width;
     logic replay_out_fifo_wr_en, replay_out_fifo_rd_en;
     logic replay_out_fifo_full, replay_out_fifo_almfull, replay_out_fifo_empty;
 
     merged_fifo #(
-        .WIDTH(WIDTH+OFFSET_WIDTH),
+        .WIDTH(ALIGNED_WIDTH),
         .ALMFULL_THRESHOLD(12))
     mfifo_inst_replay_out(
         .clk(clk),
         .rst(~sync_rst_n),
-        .din({replay_out_fifo_in_width,replay_out_fifo_in}),
-        .dout({replay_out_fifo_out_width,replay_out_fifo_out}),
+        .din(replay_out_fifo_in),
+        .dout(replay_out_fifo_out),
         .wr_en(replay_out_fifo_wr_en),
         .rd_en(replay_out_fifo_rd_en),
         .full(replay_out_fifo_full),
@@ -628,8 +628,8 @@ module rr_trace_rw #(
 
     always_comb begin
         replay_dout_valid = ~replay_out_fifo_empty;
-        replay_dout = replay_out_fifo_out;
-        replay_dout_width = replay_out_fifo_out_width;
+        replay_dout = replay_out_fifo_out[OFFSET_WIDTH +: WIDTH];
+        replay_dout_width = replay_out_fifo_out[0 +: OFFSET_WIDTH];
         replay_out_fifo_rd_en = replay_dout_valid & replay_dout_ready;
     end
 
@@ -867,7 +867,7 @@ module rr_trace_split #(
 
     // *replay_total_size* is the number of bits in the whole transaction. It's calculated when
     // the first few bits of a transaction is decoded, and used until the next transaction.
-    assign replay_total_size_tmp = `GET_ALIGNED_SIZE(GET_LEN(replay_leftover[0 +: LOGB_CHANNEL_CNT]));
+    assign replay_total_size_tmp = replay_leftover[0 +: OFFSET_WIDTH];
     assign replay_total_size = replay_is_first_packet ? replay_total_size_tmp : replay_total_size_reg;
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
@@ -934,13 +934,13 @@ module rr_trace_split #(
             // decode the packet size.
             if (replay_left_size <= AXI_WIDTH && replay_leftover_size >= replay_left_size) begin
                 if (replay_current_in_valid) begin
-                    if (replay_leftover_size + AXI_WIDTH - replay_shift_size >= LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT) begin
+                    if (replay_leftover_size + AXI_WIDTH - replay_shift_size >= OFFSET_WIDTH) begin
                         replay_is_first_packet <= 1;
                     end else if (replay_leftover_do_step) begin
                         replay_is_first_packet <= 0;
                     end
                 end else begin
-                    if (replay_leftover_size - replay_shift_size >= LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT) begin
+                    if (replay_leftover_size - replay_shift_size >= OFFSET_WIDTH) begin
                         replay_is_first_packet <= 1;
                     end else if (replay_leftover_do_step) begin
                         replay_is_first_packet <= 0;

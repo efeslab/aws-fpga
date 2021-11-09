@@ -283,7 +283,11 @@ parameter int AWSF1_PLACEMENT_VEC[AWSF1_NUM_INTERFACES-1:0] = '{
   4  // pcis
 };
 // The alignment of packets
+`ifndef OVERRIDE_PACKET_ALIGNMENT
 parameter logic [63:0] PACKET_ALIGNMENT = 8;
+`else
+parameter logic [63:0] PACKET_ALIGNMENT = `OVERRIDE_PACKET_ALIGNMENT;
+`endif
 parameter logic [63:0] PACKET_ALIGNMENT_SHIFT = $clog2(PACKET_ALIGNMENT);
 parameter logic [63:0] PACKET_ALIGNMENT_MASK = PACKET_ALIGNMENT - 1;
 `define GET_ALIGNED_SIZE(size) (((size - 1) / PACKET_ALIGNMENT + 1) * PACKET_ALIGNMENT)
