@@ -33,6 +33,9 @@ module ram_fifo_ft #(parameter WIDTH=32, parameter PTR_WIDTH=7, parameter WATERM
    output logic[PTR_WIDTH-1:0] free_entries,
    output logic oflow,
 
+   // considering there is a delay between push in and pop from the FIFO,
+   // the FIFO can be invalid at the "pop" port but still has valid data waiting
+   // to be popped out
    output logic empty                  //Because of ft_fifo empty is different than !valid.  Should only be used
                                        // to see if FIFO is not 
    );

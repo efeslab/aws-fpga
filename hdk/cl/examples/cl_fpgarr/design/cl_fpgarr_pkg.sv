@@ -100,32 +100,28 @@
       // This is for logging the ordering/happen-before across transactions
       parameter int LOGE_CHANNEL_CNT
    );
-   function automatic int GET_FULL_WIDTH;
-      GET_FULL_WIDTH = 0;
-      for (int i=0; i < LOGB_CHANNEL_CNT; ++i)
-         GET_FULL_WIDTH += CHANNEL_WIDTHS[i];
-   endfunction
-   parameter FULL_WIDTH = GET_FULL_WIDTH();
+   `DEF_SUM_WIDTH(GET_LOGB_DATA_WIDTH, CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
+   parameter LOGB_DATA_WIDTH = GET_LOGB_DATA_WIDTH();
    logic logb_valid [LOGB_CHANNEL_CNT-1:0];
-   logic [FULL_WIDTH-1:0] logb_data;
+   logic [LOGB_DATA_WIDTH-1:0] logb_data;
    logic loge_valid [LOGE_CHANNEL_CNT-1:0];
-   // this is shared between logb and loge
-   // i.e. ready == logb_ready == loge_ready
-   logic ready;
+   // almful works with a big FIFO in the end of a series of modules
+   // In fpgarr, almful is generated and handeled in the happenbefore_encoder
+   logic logb_almful;
    modport P (output logb_valid, output logb_data,
-              output loge_valid, input ready);
+              output loge_valid, input logb_almful);
    modport C (input logb_valid, input logb_data,
-              input loge_valid, output ready);
+              input loge_valid, output logb_almful);
    endinterface
 
    interface rr_packed_logging_bus_t #(
       parameter int LOGB_CHANNEL_CNT,
       parameter int LOGE_CHANNEL_CNT,
-      parameter int FULL_WIDTH
+      parameter int LOGB_DATA_WIDTH
    );
    // here, use $clog2(FULL_WIDTH+1) because if FULL_WIDTH == 32, then
    // $clog2(32) == 5, but 5 bits cannot represent the integer 32.
-   parameter OFFSET_WIDTH = $clog2(FULL_WIDTH+1);
+   parameter LOGB_OFFSET_WIDTH = $clog2(LOGB_DATA_WIDTH+1);
 
    typedef struct packed {
       // to aggregate whether at least one of the packed logb has valid data
@@ -133,20 +129,20 @@
       logic any_valid;
       // Note that data and len are only meaningful if any_valid is true
       // data is the packed version of all valid data of each logb channel
-      logic [FULL_WIDTH-1:0] data;
+      logic [LOGB_DATA_WIDTH-1:0] data;
       // len is the total length of the valid data. There are at most
       // FULL_WIDTH bits of valid data (every channel has valid data)
-      logic [OFFSET_WIDTH-1:0] len;
+      logic [LOGB_OFFSET_WIDTH-1:0] len;
    } packed_data_t;
 
    logic [LOGB_CHANNEL_CNT-1:0] logb_valid;
    packed_data_t plogb; // packed logb
    logic [LOGE_CHANNEL_CNT-1:0] loge_valid;
-   logic ready;
+   logic logb_almful;
    modport P (output logb_valid, plogb, loge_valid,
-              input ready);
+              input logb_almful);
    modport C (input logb_valid, plogb, loge_valid,
-              output ready);
+              output logb_almful);
    endinterface
 
    // This is supposed to be the interface between mjc and I

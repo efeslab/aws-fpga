@@ -16,12 +16,12 @@ parameter OFFSET_WIDTH = $clog2(FULL_WIDTH+1);
 logic any_valid;
 logic [FULL_WIDTH-1:0] data;
 logic [OFFSET_WIDTH-1:0] len;
-logic ready;
-modport P (output any_valid, data, len, input ready);
-modport C (input any_valid, data, len, output ready);
+logic almful;
+modport P (output any_valid, data, len, input almful);
+modport C (input any_valid, data, len, output almful);
 endinterface
 
-module rr_packed_logb_bus_sbuf (
+module rr_packed_logb_bus_pipe (
    input wire clk,
    input wire rstn,
    rr_packed_logb_bus_t.C in,
@@ -32,19 +32,15 @@ generate
   if (in.FULL_WIDTH != out.FULL_WIDTH)
      $error("FULL_WIDTH mismatches: in %d, out %d\n", in.FULL_WIDTH, out.FULL_WIDTH);
 endgenerate
-transkidbuf #(
-  .DATA_WIDTH(in.FULL_WIDTH + in.OFFSET_WIDTH),
-  .PASS_STALL(1)
-) sbuf (
-   .clk(clk),
-   .rstn(rstn),
-   .in_valid(in.any_valid),
-   .in_data({in.data, in.len}),
-   .in_ready(in.ready),
-   .out_valid(out.any_valid),
-   .out_data({out.data, out.len}),
-   .out_ready(out.ready)
-);
+always_ff @(posedge clk)
+  if (!rstn)
+    out.any_valid <= 0;
+  else begin
+    out.any_valid <= in.any_valid;
+    out.data <= in.data;
+    out.len <= in.len;
+    in.almful <= out.almful;
+  end
 endmodule
 
 module rr_logging_bus_marshaller2 #(
@@ -77,20 +73,20 @@ endgenerate
 rr_packed_logb_bus_t #(FULL_WIDTH_A) inA_q();
 rr_packed_logb_bus_t #(FULL_WIDTH_B) inB_q();
 
-rr_packed_logb_bus_sbuf inA_sbuf (
+rr_packed_logb_bus_pipe inA_pipe (
    .clk(clk),
    .rstn(rstn),
    .in(inA),
    .out(inA_q)
 );
-assign inA_q.ready = out.ready;
-rr_packed_logb_bus_sbuf inB_sbuf (
+assign inA_q.almful = out.almful;
+rr_packed_logb_bus_pipe inB_pipe (
    .clk(clk),
    .rstn(rstn),
    .in(inB),
    .out(inB_q)
 );
-assign inB_q.ready = out.ready;
+assign inB_q.almful = out.almful;
 
 assign out.any_valid = inA_q.any_valid || inB_q.any_valid;
 logic [inA.OFFSET_WIDTH-1:0] valid_len_A;
@@ -124,9 +120,9 @@ generate
   if (in.LOGE_CHANNEL_CNT != out.LOGE_CHANNEL_CNT)
     $error("LOGE_CHANNEL_CNT mismatches: in %d, out %d\n",
       in.LOGE_CHANNEL_CNT, out.LOGE_CHANNEL_CNT);
-  if (in.FULL_WIDTH != out.FULL_WIDTH)
-    $error("FULL_WIDTH mismatches: in %d, out %d\n",
-      in.FULL_WIDTH, out.FULL_WIDTH);
+  if (in.LOGB_DATA_WIDTH != out.LOGB_DATA_WIDTH)
+    $error("LOGB_DATA_WIDTH mismatches: in %d, out %d\n",
+      in.LOGB_DATA_WIDTH, out.LOGB_DATA_WIDTH);
   if (MERGE_TREE_MAX_NODES != in.LOGB_CHANNEL_CNT)
     $error("MERGE_TREE_MAX_NODES mismatches: max nodes %d, LOGB %d\n",
       MERGE_TREE_MAX_NODES, in.LOGB_CHANNEL_CNT);
@@ -135,13 +131,14 @@ localparam LOGB_CHANNEL_CNT = in.LOGB_CHANNEL_CNT;
 localparam bit [LOGB_CHANNEL_CNT-1:0]
   [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS = in.CHANNEL_WIDTHS;
 `DEF_GET_OFFSET(GET_OFFSET, CHANNEL_WIDTHS)
+localparam LOGE_CHANNEL_CNT = in.LOGE_CHANNEL_CNT;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Extract rr_packed_logb_bus_t from rr_logging_bus_t
 ////////////////////////////////////////////////////////////////////////////////
 genvar i;
 generate
-for (i=0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin: packed_logb_gen
+for (i=0; i < LOGB_CHANNEL_CNT; i=i+1) begin: packed_logb_gen
   localparam IDX = SHUFFLE_PLAN[i][0];
   localparam IDX2 = SHUFFLE_PLAN[i][1];
   localparam WIDTH = CHANNEL_WIDTHS[IDX];
@@ -180,7 +177,7 @@ parameter bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
    ) merge (.clk(clk), .rstn(rstn), .inA(_inA), .inB(_inB), .out(_out))
 `define TREE_QUEUE(_in, _out) \
    `PACKED_LOGB_BUS_DUP(_in, _out); \
-   rr_packed_logb_bus_sbuf q(.clk(clk), .rstn(rstn), .in(_in), .out(_out))
+   rr_packed_logb_bus_pipe q(.clk(clk), .rstn(rstn), .in(_in), .out(_out))
 
 // The aggregation/merge tree is controlled by cl_fpgarr_packing_cfg.svh
 // There is an interesting macro MERGE_PLAN, which is organized in terms of
@@ -249,52 +246,41 @@ endgenerate
 assign out.plogb.any_valid = `TREE_TOP.any_valid;
 assign out.plogb.data = `TREE_TOP.data;
 assign out.plogb.len = `TREE_TOP.len;
-assign `TREE_TOP.ready = out.ready;
+assign `TREE_TOP.almful = out.logb_almful;
 
 localparam QUEUE_NSTAGES = MERGE_TREE_HEIGHT-1;
 // Queue logb_valid and loge_valid for the correct number of cycles
 generate
 for (i=0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin: logb_gen
-   // shuffle logb_valid together with logb_data according to the SHUFFLE_PLAN
-   localparam IDX = SHUFFLE_PLAN[i][0];
-   transkidbuf_pipeline #(
-      .DATA_WIDTH(0),
-      .PIPE_DEPTH(QUEUE_NSTAGES),
-      .PASS_LAST_STALL(1)) sbuf_p (
-      .clk(clk), .rstn(rstn),
-      .in_valid(in.logb_valid[IDX]),
-      .in_data(),
-      .in_ready(),
-      .out_valid(out.logb_valid[i]),
-      .out_data(),
-      .out_ready(out.ready)
-   );
+  // shuffle logb_valid together with logb_data according to the SHUFFLE_PLAN
+  localparam IDX = SHUFFLE_PLAN[i][0];
+  lib_pipe #(
+    .WIDTH(LOGB_CHANNEL_CNT),
+    .STAGES(QUEUE_NSTAGES)
+  ) logb_valid_pipe (
+    .clk(clk), .rst_n(rstn),
+    .in_bus(in.logb_valid[IDX]),
+    .out_bus(out.logb_valid[i])
+  );
 end
 for (i=0; i < in.LOGE_CHANNEL_CNT; i=i+1) begin: loge_gen
-   // loge_valid are never shuffled
-   transkidbuf_pipeline #(
-      .DATA_WIDTH(0),
-      .PIPE_DEPTH(QUEUE_NSTAGES),
-      .PASS_LAST_STALL(1)) sbuf_p (
-      .clk(clk), .rstn(rstn),
-      .in_valid(in.loge_valid[i]),
-      .in_data(),
-      .in_ready(),
-      .out_valid(out.loge_valid[i]),
-      .out_data(),
-      .out_ready(out.ready)
-   );
+  // loge_valid are never shuffled
+  lib_pipe #(
+    .WIDTH(LOGE_CHANNEL_CNT),
+    .STAGES(QUEUE_NSTAGES)
+  ) logge_valid_pipe (
+    .clk(clk), .rst_n(rstn),
+    .in_bus(in.loge_valid[i]),
+    .out_bus(out.loge_valid[i])
+  );
 end
 endgenerate
 
-// when multiple transkidbufs(_pipeline) are instantiated with PASS_STALL==1,
-// their in_ready signals are trivially one cycle off in-sync with out_ready.
-// For more info, see transkidbuf.sv assertion "trivial_in_ready"
-// As a result, I ignore in_ready of all transkidbuf instantiations and maintain
-// the ready signal of input packed logger buses myself.
-// TODO: CHeck this ready is in-synch with the merge tree.
-(* dont_touch = "true" *) logic in_ready_piped;
-lib_pipe #(.WIDTH(1), .STAGES(QUEUE_NSTAGES)) in_ready_pipe(
-   .clk(clk), .rst_n(rstn), .in_bus(out.ready), .out_bus(in_ready_piped));
-assign in.ready = in_ready_piped;
+// As a result, I ignore almful of all pipeline stages in the merge tree and chose to maintain
+// the logb_almful signal of input unpacked logger buses myself.
+// TODO: is dont_touch needed?
+lib_pipe #(.WIDTH(1), .STAGES(QUEUE_NSTAGES)) in_logb_almful_pipe (
+   .clk(clk), .rst_n(rstn),
+   .in_bus(out.logb_almful),
+   .out_bus(in.logb_almful));
 endmodule

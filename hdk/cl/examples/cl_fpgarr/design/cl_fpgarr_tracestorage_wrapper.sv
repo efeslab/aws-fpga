@@ -89,6 +89,8 @@ module rr_trace_rw #(
     // align the logging unit as well as its length
     // The length of the logging unit is concat with the content before given to
     // the trace_merge (record) module
+    // Note that the padding for the alignment comes from the "potentionally"
+    // uninitialized part of the logb_data
     // TODO: remove the $clog2(PACKET_ALIGNMENT) lower bits, which is always 0
     assign record_in_fifo_out_aligned = ALIGNED_WIDTH'(
         // MSB: logging data  LSB: aligned_width

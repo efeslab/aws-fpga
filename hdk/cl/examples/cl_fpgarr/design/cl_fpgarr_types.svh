@@ -161,11 +161,11 @@ parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
   rr_packed_logging_bus_t #(\
     .LOGB_CHANNEL_CNT(unpackedname.LOGB_CHANNEL_CNT), \
     .LOGE_CHANNEL_CNT(unpackedname.LOGE_CHANNEL_CNT), \
-    .FULL_WIDTH(unpackedname.FULL_WIDTH)) packedname()
+    .LOGB_DATA_WIDTH(unpackedname.LOGB_DATA_WIDTH)) packedname()
 `define PACKED_LOGGING_BUS_TO_WBBUS(plog_bus, wbbus) \
   rr_stream_bus_t #( \
     .FULL_WIDTH(plog_bus.LOGB_CHANNEL_CNT + plog_bus.LOGE_CHANNEL_CNT + \
-      plog_bus.FULL_WIDTH)) wbbus()
+      plog_bus.LOGB_DATA_WIDTH)) wbbus()
 // about the replay part
 `define REPLAY_BUS_JOIN2(name, outA, outB) \
   rr_replay_bus_t #( \

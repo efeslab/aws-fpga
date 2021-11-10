@@ -14,23 +14,24 @@ module axichannel_logger #(
   input wire out_ready,
   output wire [DATA_WIDTH-1:0] out_data,
   // pipelined logging output
+  // backpressure comes from the logb_almful
   output wire logb_valid,
-  input wire logb_ready,
   output wire [DATA_WIDTH-1:0] logb_data,
   output wire loge_valid,
-  input wire loge_ready
+  input wire logb_almful
 );
 
-// the xxx_pipe version are the signal passed to the traskidbuffer pipeline
-// the output of the transkidbuffer is wired to output ports
-wire logb_valid_pipe;
-wire logb_ready_pipe;
-wire [DATA_WIDTH-1:0] logb_data_pipe;
-wire loge_valid_pipe;
-wire loge_ready_pipe;
+// The xxx_p version are the signals on the logger-side of the register
+// pipeline
+// The storage-backend-side of the register pipeline are wired to the output
+// ports
+wire logb_valid_p;
+wire [DATA_WIDTH-1:0] logb_data_p;
+wire loge_valid_p;
+wire logb_almful_p;
 `ifdef FORMAL
 // F_x is for formal properties
-wire [DATA_WIDTH-1:0] F_loge_data_pipe;
+wire [DATA_WIDTH-1:0] F_loge_data_p;
 wire [DATA_WIDTH-1:0] F_loge_data;
 `endif
 twowayhandshake_logger #(.DATA_WIDTH(DATA_WIDTH)) logger (
@@ -39,55 +40,72 @@ twowayhandshake_logger #(.DATA_WIDTH(DATA_WIDTH)) logger (
   .in_valid(in_valid),
   .in_ready(in_ready),
   .in_data(in_data),
-  // logging traffic goes into transkidbuffer
-  .logb_valid(logb_valid_pipe),
-  .logb_ready(logb_ready_pipe),
-  .logb_data(logb_data_pipe),
-  .loge_valid(loge_valid_pipe),
-  .loge_ready(loge_ready_pipe),
+  // logging traffic goes into the register pipeline
+  .logb_valid(logb_valid_p),
+  .logb_ready(!logb_almful_p),
+  .logb_data(logb_data_p),
+  .loge_valid(loge_valid_p),
+  .loge_ready(1'b1), // loge is not guarded by logb_almful
   .out_valid(out_valid),
   .out_ready(out_ready),
   .out_data(out_data)
 );
 
-// logb pipe transparently pass all stalls
-// TODO: consider overhaul this transkidbuf_pipeline to BRAM fifo, together with
-// all the rest of the packing module
-transkidbuf_pipeline #(
-  .DATA_WIDTH(DATA_WIDTH),
-  .PIPE_DEPTH(PIPE_DEPTH),
-  .PASS_LAST_STALL(1)) logb_pipe (
-  .clk(clk),
-  .rstn(rstn),
-  .in_valid(logb_valid_pipe),
-  .in_ready(logb_ready_pipe),
-  .in_data(logb_data_pipe),
-  .out_valid(logb_valid),
-  .out_ready(logb_ready),
-  .out_data(logb_data)
+
+// register pipeline, guarded by the logb_almful
+// I prefer to pipeline individual signals instead of packing all together to
+// ease the debugging. I guess the synthesizer will do whatever optimizations it
+// likes.
+// TODO: lib_pipe is still not the ideal implemention I want. Maybe consider
+// reimplement my own version of lib_pipe
+// 1. lib_pipe will not respond to rst if FPGA_LESS_RST is set (which is the case)
+// 2. if no FPGA_LESS_RST, lib_pipe will
+//     (1) generate asynchronous reset
+//     (2) whether to do reset or not isn't configurable. sometimes I may only
+//     want to reset the valid but not the data
+lib_pipe #(
+  .WIDTH(1), .STAGES(PIPE_DEPTH)
+) logb_valid_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(logb_valid_p),
+  .out_bus(logb_valid)
 );
-// loge pipe transpartently pass all stalls except the last one
-transkidbuf_pipeline #(
-  .DATA_WIDTH(DATA_WIDTH),
-  .PIPE_DEPTH(PIPE_DEPTH),
-  .PASS_LAST_STALL(0)) loge_pipe (
-  .clk(clk),
-  .rstn(rstn),
-  .in_valid(loge_valid_pipe),
-  .in_ready(loge_ready_pipe),
-`ifdef FORMAL
-  .in_data(F_loge_data_pipe),
-`else
-  .in_data(),
-`endif
-  .out_valid(loge_valid),
-  .out_ready(loge_ready),
-`ifdef FORMAL
-  .out_data(F_loge_data)
-`else
-  .out_data()
-`endif
+
+lib_pipe #(
+  .WIDTH(DATA_WIDTH), .STAGES(PIPE_DEPTH)
+) logb_data_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(logb_data_p),
+  .out_bus(logb_data)
 );
+
+lib_pipe #(
+  .WIDTH(1), .STAGES(PIPE_DEPTH)
+) loge_valid_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(loge_valid_p),
+  .out_bus(loge_valid)
+);
+// for logb_almful
+lib_pipe #(
+  .WIDTH(1), .STAGES(PIPE_DEPTH)
+) logb_almful_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(logb_almful),
+  .out_bus(logb_almful_p)
+);
+
+`ifdef FORMAL
+lib_pipe_pipe #(
+  .WIDTH(DATA_WIDTH), .STAGES(PIPE_DEPTH)
+) F_loge_data_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(F_loge_data_p)
+  .out_bus(F_loge_data)
+);
+`endif
+
+// TODO the proof for this module is no longer available after switching to BRAM
 
 `ifdef FORMAL
 assign F_loge_data_pipe = in_data;

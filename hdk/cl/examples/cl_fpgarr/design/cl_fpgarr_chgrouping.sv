@@ -47,20 +47,20 @@ generate
       $error("LOGE mismatches: inA %d, inB %d, out %d\n",
          inA.LOGE_CHANNEL_CNT, inB.LOGE_CHANNEL_CNT, LOGE_CHANNEL_CNT
       );
-   if (inA.FULL_WIDTH + inB.FULL_WIDTH != out.FULL_WIDTH)
-      $error("FULL_WIDTH mismatches: inA %d, inB %d, out %d\n",
-         inA.FULL_WIDTH, inB.FULL_WIDTH, out.FULL_WIDTH);
+   if (inA.LOGB_DATA_WIDTH + inB.LOGB_DATA_WIDTH != out.LOGB_DATA_WIDTH)
+      $error("LOGB_DATA_WIDTH mismatches: inA %d, inB %d, out %d\n",
+         inA.LOGB_DATA_WIDTH, inB.LOGB_DATA_WIDTH, out.LOGB_DATA_WIDTH);
 endgenerate
 initial begin
    assert(check_CHANNEL_WIDTHS());
 end
 // end of parameter check
-assign inA.ready = out.ready;
-assign inB.ready = out.ready;
+assign inA.logb_almful = out.logb_almful;
+assign inB.logb_almful = out.logb_almful;
 assign out.logb_valid[0 +: inA.LOGB_CHANNEL_CNT] = inA.logb_valid;
 assign out.logb_valid[inA.LOGB_CHANNEL_CNT +: inB.LOGB_CHANNEL_CNT] = inB.logb_valid;
-assign out.logb_data[0 +: inA.FULL_WIDTH] = inA.logb_data;
-assign out.logb_data[inA.FULL_WIDTH +: inB.FULL_WIDTH] = inB.logb_data;
+assign out.logb_data[0 +: inA.LOGB_DATA_WIDTH] = inA.logb_data;
+assign out.logb_data[inA.LOGB_DATA_WIDTH +: inB.LOGB_DATA_WIDTH] = inB.logb_data;
 assign out.loge_valid[0 +: inA.LOGE_CHANNEL_CNT] = inA.loge_valid;
 assign out.loge_valid[inA.LOGE_CHANNEL_CNT +: inB.LOGE_CHANNEL_CNT] = inB.loge_valid;
 endmodule

@@ -173,9 +173,9 @@ generate
   if (in.LOGB_CHANNEL_CNT != out.LOGB_CHANNEL_CNT)
     $error("LOGB_CHANNEL_CNT mismatch: in %d, out %d\n",
       in.LOGB_CHANNEL_CNT, out.LOGB_CHANNEL_CNT);
-  if (in.FULL_WIDTH != out.FULL_WIDTH)
-    $error("FULL_WIDTH mismatch: in %d, out %d\n",
-      in.FULL_WIDTH, out.FULL_WIDTH);
+  if (in.LOGB_DATA_WIDTH != out.LOGB_DATA_WIDTH)
+    $error("LOGB_DATA_WIDTH mismatch: in %d, out %d\n",
+      in.LOGB_DATA_WIDTH, out.LOGB_DATA_WIDTH);
   if (in.LOGE_CHANNEL_CNT != out.LOGE_CHANNEL_CNT)
     $error("LOGE_CHANNEL_CNT mismatch: in %d, out%d\n",
       in.LOGE_CHANNEL_CNT, out.LOGE_CHANNEL_CNT);
@@ -189,5 +189,5 @@ generate
     assign out.loge_valid[i] = en? in.loge_valid[i] : 0;
 endgenerate
 assign out.logb_data = en? in.logb_data : 0;
-assign in.ready = en? out.ready : 1;
+assign in.logb_almful = en? out.logb_almful : 0;
 endmodule

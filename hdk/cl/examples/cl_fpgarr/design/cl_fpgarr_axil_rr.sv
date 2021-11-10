@@ -44,10 +44,9 @@ axichannel_logger #(
    .out_ready(outM.awready),
    .out_data(axil_rr_AW_t'{outM.awaddr}),
    .logb_valid(axil_log.logb_valid[LOGB_AW]),
-   .logb_ready(axil_log.ready),
    .logb_data(axil_log.logb_data[GET_OFFSET(LOGB_AW) +: CHANNEL_WIDTHS[LOGB_AW]]),
    .loge_valid(axil_log.loge_valid[LOGE_AW]),
-   .loge_ready(axil_log.ready)
+   .logb_almful(axil_log.logb_almful)
 );
 // W  Channel, inS(shell) => outM(cl)
 axichannel_logger #(
@@ -63,10 +62,9 @@ axichannel_logger #(
    .out_ready(outM.wready),
    .out_data(axil_rr_W_t'{outM.wdata, outM.wstrb}),
    .logb_valid(axil_log.logb_valid[LOGB_W]),
-   .logb_ready(axil_log.ready),
    .logb_data(axil_log.logb_data[GET_OFFSET(LOGB_W) +: CHANNEL_WIDTHS[LOGB_W]]),
    .loge_valid(axil_log.loge_valid[LOGE_W]),
-   .loge_ready(axil_log.ready)
+   .logb_almful(axil_log.logb_almful)
 );
 // AR Channel, inS(shell) => outM(cl)
 axichannel_logger #(
@@ -82,10 +80,9 @@ axichannel_logger #(
    .out_ready(outM.arready),
    .out_data(axil_rr_AR_t'{outM.araddr}),
    .logb_valid(axil_log.logb_valid[LOGB_AR]),
-   .logb_ready(axil_log.ready),
    .logb_data(axil_log.logb_data[GET_OFFSET(LOGB_AR) +: CHANNEL_WIDTHS[LOGB_AR]]),
    .loge_valid(axil_log.loge_valid[LOGE_AR]),
-   .loge_ready(axil_log.ready)
+   .logb_almful(axil_log.logb_almful)
 );
 // B  Channel, inS(shell) <= outM(cl)
 axichannel_logger #(
@@ -101,10 +98,9 @@ axichannel_logger #(
    .out_ready(inS.bready),
    .out_data(axil_rr_B_t'{inS.bresp}),
    .logb_valid(),
-   .logb_ready(axil_log.ready),
    .logb_data(),
    .loge_valid(axil_log.loge_valid[LOGE_B]),
-   .loge_ready(axil_log.ready)
+   .logb_almful(axil_log.logb_almful)
 );
 // R  Channel, inS(shell) <= outM(cl)
 axichannel_logger #(
@@ -120,10 +116,9 @@ axichannel_logger #(
    .out_ready(inS.rready),
    .out_data(axil_rr_R_t'{inS.rdata, inS.rresp}),
    .logb_valid(),
-   .logb_ready(axil_log.ready),
    .logb_data(),
    .loge_valid(axil_log.loge_valid[LOGE_R]),
-   .loge_ready(axil_log.ready)
+   .logb_almful(axil_log.logb_almful)
 );
 endmodule
 
@@ -166,10 +161,9 @@ axichannel_logger #(
    .out_ready(inM.awready),
    .out_data(axil_rr_AW_t'{inM.awaddr}),
    .logb_valid(),
-   .logb_ready(axil_log.ready),
    .logb_data(),
    .loge_valid(axil_log.loge_valid[LOGE_AW]),
-   .loge_ready(axil_log.ready)
+   .logb_almful(axil_log.logb_almful)
 );
 // W  Channel, inM(shell) <= outS(cl)
 axichannel_logger #(
@@ -185,10 +179,9 @@ axichannel_logger #(
    .out_ready(inM.wready),
    .out_data(axil_rr_W_t'{inM.wdata, inM.wstrb}),
    .logb_valid(),
-   .logb_ready(axil_log.ready),
    .logb_data(),
    .loge_valid(axil_log.loge_valid[LOGE_W]),
-   .loge_ready(axil_log.ready)
+   .logb_almful(axil_log.logb_almful)
 );
 // AR Channel, inM(shell) <= outS(cl)
 axichannel_logger #(
@@ -204,10 +197,9 @@ axichannel_logger #(
    .out_ready(inM.arready),
    .out_data(axil_rr_AR_t'{inM.araddr}),
    .logb_valid(),
-   .logb_ready(axil_log.ready),
    .logb_data(),
    .loge_valid(axil_log.loge_valid[LOGE_AR]),
-   .loge_ready(axil_log.ready)
+   .logb_almful(axil_log.logb_almful)
 );
 // B  Channel, inM(shell) => outS(cl)
 axichannel_logger #(
@@ -223,10 +215,9 @@ axichannel_logger #(
    .out_ready(outS.bready),
    .out_data(axil_rr_B_t'{outS.bresp}),
    .logb_valid(axil_log.logb_valid[LOGB_B]),
-   .logb_ready(axil_log.ready),
    .logb_data(axil_log.logb_data[GET_OFFSET(LOGB_B) +: CHANNEL_WIDTHS[LOGB_B]]),
    .loge_valid(axil_log.loge_valid[LOGE_B]),
-   .loge_ready(axil_log.ready)
+   .logb_almful(axil_log.logb_almful)
 );
 // R  CHannel, inM(shell) => outS(cl)
 axichannel_logger #(
@@ -242,10 +233,9 @@ axichannel_logger #(
    .out_ready(outS.rready),
    .out_data(axil_rr_R_t'{outS.rdata, outS.rresp}),
    .logb_valid(axil_log.logb_valid[LOGB_R]),
-   .logb_ready(axil_log.ready),
    .logb_data(axil_log.logb_data[GET_OFFSET(LOGB_R) +: CHANNEL_WIDTHS[LOGB_R]]),
    .loge_valid(axil_log.loge_valid[LOGE_R]),
-   .loge_ready(axil_log.ready)
+   .logb_almful(axil_log.logb_almful)
 );
 endmodule
 

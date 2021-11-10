@@ -92,7 +92,7 @@ always_ff @(posedge clk) begin
     if (record_bus.valid & record_bus.ready)
         $display("[record_bus]: width\t%d\tcalculated width\t%d\tdata\t%x", record_bus.len, GET_LEN(record_bus.data[0 +: LOGB_CHANNEL_CNT]), record_bus.data);
     if (replay_bus.valid & replay_bus.ready)
-        $display("[replay_bus]: width\t%d\tcalculated width\t%d\tdata\t%x", replay_bus.len, GET_LEN(replay_bus.data[0 +: LOGB_CHANNEL_CNT]), replay_bus.data);
+        $display("[replay_bus]: width(+offset+alignment)\t%d\tcalculated width\t%d\tdata\t%x", replay_bus.len, GET_LEN(replay_bus.data[0 +: LOGB_CHANNEL_CNT]), replay_bus.data);
 end
 `endif
 

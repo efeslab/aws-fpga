@@ -43,10 +43,9 @@ axichannel_logger #(
    .out_ready(outM.awready),
    .out_data(axi_rr_AW_t'{outM.awid, outM.awaddr, outM.awlen, outM.awsize}),
    .logb_valid(axi_log.logb_valid[LOGB_AW]),
-   .logb_ready(axi_log.ready),
    .logb_data(axi_log.logb_data[GET_OFFSET(LOGB_AW) +: CHANNEL_WIDTHS[LOGB_AW]]),
    .loge_valid(axi_log.loge_valid[LOGE_AW]),
-   .loge_ready(axi_log.ready)
+   .logb_almful(axi_log.logb_almful)
 );
 // W  Channel, inS(shell) => outM(cl)
 axichannel_logger #(
@@ -62,10 +61,9 @@ axichannel_logger #(
    .out_ready(outM.wready),
    .out_data(axi_rr_W_t'{outM.wid, outM.wdata, outM.wstrb, outM.wlast}),
    .logb_valid(axi_log.logb_valid[LOGB_W]),
-   .logb_ready(axi_log.ready),
    .logb_data(axi_log.logb_data[GET_OFFSET(LOGB_W) +: CHANNEL_WIDTHS[LOGB_W]]),
    .loge_valid(axi_log.loge_valid[LOGE_W]),
-   .loge_ready(axi_log.ready)
+   .logb_almful(axi_log.logb_almful)
 );
 // AR Channel, inS(shell) => outM(cl)
 axichannel_logger #(
@@ -81,10 +79,9 @@ axichannel_logger #(
    .out_ready(outM.arready),
    .out_data(axi_rr_AR_t'{outM.arid, outM.araddr, outM.arlen, outM.arsize}),
    .logb_valid(axi_log.logb_valid[LOGB_AR]),
-   .logb_ready(axi_log.ready),
    .logb_data(axi_log.logb_data[GET_OFFSET(LOGB_AR) +: CHANNEL_WIDTHS[LOGB_AR]]),
    .loge_valid(axi_log.loge_valid[LOGE_AR]),
-   .loge_ready(axi_log.ready)
+   .logb_almful(axi_log.logb_almful)
 );
 // B  Channel, inS(shell) <= outM(cl)
 axichannel_logger #(
@@ -100,10 +97,9 @@ axichannel_logger #(
    .out_ready(inS.bready),
    .out_data(axi_rr_B_t'{inS.bid, inS.bresp}),
    .logb_valid(),
-   .logb_ready(axi_log.ready),
    .logb_data(),
    .loge_valid(axi_log.loge_valid[LOGE_B]),
-   .loge_ready(axi_log.ready)
+   .logb_almful(axi_log.logb_almful)
 );
 // R  Channel, inS(shell) <= outM(cl)
 axichannel_logger #(
@@ -119,10 +115,9 @@ axichannel_logger #(
    .out_ready(inS.rready),
    .out_data(axi_rr_R_t'{inS.rid, inS.rdata, inS.rresp, inS.rlast}),
    .logb_valid(),
-   .logb_ready(axi_log.ready),
    .logb_data(),
    .loge_valid(axi_log.loge_valid[LOGE_R]),
-   .loge_ready(axi_log.ready)
+   .logb_almful(axi_log.logb_almful)
 );
 endmodule
 
@@ -165,10 +160,9 @@ axichannel_logger #(
    .out_ready(inM.awready),
    .out_data(axi_rr_AW_t'{inM.awid, inM.awaddr, inM.awlen, inM.awsize}),
    .logb_valid(),
-   .logb_ready(axi_log.ready),
    .logb_data(),
    .loge_valid(axi_log.loge_valid[LOGE_AW]),
-   .loge_ready(axi_log.ready)
+   .logb_almful(axi_log.logb_almful)
 );
 // W  Channel, inM(shell) <= outS(cl)
 axichannel_logger #(
@@ -184,10 +178,9 @@ axichannel_logger #(
    .out_ready(inM.wready),
    .out_data(axi_rr_W_t'{inM.wid, inM.wdata, inM.wstrb, inM.wlast}),
    .logb_valid(),
-   .logb_ready(axi_log.ready),
    .logb_data(),
    .loge_valid(axi_log.loge_valid[LOGE_W]),
-   .loge_ready(axi_log.ready)
+   .logb_almful(axi_log.logb_almful)
 );
 // AR Channel, inM(shell) <= outS(cl)
 axichannel_logger #(
@@ -203,10 +196,9 @@ axichannel_logger #(
    .out_ready(inM.arready),
    .out_data(axi_rr_AR_t'{inM.arid, inM.araddr, inM.arlen, inM.arsize}),
    .logb_valid(),
-   .logb_ready(axi_log.ready),
    .logb_data(),
    .loge_valid(axi_log.loge_valid[LOGE_AR]),
-   .loge_ready(axi_log.ready)
+   .logb_almful(axi_log.logb_almful)
 );
 // B  Channel, inM(shell) => outS(cl)
 axichannel_logger #(
@@ -222,10 +214,9 @@ axichannel_logger #(
    .out_ready(outS.bready),
    .out_data(axi_rr_B_t'{outS.bid, outS.bresp}),
    .logb_valid(axi_log.logb_valid[LOGB_B]),
-   .logb_ready(axi_log.ready),
    .logb_data(axi_log.logb_data[GET_OFFSET(LOGB_B) +: CHANNEL_WIDTHS[LOGB_B]]),
    .loge_valid(axi_log.loge_valid[LOGE_B]),
-   .loge_ready(axi_log.ready)
+   .logb_almful(axi_log.logb_almful)
 );
 // R  CHannel, inM(shell) => outS(cl)
 axichannel_logger #(
@@ -241,10 +232,9 @@ axichannel_logger #(
    .out_ready(outS.rready),
    .out_data(axi_rr_R_t'{outS.rid, outS.rdata, outS.rresp, outS.rlast}),
    .logb_valid(axi_log.logb_valid[LOGB_R]),
-   .logb_ready(axi_log.ready),
    .logb_data(axi_log.logb_data[GET_OFFSET(LOGB_R) +: CHANNEL_WIDTHS[LOGB_R]]),
    .loge_valid(axi_log.loge_valid[LOGE_R]),
-   .loge_ready(axi_log.ready)
+   .logb_almful(axi_log.logb_almful)
 );
 endmodule
 
