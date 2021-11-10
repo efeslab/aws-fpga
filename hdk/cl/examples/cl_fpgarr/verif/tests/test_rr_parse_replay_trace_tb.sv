@@ -251,7 +251,10 @@ module test_rr_parse_replay_trace_tb;
 
     always @(posedge clk) begin
         if (replay_dout_valid) begin
-            $display("[wb_tb]: replay width %d data %x", replay_dout_width, replay_dout);
+            $display("[wb_tb]: replay width %d (+width %d aligned to %d) data %x",
+                GET_LEN(replay_dout[0 +: LOGB_CHANNEL_CNT]),
+                GET_LEN(replay_dout[0 +: LOGB_CHANNEL_CNT]) + OFFSET_WIDTH'(OFFSET_WIDTH),
+                replay_dout_width, replay_dout);
         end
 
         if (record_din_valid) begin

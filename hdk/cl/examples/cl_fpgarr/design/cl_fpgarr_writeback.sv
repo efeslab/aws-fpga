@@ -286,7 +286,11 @@ module rr_trace_rw #(
     // align the logging unit as well as its length
     // The length of the logging unit is concat with the content before given to
     // the trace_merge (record) module
-    assign record_in_fifo_out_aligned = ALIGNED_WIDTH'({record_in_fifo_out,record_in_fifo_out_width_aligned});
+    // TODO: remove the $clog2(PACKET_ALIGNMENT) lower bits, which is always 0
+    assign record_in_fifo_out_aligned = ALIGNED_WIDTH'(
+        // MSB: logging data  LSB: aligned_width
+        {record_in_fifo_out, record_in_fifo_out_width_aligned}
+    );
     assign record_in_fifo_out_width_aligned = `GET_ALIGNED_SIZE_W(
        OFFSET_WIDTH, record_in_fifo_out_width + OFFSET_WIDTH);
 
@@ -1119,7 +1123,25 @@ module rr_parse_replay_trace #(
     input logic replay_out_fifo_almfull,
     input logic replay_out_fifo_empty
 );
+
+// highlevel structure
+// Two component:
+// 1. shifting buffer, [2*AXI_WIDTH-1:0], managed by two FSM
+//    LO_FSM for the [0 +: AXI_WIDTH]
+//    HI_FSM for the [AXI_WIDTH +: AXI_WIDTH]
+// 2. assemble buffer, [LOGGING_UNIT_WIDTH-1:0], managed by ASM_FSM
+// AXI_OFFSET_WIDTH is used to index inside the LO part of the shifting buffer
+// AXI_ALIGNED_OFFSET_WIDTH is used to index inside the LO part of the shifting
+// buffer (in terms of alignment units)
+// ALIGNED_OFFSET_WIDTH is used to describe the length of a logging unit (in
+// terms of alignment units)
 localparam AXI_OFFSET_WIDTH = $clog2(AXI_WIDTH);
+localparam SHIFTBUF_WIDTH = 2*AXI_WIDTH;
+localparam NUM_ALIGNED = SHIFTBUF_WIDTH / PACKET_ALIGNMENT;
+localparam PACKET_ALIGNMENT_WIDTH = $clog2(PACKET_ALIGNMENT);
+localparam ALIGNED_OFFSET_WIDTH = OFFSET_WIDTH - PACKET_ALIGNMENT_WIDTH;
+localparam AXI_ALIGNED_WIDTH = AXI_WIDTH / PACKET_ALIGNMENT;
+localparam AXI_ALIGNED_OFFSET_WIDTH = AXI_OFFSET_WIDTH - PACKET_ALIGNMENT_WIDTH;
 
 // parameter check
 generate
@@ -1130,17 +1152,26 @@ generate
     if (AXI_OFFSET_WIDTH >= OFFSET_WIDTH)
         $error("Invalid AXI_OFFSET_WIDTH %d OR Invalid OFFSET_WIDTH %d\n",
             AXI_OFFSET_WIDTH, OFFSET_WIDTH);
+    if ((LOGGING_UNIT_WIDTH % PACKET_ALIGNMENT) != 0)
+        $error("Invalid alignment: LOGGING_UNIT_WIDTH %d, PACKET_ALIGNMENT %d\n",
+            LOGGING_UNIT_WIDTH, PACKET_ALIGNMENT);
+    if ((AXI_WIDTH % PACKET_ALIGNMENT) != 0)
+        $error("Invalid alignment: AXI_WIDTH %d, PACKET_ALIGNMENT %d\n",
+            AXI_WIDTH, PACKET_ALIGNMENT);
+    if (AXI_ALIGNED_OFFSET_WIDTH != $clog2(AXI_WIDTH/PACKET_ALIGNMENT))
+        $error("Failed sanity check: AXI_ALIGNED_OFFSET_WIDTH might be wrong\n");
+    if (ALIGNED_OFFSET_WIDTH != $clog2(LOGGING_UNIT_WIDTH/PACKET_ALIGNMENT))
+        $error("Failed sanity check: ALIGNED_OFFSET_WIDTH might be wrong\n");
 endgenerate
 
-// highlevel structure
-// Two component:
-// 1. shifting buffer, [2*AXI_WIDTH-1:0], managed by two FSM
-//    LO_FSM for the [0 +: AXI_WIDTH]
-//    HI_FSM for the [AXI_WIDTH +: AXI_WIDTH]
-// 2. assemble buffer, [LOGGING_UNIT_WIDTH-1:0], managed by ASM_FSM
-
-// AXI_OFFSET_WIDTH is used to index inside the shifting buffer
 logic [2*AXI_WIDTH-1:0] shift_buf;
+logic [NUM_ALIGNED-1:0] [PACKET_ALIGNMENT-1:0] shift_buf_aligned;
+genvar i;
+generate
+for (i=0; i < NUM_ALIGNED; ++i)
+    assign shift_buf_aligned[i] =
+        shift_buf[i*PACKET_ALIGNMENT +: PACKET_ALIGNMENT];
+endgenerate
 // HI_FSM declaration
 // EMPTY: init state
 // FULL: Have valid data starting from hi_valid_off, can be used by or shift to
@@ -1163,13 +1194,13 @@ logic hi_full; // single bit reg shortcut for hi_fsm == HI_FULL
 typedef enum { LO_EMPTY, LO_HEADER, LO_BODY } LO_FSM_t;
 (* fsm_encoding = "one_hot" *) LO_FSM_t lo_fsm, lo_fsm_next;
 logic lo_empty; // single bit reg shortcut for lo_fsm == LO_EMPTY
-logic [AXI_OFFSET_WIDTH-1:0] lo_valid_off;
+logic [AXI_ALIGNED_OFFSET_WIDTH-1:0] lo_valid_off;
 logic hi_lo_shift;  // transfer one axi unit from HI to LO
 // output from the lo buffer to the ASM buffer
 // lo_out should be paired with asm_ready
 logic lo_out;
 logic [AXI_WIDTH-1:0] lo_out_data;
-assign lo_out_data = shift_buf[lo_valid_off +: AXI_WIDTH];
+assign lo_out_data = shift_buf_aligned[lo_valid_off +: AXI_ALIGNED_WIDTH];
 // the remaining len of the valid data of the current loging unit waiting to be
 // transmitted to the assemble buffer
 // Only valid if
@@ -1177,18 +1208,19 @@ assign lo_out_data = shift_buf[lo_valid_off +: AXI_WIDTH];
 // 2. LO_BODY (from a register)
 // NOTE that in the following usage, lo_remain_len is only used when lo_out,
 // which guarantees lo_remain_len has valid data.
-logic [OFFSET_WIDTH-1:0] lo_remain_len;
+logic [ALIGNED_OFFSET_WIDTH-1:0] lo_remain_len;
 // all LO (valid) data has been transmitted to the ASM buffer
 // only valid when lo_out
 logic lo_exhaust;
 assign lo_exhaust =
-    (lo_remain_len + OFFSET_WIDTH'(lo_valid_off)) >= OFFSET_WIDTH'(AXI_WIDTH);
+    (lo_remain_len + ALIGNED_OFFSET_WIDTH'(lo_valid_off)) >=
+    ALIGNED_OFFSET_WIDTH'(AXI_ALIGNED_WIDTH);
 // Whether the output of LO contains the remaining of the logging unit
 // only valid when lo_out
 // Note that I assume only output when HI and LO have continuous valid data
 logic lo_valid_satisfied;
 assign lo_valid_satisfied =
-    lo_remain_len <= AXI_WIDTH;
+    lo_remain_len <= AXI_ALIGNED_WIDTH;
 /// }}}
 
 // ASM_FSM
@@ -1204,7 +1236,6 @@ typedef enum { ASM_WAIT_HEADER, ASM_WAIT_BODY, ASM_DONE } ASM_FSM_t;
 localparam NUM_AXI = (LOGGING_UNIT_WIDTH - 1)/AXI_WIDTH + 1;
 logic [NUM_AXI * AXI_WIDTH-1:0] trace_data;
 logic [NUM_AXI-1:0] [AXI_WIDTH-1:0] trace_data_per_axi;
-genvar i;
 generate
    for (i=0; i < NUM_AXI; i=i+1) begin
       assign trace_data[i*AXI_WIDTH +: AXI_WIDTH] = trace_data_per_axi[i];
@@ -1392,8 +1423,9 @@ always_ff @(posedge clk)
                     if (lo_valid_satisfied)
                         // LO_HEADER |-> header_flow (lo_exhaust)
                         // LO_BODY |-> reload (lo_exhaust)
-                        lo_valid_off <= lo_remain_len[0 +: AXI_OFFSET_WIDTH] +
-                            lo_valid_off - AXI_WIDTH;
+                        lo_valid_off <=
+                            lo_remain_len[0 +: AXI_ALIGNED_OFFSET_WIDTH] +
+                            lo_valid_off - AXI_ALIGNED_WIDTH;
                     else
                         // LO_HEADER |-> extend
                         // LO_BODY |-> body_flow (lo_exhaust)
@@ -1402,7 +1434,8 @@ always_ff @(posedge clk)
                     // LO_HEADER |-> header_flow (!lo_exhaust)
                     // LO_BODY |-> reload (!lo_exhaust)
                     lo_valid_off <=
-                        lo_valid_off + lo_remain_len[0 +: AXI_OFFSET_WIDTH];
+                        lo_valid_off +
+                        lo_remain_len[0 +: AXI_ALIGNED_OFFSET_WIDTH];
                 else
                     // LO_HEADER/LO_BODY |-> stall
                     lo_valid_off <= lo_valid_off;
@@ -1421,11 +1454,12 @@ always_ff @(posedge clk)
             default:
                 lo_empty <= 0;
         endcase
-reg [OFFSET_WIDTH-1:0] lo_remain_len_reg;
+reg [ALIGNED_OFFSET_WIDTH-1:0] lo_remain_len_reg;
 always_comb
     case (lo_fsm)
         LO_HEADER:
-            lo_remain_len = lo_out_data[0 +: OFFSET_WIDTH];
+            lo_remain_len =
+                lo_out_data[PACKET_ALIGNMENT_WIDTH +: ALIGNED_OFFSET_WIDTH];
         LO_BODY:
             lo_remain_len = lo_remain_len_reg;
         default:
@@ -1439,13 +1473,13 @@ always_ff @(posedge clk)
         LO_HEADER:
             if (hi_lo_shift && !lo_valid_satisfied)
                 // extend
-                lo_remain_len_reg <= lo_remain_len - AXI_WIDTH;
+                lo_remain_len_reg <= lo_remain_len - AXI_ALIGNED_WIDTH;
             else
                 lo_remain_len_reg <= lo_remain_len_reg;
         LO_BODY:
             if (hi_lo_shift && !lo_valid_satisfied)
                 // body_flow (lo_exhaust)
-                lo_remain_len_reg <= lo_remain_len_reg - AXI_WIDTH;
+                lo_remain_len_reg <= lo_remain_len_reg - AXI_ALIGNED_WIDTH;
             else
                 lo_remain_len_reg <= lo_remain_len_reg;
         default:
@@ -1472,7 +1506,11 @@ always_ff @(posedge clk) begin
    else
       asm_valid <= lo_out;
    asm_data_in <= lo_out_data;
-   asm_valid_len_in <= lo_remain_len;
+   asm_valid_len_in <=
+       // MSB: logging unit length in terms of alignment units
+       {lo_remain_len,
+       // LSB: padding lower bits to make the length in terms of bits
+       {PACKET_ALIGNMENT_WIDTH{1'b0}}};
 end
 
 // ASM_FSM definition
