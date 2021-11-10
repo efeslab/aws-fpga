@@ -720,7 +720,8 @@ module rr_trace_merge #(
     logic [AXI_WIDTH-1:0] record_unhandled [NSTAGES-1:0];
     logic [AXI_WIDTH-1:0] current_record_unhandled;
     logic [OFFSET_WIDTH-1:0] current_record_unhandled_size;
-    logic [AXI_WIDTH*2-1:0] record_leftover, record_leftover_next;
+    logic [AXI_WIDTH*2-1:0] record_leftover;
+    logic [AXI_WIDTH*2/PACKET_ALIGNMENT-1:0][PACKET_ALIGNMENT-1:0] record_leftover_next;
     logic [$clog2(AXI_WIDTH):0] record_leftover_size;
     logic [$clog2(NSTAGES):0] record_curr;
     logic do_record_finish;
@@ -772,11 +773,15 @@ module rr_trace_merge #(
             current_record_unhandled <= record_unhandled[record_curr];
 
             record_leftover_next = record_leftover;
-            record_leftover_next[`GET_FORCE_ALIGNED_SIZE(record_leftover_size) +: AXI_WIDTH] = current_record_unhandled;
+            for (int i = 0; i < AXI_WIDTH/PACKET_ALIGNMENT; i++) begin
+                record_leftover_next[`GET_FORCE_ALIGNED_FRAME(record_leftover_size) + i]
+                                                = current_record_unhandled[i * PACKET_ALIGNMENT +: PACKET_ALIGNMENT];
+            end
+
             if (record_leftover_size + current_record_unhandled_size >= AXI_WIDTH) begin
-                record_leftover[0 +: AXI_WIDTH] <= record_leftover_next[AXI_WIDTH +: AXI_WIDTH];
+                record_leftover[0 +: AXI_WIDTH] <= record_leftover_next[AXI_WIDTH/PACKET_ALIGNMENT +: AXI_WIDTH/PACKET_ALIGNMENT];
                 record_leftover_size <= record_leftover_size + current_record_unhandled_size - AXI_WIDTH;
-                record_out_fifo_in <= record_leftover_next[0 +: AXI_WIDTH];
+                record_out_fifo_in <= record_leftover_next[0 +: AXI_WIDTH/PACKET_ALIGNMENT];
                 record_out_fifo_in_size <= AXI_WIDTH;
                 record_out_fifo_wr_en <= 1;
             end else if (do_record_finish && record_in_fifo_empty && ~record_din_valid) begin
@@ -834,7 +839,8 @@ module rr_trace_split #(
     logic replay_current_in_valid;
 
     logic [AXI_WIDTH*2-1:0] replay_leftover;
-    logic [AXI_WIDTH*3-1:0] replay_leftover_next_assigned, replay_leftover_next_unassigned;
+    logic [AXI_WIDTH*3/PACKET_ALIGNMENT-1:0][PACKET_ALIGNMENT-1:0] replay_leftover_next_assigned;
+    logic [AXI_WIDTH*3/PACKET_ALIGNMENT-1:0][PACKET_ALIGNMENT-1:0] replay_leftover_next_unassigned;
     logic [OFFSET_WIDTH-1:0] replay_leftover_size;
     logic [OFFSET_WIDTH-1:0] replay_total_size, replay_total_size_tmp, replay_total_size_reg;
     logic [OFFSET_WIDTH-1:0] replay_left_size, replay_left_size_tmp, replay_left_size_reg;
@@ -954,7 +960,10 @@ module rr_trace_split #(
 
     always_comb begin
         replay_leftover_next_assigned = replay_leftover;
-        replay_leftover_next_assigned[`GET_FORCE_ALIGNED_SIZE(replay_leftover_size) +: AXI_WIDTH] = replay_current_in;
+        for (int i = 0; i < AXI_WIDTH/PACKET_ALIGNMENT; i++) begin
+            replay_leftover_next_assigned[`GET_FORCE_ALIGNED_FRAME(replay_leftover_size) + i]
+                                            = replay_current_in[i*PACKET_ALIGNMENT +: PACKET_ALIGNMENT];
+        end
         replay_leftover_next_unassigned = {AXI_WIDTH'(0), replay_leftover};
     end
     always_ff @(posedge clk) begin
@@ -964,10 +973,16 @@ module rr_trace_split #(
             if (replay_leftover_do_step || replay_current_in_valid) begin
                 if (replay_current_in_valid) begin
                     replay_leftover_size <= replay_leftover_size + AXI_WIDTH - replay_shift_size;
-                    replay_leftover <= replay_leftover_next_assigned[`GET_FORCE_ALIGNED_SIZE(replay_shift_size) +: AXI_WIDTH*2];
+                    for (int i = 0; i < AXI_WIDTH*2/PACKET_ALIGNMENT; i++) begin
+                        replay_leftover[i*PACKET_ALIGNMENT +: PACKET_ALIGNMENT] <=
+                            replay_leftover_next_assigned[`GET_FORCE_ALIGNED_FRAME(replay_shift_size) + i];
+                    end
                 end else begin
                     replay_leftover_size <= replay_leftover_size - replay_shift_size;
-                    replay_leftover <= replay_leftover_next_unassigned[`GET_FORCE_ALIGNED_SIZE(replay_shift_size) +: AXI_WIDTH*2];
+                    for (int i = 0; i < AXI_WIDTH*2/PACKET_ALIGNMENT; i++) begin
+                        replay_leftover[i*PACKET_ALIGNMENT +: PACKET_ALIGNMENT] <=
+                            replay_leftover_next_unassigned[`GET_FORCE_ALIGNED_FRAME(replay_shift_size) + i];
+                    end
                 end
             end
         end
