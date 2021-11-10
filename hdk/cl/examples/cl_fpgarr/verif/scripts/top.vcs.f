@@ -88,13 +88,18 @@ ${CL_ROOT}/design/transkidbuf_pipeline.sv
 ${CL_ROOT}/design/axichannel_logger.sv
 ${CL_ROOT}/design/axichannel_replayer.sv
 ${CL_ROOT}/design/cl_fpgarr_packing.sv
-${CL_ROOT}/design/cl_fpgarr_writeback.sv
+${CL_ROOT}/design/cl_fpgarr_happenbefore_encoder.sv
 ${CL_ROOT}/design/cl_fpgarr_csrs.sv
-${CL_ROOT}/design/cl_fpgarr_tracestorage_axi.sv
 ${CL_ROOT}/design/cl_fpgarr_tracedecoder.sv
 ${CL_ROOT}/design/cl_fpgarr_chgrouping.sv
 ${CL_ROOT}/design/cl_fpgarr_rr_sel.sv
 ${CL_ROOT}/design/cl_fpgarr_rt_loge_crossbar.sv
+## fpgarr tracestorage files
+${CL_ROOT}/design/cl_fpgarr_tracestorage_axi.sv
+${CL_ROOT}/design/cl_fpgarr_tracestorage_wrapper.sv
+${CL_ROOT}/design/cl_fpgarr_tracestorage_encoder.sv
+${CL_ROOT}/design/cl_fpgarr_tracestorage_decoder.sv
+${CL_ROOT}/design/cl_fpgarr_pcim_interconnect.sv
 ${CL_ROOT}/design/merged_fifo.sv
 
 # start of rr_pcim_axi_interconnect
