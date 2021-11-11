@@ -104,7 +104,7 @@ assign out.any_valid = inA_q.any_valid || inB_q.any_valid;
 logic [inA.OFFSET_WIDTH-1:0] valid_len_A;
 logic [inB.OFFSET_WIDTH-1:0] valid_len_B;
 `ifdef ALIGN_CHANNELS
-logic [(inA.OFFSET_WIDTH+inB.OFFSET_WIDTH)/PACKET_ALIGNMENT-1:0][PACKET_ALIGNMENT-1:0] odata;
+logic [(inA.FULL_WIDTH+inB.FULL_WIDTH)/PACKET_ALIGNMENT-1:0][PACKET_ALIGNMENT-1:0] odata;
 `endif
 always_comb begin
     valid_len_A = inA_q.any_valid? inA_q.len: 0;
@@ -129,9 +129,9 @@ end
 
 always_ff @(posedge clk) begin
     if (rstn) begin
-        if (valid_len_A % PACKET_ALIGNMENT != 0)
+        if (inA_q.any_valid && valid_len_A % PACKET_ALIGNMENT != 0)
             $error("valid_len_A not aligned: valid_len_A == %d", valid_len_A);
-        if (valid_len_B % PACKET_ALIGNMENT != 0)
+        if (inB_q.any_valid && valid_len_B % PACKET_ALIGNMENT != 0)
             $error("valid_len_B not aligned: valid_len_B == %d", valid_len_B);
     end
 end
