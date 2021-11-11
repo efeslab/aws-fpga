@@ -299,4 +299,10 @@ parameter logic [63:0] PACKET_ALIGNMENT_MASK = 64'(PACKET_ALIGNMENT) - 1;
 `define GET_FORCE_ALIGNED_SIZE(size) (size & ~PACKET_ALIGNMENT_MASK)
 `define GET_FORCE_ALIGNED_FRAME(size) (size >> PACKET_ALIGNMENT_SHIFT)
 `define IS_ALIGNED_SIZE(size) ((size & PACKET_ALIGNMENT_MASK) == 0)
+// GET_ALIGNED_CHANNEL_SIZE is used to align the size of each channel
+`ifdef ALIGN_CHANNELS
+`define GET_ALIGNED_CHANNEL_SIZE(x) `GET_ALIGNED_SIZE(x)
+`else
+`define GET_ALIGNED_CHANNEL_SIZE(x) (x)
+`endif
 `endif // CL_FPGARR_DEFS

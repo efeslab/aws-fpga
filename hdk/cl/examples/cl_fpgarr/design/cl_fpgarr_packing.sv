@@ -63,6 +63,14 @@ generate
    if (inA.FULL_WIDTH + inB.FULL_WIDTH != out.FULL_WIDTH)
       $error("FULL_WIDTH mismatches: inA %d, inB %d, out %d\n",
          inA.FULL_WIDTH, inB.FULL_WIDTH, out.FULL_WIDTH);
+
+`ifdef ALIGN_CHANNELS
+   // Alignment checking
+   if (inA.FULL_WIDTH % PACKET_ALIGNMENT != 0)
+      $error("inA.FULL_WIDTH not aligned: inA %d\n", inA.FULL_WIDTH);
+   if (inB.FULL_WIDTH % PACKET_ALIGNMENT != 0)
+      $error("inB.FULL_WIDTH not aligned: inB %d\n", inB.FULL_WIDTH);
+`endif
 endgenerate
 
 // Data packing!
@@ -95,15 +103,39 @@ assign inB_q.ready = out.ready;
 assign out.any_valid = inA_q.any_valid || inB_q.any_valid;
 logic [inA.OFFSET_WIDTH-1:0] valid_len_A;
 logic [inB.OFFSET_WIDTH-1:0] valid_len_B;
+`ifdef ALIGN_CHANNELS
+logic [(inA.OFFSET_WIDTH+inB.OFFSET_WIDTH)/PACKET_ALIGNMENT-1:0][PACKET_ALIGNMENT-1:0] odata;
+`endif
 always_comb begin
-   valid_len_A = inA_q.any_valid? inA_q.len: 0;
-   valid_len_B = inB_q.any_valid? inB_q.len: 0;
-   out.len = out.OFFSET_WIDTH'(valid_len_A) + out.OFFSET_WIDTH'(valid_len_B);
-   // do not use "if" to avoid latches
-   out.data = 'bx;
-   out.data[0 +: inA.FULL_WIDTH] = inA_q.data;
-   out.data[valid_len_A +: inB.FULL_WIDTH] = inB_q.data;
+    valid_len_A = inA_q.any_valid? inA_q.len: 0;
+    valid_len_B = inB_q.any_valid? inB_q.len: 0;
+    out.len = out.OFFSET_WIDTH'(valid_len_A) + out.OFFSET_WIDTH'(valid_len_B);
+    // do not use "if" to avoid latches
+`ifdef ALIGN_CHANNELS
+    odata = 'bx;
+    for (int i = 0; i < `GET_FORCE_ALIGNED_FRAME(inA.FULL_WIDTH); i++) begin
+        odata[i] = inA_q.data[i*PACKET_ALIGNMENT +: PACKET_ALIGNMENT];
+    end
+    for (int i = 0; i < `GET_FORCE_ALIGNED_FRAME(inB.FULL_WIDTH); i++) begin
+        odata[`GET_FORCE_ALIGNED_FRAME(valid_len_A) + i] = inB_q.data[i*PACKET_ALIGNMENT +: PACKET_ALIGNMENT];
+    end
+    out.data = odata;
+`else
+    out.data = 'bx;
+    out.data[0 +: inA.FULL_WIDTH] = inA_q.data;
+    out.data[valid_len_A +: inB.FULL_WIDTH] = inB_q.data;
+`endif
 end
+
+always_ff @(posedge clk) begin
+    if (rstn) begin
+        if (valid_len_A % PACKET_ALIGNMENT != 0)
+            $error("valid_len_A not aligned: valid_len_A == %d", valid_len_A);
+        if (valid_len_B % PACKET_ALIGNMENT != 0)
+            $error("valid_len_B not aligned: valid_len_B == %d", valid_len_B);
+    end
+end
+
 endmodule
 
 module rr_logging_bus_unpack2pack (

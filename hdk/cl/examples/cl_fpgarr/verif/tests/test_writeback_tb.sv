@@ -10,20 +10,20 @@ module test_writeback_tb;
     localparam int LOGB_CHANNEL_CNT = 14;
     localparam int LOGE_CHANNEL_CNT = 25;
     localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS = {
-        RR_CHANNEL_WIDTH_BITS'(32),
-        RR_CHANNEL_WIDTH_BITS'(36),
-        RR_CHANNEL_WIDTH_BITS'(32),
-        RR_CHANNEL_WIDTH_BITS'(32),
-        RR_CHANNEL_WIDTH_BITS'(36),
-        RR_CHANNEL_WIDTH_BITS'(32),
-        RR_CHANNEL_WIDTH_BITS'(32),
-        RR_CHANNEL_WIDTH_BITS'(36),
-        RR_CHANNEL_WIDTH_BITS'(32),
-        RR_CHANNEL_WIDTH_BITS'(531),
-        RR_CHANNEL_WIDTH_BITS'(18),
-        RR_CHANNEL_WIDTH_BITS'(91),
-        RR_CHANNEL_WIDTH_BITS'(593),
-        RR_CHANNEL_WIDTH_BITS'(91)
+        `GET_ALIGNED_CHANNEL_SIZE(RR_CHANNEL_WIDTH_BITS'(32)),
+        `GET_ALIGNED_CHANNEL_SIZE(RR_CHANNEL_WIDTH_BITS'(36)),
+        `GET_ALIGNED_CHANNEL_SIZE(RR_CHANNEL_WIDTH_BITS'(32)),
+        `GET_ALIGNED_CHANNEL_SIZE(RR_CHANNEL_WIDTH_BITS'(32)),
+        `GET_ALIGNED_CHANNEL_SIZE(RR_CHANNEL_WIDTH_BITS'(36)),
+        `GET_ALIGNED_CHANNEL_SIZE(RR_CHANNEL_WIDTH_BITS'(32)),
+        `GET_ALIGNED_CHANNEL_SIZE(RR_CHANNEL_WIDTH_BITS'(32)),
+        `GET_ALIGNED_CHANNEL_SIZE(RR_CHANNEL_WIDTH_BITS'(36)),
+        `GET_ALIGNED_CHANNEL_SIZE(RR_CHANNEL_WIDTH_BITS'(32)),
+        `GET_ALIGNED_CHANNEL_SIZE(RR_CHANNEL_WIDTH_BITS'(531)),
+        `GET_ALIGNED_CHANNEL_SIZE(RR_CHANNEL_WIDTH_BITS'(18)),
+        `GET_ALIGNED_CHANNEL_SIZE(RR_CHANNEL_WIDTH_BITS'(91)),
+        `GET_ALIGNED_CHANNEL_SIZE(RR_CHANNEL_WIDTH_BITS'(593)),
+        `GET_ALIGNED_CHANNEL_SIZE(RR_CHANNEL_WIDTH_BITS'(91))
     };
 
     function automatic int GET_FULL_WIDTH;
@@ -35,7 +35,7 @@ module test_writeback_tb;
     endfunction
 
     localparam WIDTH = GET_FULL_WIDTH();
-    localparam OFFSET_WIDTH = $clog2(WIDTH-1) + 1;
+    localparam OFFSET_WIDTH = $clog2(WIDTH+1);
     localparam AXI_WIDTH = 512;
     localparam AXI_ADDR_WIDTH = 64;
 
@@ -253,10 +253,9 @@ module test_writeback_tb;
     end
 `else
 
-    initial begin
-        assert(0 && "TEST_REPLAY should be defined to run this test");
-        $finish;
-    end
+    generate
+        $error("TEST_REPLAY should be defined to run this test");
+    endgenerate
 
 `endif
 
