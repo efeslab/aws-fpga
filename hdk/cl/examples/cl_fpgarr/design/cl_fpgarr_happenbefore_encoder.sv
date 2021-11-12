@@ -51,6 +51,9 @@ generate
    $info("LOGB FIFO config: in total %d entries, threshold is %d entries left\n",
       2**RR_LOGB_FIFO_PTR_WIDTH, RR_LOGB_FIFO_ALMFUL_THRESHOLD);
 endgenerate
+// forward declare logb_fifo control signals
+logic fifo_push;
+logic fifo_pop;
 
 // loge_valid_output is the signal outputting to the writeback_bus, it should be
 // in-sync with out.valid
@@ -79,12 +82,12 @@ else
       //   (!out.valid): I cannot write to trace at this moment, any standalone
       //   loge_valid should be accumulated and wait for the next write to the
       //   trace.
-      if (out.valid && out.ready)
+      if (fifo_push)
          // the incoming loge_valid is not related to the happen-before of
          // the current logb_valid. That will be deferred to the next
          // transmission
          loge_valid_out[i] <= in.loge_valid[i];
-      else if (!out.valid && in.loge_valid[i] && out.ready) begin
+      else if (in.loge_valid[i]) begin
          // a standlone loge_valid comes
          loge_valid_out[i] <= 1;
          // there could only be at most 1 transaction finished between two
@@ -96,6 +99,8 @@ else
 // MSB to LSB: out.data, out.len
 logic fifo_oflow;
 logic fifo_empty;
+assign fifo_push = in.plogb.any_valid;
+assign fifo_pop = out.valid && out.ready;
 ram_fifo_ft #(
    .WIDTH(out.FULL_WIDTH + out.OFFSET_WIDTH),
    .PTR_WIDTH(RR_LOGB_FIFO_PTR_WIDTH),
@@ -104,7 +109,7 @@ ram_fifo_ft #(
 ) logb_fifo (
    .clk(clk),
    .rst_n(rstn),
-   .push(in.plogb.any_valid),
+   .push(fifo_push),
    .push_data({
       in.plogb.data,      // -
       loge_valid_out,     //  |-> These become out.data
@@ -118,7 +123,7 @@ ram_fifo_ft #(
    `else
    .wmark(in.logb_almful),
    `endif
-   .pop(out.valid && out.ready),
+   .pop(fifo_pop),
    // out.data from LSB to MSB:
    // logb_valid, loge_valid, packed_logb_data
    // i.e. assign out.data = {in.plogb.data, loge_valid_out, in.logb_valid};
