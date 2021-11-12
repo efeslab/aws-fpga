@@ -173,7 +173,6 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 
         sv_map_host_memory(host_mem);
         printf("host_mem: %p\n", host_mem);
-        cl_poke_ocl(0x001, 0xffffffff);
         cl_poke_ocl(0x030, 0);
         cl_poke_ocl(0x010, 1);
         cl_poke_ocl(0x020, (uint64_t)(host_mem) & 0xffffffff);
