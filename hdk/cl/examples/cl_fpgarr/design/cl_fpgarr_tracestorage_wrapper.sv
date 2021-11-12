@@ -335,15 +335,26 @@ module rr_trace_rw #(
     assign axi_r_transmitted = axi_out.rvalid & axi_out.rready;
     assign axi_ar_working = axi_out.arvalid & ~axi_out.arready;
 
+    logic axi_ar_transmitted_q, replay_in_fifo_rd_en_q;
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            axi_ar_transmitted_q <= 0;
+            replay_in_fifo_rd_en_q <= 0;
+        end else begin
+            axi_ar_transmitted_q <= axi_ar_transmitted;
+            replay_in_fifo_rd_en_q <= replay_in_fifo_rd_en;
+        end
+    end
+
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
             read_balance <= 0;
         end else begin
-            if (axi_ar_transmitted && replay_in_fifo_rd_en) begin
+            if (axi_ar_transmitted_q && replay_in_fifo_rd_en_q) begin
                 read_balance <= read_balance;
-            end else if (axi_ar_transmitted) begin
+            end else if (axi_ar_transmitted_q) begin
                 read_balance <= read_balance + 1;
-            end else if (replay_in_fifo_rd_en) begin
+            end else if (replay_in_fifo_rd_en_q) begin
                 read_balance <= read_balance - 1;
             end
         end
