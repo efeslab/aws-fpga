@@ -3,6 +3,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Interface for logb bus packing (only used in this file)
+// this is a one-direction pipeline, almful is maintained separately
 ////////////////////////////////////////////////////////////////////////////////
 `define PACKED_LOGB_BUS_JOIN2(inA, inB, name)\
   rr_packed_logb_bus_t #(inA.FULL_WIDTH + inB.FULL_WIDTH) name()
@@ -16,9 +17,8 @@ parameter OFFSET_WIDTH = $clog2(FULL_WIDTH+1);
 logic any_valid;
 logic [FULL_WIDTH-1:0] data;
 logic [OFFSET_WIDTH-1:0] len;
-logic almful;
-modport P (output any_valid, data, len, input almful);
-modport C (input any_valid, data, len, output almful);
+modport P (output any_valid, data, len);
+modport C (input any_valid, data, len);
 endinterface
 
 module rr_packed_logb_bus_pipe (
@@ -39,7 +39,6 @@ always_ff @(posedge clk)
     out.any_valid <= in.any_valid;
     out.data <= in.data;
     out.len <= in.len;
-    in.almful <= out.almful;
   end
 endmodule
 
@@ -79,14 +78,12 @@ rr_packed_logb_bus_pipe inA_pipe (
    .in(inA),
    .out(inA_q)
 );
-assign inA_q.almful = out.almful;
 rr_packed_logb_bus_pipe inB_pipe (
    .clk(clk),
    .rstn(rstn),
    .in(inB),
    .out(inB_q)
 );
-assign inB_q.almful = out.almful;
 
 assign out.any_valid = inA_q.any_valid || inB_q.any_valid;
 logic [inA.OFFSET_WIDTH-1:0] valid_len_A;
@@ -246,7 +243,6 @@ endgenerate
 assign out.plogb.any_valid = `TREE_TOP.any_valid;
 assign out.plogb.data = `TREE_TOP.data;
 assign out.plogb.len = `TREE_TOP.len;
-assign `TREE_TOP.almful = out.logb_almful;
 
 localparam QUEUE_NSTAGES = MERGE_TREE_HEIGHT-1;
 // Queue logb_valid and loge_valid for the correct number of cycles
