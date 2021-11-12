@@ -237,14 +237,20 @@ for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
 end
 endgenerate
 
-// output packed_logb_bus
+// output packed_logb_bus, register one more stage for timing
 `undef TREE_TOP
 `define TREE_TOP tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb
-assign out.plogb.any_valid = `TREE_TOP.any_valid;
-assign out.plogb.data = `TREE_TOP.data;
-assign out.plogb.len = `TREE_TOP.len;
+always_ff @(posedge clk)
+  if (!rstn)
+    out.plogb.any_valid <= 0;
+  else
+    out.plogb.any_valid <= `TREE_TOP.any_valid;
+always_ff @(posedge clk) begin
+  out.plogb.data <= `TREE_TOP.data;
+  out.plogb.len <= `TREE_TOP.len;
+end
 
-localparam QUEUE_NSTAGES = MERGE_TREE_HEIGHT-1;
+localparam QUEUE_NSTAGES = MERGE_TREE_HEIGHT;
 // Queue logb_valid and loge_valid for the correct number of cycles
 generate
 for (i=0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin: logb_gen
