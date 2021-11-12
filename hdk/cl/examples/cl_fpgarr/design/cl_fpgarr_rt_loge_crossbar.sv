@@ -21,7 +21,7 @@ module rr_rt_loge_crossbar #(
     rt_loge_out [NUM_INTERFACES-1:0]
 );
 
-function automatic ABS(int x, int y);
+function automatic int ABS(int x, int y);
   if (x < y)
     ABS = y - x;
   else
@@ -33,7 +33,7 @@ genvar t; // target interface
 generate
   for (s=0; s < NUM_INTERFACES; s=s+1)
     for (t=0; t < NUM_INTERFACES; t=t+1) begin: crossbar
-      localparam DIST = ABS(PLACEMENT_VEC[s], PLACEMENT_VEC[t]);
+      localparam int DIST = ABS(PLACEMENT_VEC[s], PLACEMENT_VEC[t]);
       if (DIST == 0)
         assign rt_loge_out[t][s] = rt_loge_in[s];
       else
