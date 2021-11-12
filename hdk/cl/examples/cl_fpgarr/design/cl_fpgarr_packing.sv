@@ -127,6 +127,10 @@ always_comb begin
 `endif
 end
 
+// If we turn this block on, vivado would give an error saying valid_len_A
+// could be x. This block is only for sanity check and would not be used in
+// anyway during synthesis, so we can safely ignore it with translate_off.
+// synthesis translate_off
 always_ff @(posedge clk) begin
     if (rstn) begin
         if (inA_q.any_valid && valid_len_A % PACKET_ALIGNMENT != 0)
@@ -135,6 +139,7 @@ always_ff @(posedge clk) begin
             $error("valid_len_B not aligned: valid_len_B == %d", valid_len_B);
     end
 end
+// synthesis translate_on
 
 endmodule
 
