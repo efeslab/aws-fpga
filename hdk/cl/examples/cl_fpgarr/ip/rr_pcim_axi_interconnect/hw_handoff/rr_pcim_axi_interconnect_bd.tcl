@@ -158,8 +158,8 @@ proc create_root_design { parentCell } {
    CONFIG.ADDR_WIDTH {64} \
    CONFIG.DATA_WIDTH {512} \
    CONFIG.FREQ_HZ {250000000} \
-   CONFIG.NUM_READ_OUTSTANDING {16} \
-   CONFIG.NUM_WRITE_OUTSTANDING {16} \
+   CONFIG.NUM_READ_OUTSTANDING {32} \
+   CONFIG.NUM_WRITE_OUTSTANDING {32} \
    CONFIG.PROTOCOL {AXI4} \
    ] $M00_AXI
   set_property APERTURES {{0x0 16E}} [get_bd_intf_ports M00_AXI]
@@ -181,7 +181,7 @@ proc create_root_design { parentCell } {
    CONFIG.HAS_REGION {1} \
    CONFIG.HAS_RRESP {1} \
    CONFIG.HAS_WSTRB {1} \
-   CONFIG.ID_WIDTH {15} \
+   CONFIG.ID_WIDTH {14} \
    CONFIG.MAX_BURST_LENGTH {256} \
    CONFIG.NUM_READ_OUTSTANDING {32} \
    CONFIG.NUM_READ_THREADS {16} \
@@ -214,7 +214,40 @@ proc create_root_design { parentCell } {
    CONFIG.HAS_REGION {1} \
    CONFIG.HAS_RRESP {1} \
    CONFIG.HAS_WSTRB {1} \
-   CONFIG.ID_WIDTH {15} \
+   CONFIG.ID_WIDTH {14} \
+   CONFIG.MAX_BURST_LENGTH {256} \
+   CONFIG.NUM_READ_OUTSTANDING {32} \
+   CONFIG.NUM_READ_THREADS {16} \
+   CONFIG.NUM_WRITE_OUTSTANDING {32} \
+   CONFIG.NUM_WRITE_THREADS {16} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_WRITE_MODE {WRITE_ONLY} \
+   CONFIG.RUSER_BITS_PER_BYTE {0} \
+   CONFIG.RUSER_WIDTH {0} \
+   CONFIG.SUPPORTS_NARROW_BURST {1} \
+   CONFIG.WUSER_BITS_PER_BYTE {0} \
+   CONFIG.WUSER_WIDTH {0} \
+   ] $S01_AXI
+  set_property APERTURES {{0x0 16E}} [get_bd_intf_ports S01_AXI]
+
+  set S02_AXI [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S02_AXI ]
+  set_property -dict [ list \
+   CONFIG.ADDR_WIDTH {64} \
+   CONFIG.ARUSER_WIDTH {0} \
+   CONFIG.AWUSER_WIDTH {0} \
+   CONFIG.BUSER_WIDTH {0} \
+   CONFIG.DATA_WIDTH {512} \
+   CONFIG.FREQ_HZ {250000000} \
+   CONFIG.HAS_BRESP {1} \
+   CONFIG.HAS_BURST {1} \
+   CONFIG.HAS_CACHE {1} \
+   CONFIG.HAS_LOCK {1} \
+   CONFIG.HAS_PROT {1} \
+   CONFIG.HAS_QOS {1} \
+   CONFIG.HAS_REGION {1} \
+   CONFIG.HAS_RRESP {1} \
+   CONFIG.HAS_WSTRB {1} \
+   CONFIG.ID_WIDTH {14} \
    CONFIG.MAX_BURST_LENGTH {256} \
    CONFIG.NUM_READ_OUTSTANDING {32} \
    CONFIG.NUM_READ_THREADS {16} \
@@ -227,14 +260,13 @@ proc create_root_design { parentCell } {
    CONFIG.SUPPORTS_NARROW_BURST {1} \
    CONFIG.WUSER_BITS_PER_BYTE {0} \
    CONFIG.WUSER_WIDTH {0} \
-   ] $S01_AXI
-  set_property APERTURES {{0x0 16E}} [get_bd_intf_ports S01_AXI]
+   ] $S02_AXI
 
 
   # Create ports
   set ACLK [ create_bd_port -dir I -type clk -freq_hz 250000000 ACLK ]
   set_property -dict [ list \
-   CONFIG.ASSOCIATED_BUSIF {S00_AXI:M00_AXI:S01_AXI} \
+   CONFIG.ASSOCIATED_BUSIF {S00_AXI:M00_AXI:S01_AXI:S02_AXI} \
  ] $ACLK
   set ARESETN [ create_bd_port -dir I -type rst ARESETN ]
 
@@ -247,10 +279,11 @@ proc create_root_design { parentCell } {
    CONFIG.M02_HAS_REGSLICE {4} \
    CONFIG.M03_HAS_REGSLICE {4} \
    CONFIG.NUM_MI {1} \
-   CONFIG.NUM_SI {2} \
+   CONFIG.NUM_SI {3} \
    CONFIG.S00_ARB_PRIORITY {0} \
    CONFIG.S00_HAS_REGSLICE {4} \
    CONFIG.S01_HAS_REGSLICE {4} \
+   CONFIG.S02_HAS_REGSLICE {4} \
    CONFIG.SYNCHRONIZATION_STAGES {2} \
    CONFIG.XBAR_DATA_WIDTH {512} \
  ] $rr_pcim_axi_interconnect
@@ -258,15 +291,17 @@ proc create_root_design { parentCell } {
   # Create interface connections
   connect_bd_intf_net -intf_net S00_AXI_1 [get_bd_intf_ports S00_AXI] [get_bd_intf_pins rr_pcim_axi_interconnect/S00_AXI]
   connect_bd_intf_net -intf_net S01_AXI_1 [get_bd_intf_ports S01_AXI] [get_bd_intf_pins rr_pcim_axi_interconnect/S01_AXI]
+  connect_bd_intf_net -intf_net S02_AXI_1 [get_bd_intf_ports S02_AXI] [get_bd_intf_pins rr_pcim_axi_interconnect/S02_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_ports M00_AXI] [get_bd_intf_pins rr_pcim_axi_interconnect/M00_AXI]
 
   # Create port connections
-  connect_bd_net -net ACLK_1 [get_bd_ports ACLK] [get_bd_pins rr_pcim_axi_interconnect/ACLK] [get_bd_pins rr_pcim_axi_interconnect/M00_ACLK] [get_bd_pins rr_pcim_axi_interconnect/S00_ACLK] [get_bd_pins rr_pcim_axi_interconnect/S01_ACLK]
-  connect_bd_net -net ARESETN_1 [get_bd_ports ARESETN] [get_bd_pins rr_pcim_axi_interconnect/ARESETN] [get_bd_pins rr_pcim_axi_interconnect/M00_ARESETN] [get_bd_pins rr_pcim_axi_interconnect/S00_ARESETN] [get_bd_pins rr_pcim_axi_interconnect/S01_ARESETN]
+  connect_bd_net -net ACLK_1 [get_bd_ports ACLK] [get_bd_pins rr_pcim_axi_interconnect/ACLK] [get_bd_pins rr_pcim_axi_interconnect/M00_ACLK] [get_bd_pins rr_pcim_axi_interconnect/S00_ACLK] [get_bd_pins rr_pcim_axi_interconnect/S01_ACLK] [get_bd_pins rr_pcim_axi_interconnect/S02_ACLK]
+  connect_bd_net -net ARESETN_1 [get_bd_ports ARESETN] [get_bd_pins rr_pcim_axi_interconnect/ARESETN] [get_bd_pins rr_pcim_axi_interconnect/M00_ARESETN] [get_bd_pins rr_pcim_axi_interconnect/S00_ARESETN] [get_bd_pins rr_pcim_axi_interconnect/S01_ARESETN] [get_bd_pins rr_pcim_axi_interconnect/S02_ARESETN]
 
   # Create address segments
   assign_bd_address -offset 0x00000000 -range 0x00010000000000000000 -target_address_space [get_bd_addr_spaces S00_AXI] [get_bd_addr_segs M00_AXI/Reg] -force
   assign_bd_address -offset 0x00000000 -range 0x00010000000000000000 -target_address_space [get_bd_addr_spaces S01_AXI] [get_bd_addr_segs M00_AXI/Reg] -force
+  assign_bd_address -offset 0x00000000 -range 0x00010000000000000000 -target_address_space [get_bd_addr_spaces S02_AXI] [get_bd_addr_segs M00_AXI/Reg] -force
 
 
   # Restore current instance

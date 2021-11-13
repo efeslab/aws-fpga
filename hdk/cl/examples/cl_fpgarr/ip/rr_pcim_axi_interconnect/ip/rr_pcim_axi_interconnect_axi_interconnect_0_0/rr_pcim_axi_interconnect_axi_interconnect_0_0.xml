@@ -53,7 +53,7 @@
     <spirit:parameter>
       <spirit:name>NUM_SI</spirit:name>
       <spirit:displayName>Number of Slave Interfaces</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.NUM_SI" spirit:order="2" spirit:minimum="1" spirit:maximum="16" spirit:rangeType="long">2</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.NUM_SI" spirit:order="2" spirit:minimum="1" spirit:maximum="16" spirit:rangeType="long">3</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>NUM_MI</spirit:name>
@@ -753,7 +753,7 @@
     <spirit:parameter>
       <spirit:name>S02_HAS_REGSLICE</spirit:name>
       <spirit:displayName>Enable Register Slice on interface S02_AXI</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.S02_HAS_REGSLICE" spirit:choiceRef="choice_pairs_b6c9535e" spirit:order="1635414">0</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.S02_HAS_REGSLICE" spirit:choiceRef="choice_pairs_b6c9535e" spirit:order="1635414">4</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>S03_HAS_REGSLICE</spirit:name>
@@ -1640,6 +1640,7 @@
         <xilinx:configElementInfo xilinx:referenceId="PARAM_VALUE.S00_ARB_PRIORITY" xilinx:valueSource="user"/>
         <xilinx:configElementInfo xilinx:referenceId="PARAM_VALUE.S00_HAS_REGSLICE" xilinx:valueSource="user"/>
         <xilinx:configElementInfo xilinx:referenceId="PARAM_VALUE.S01_HAS_REGSLICE" xilinx:valueSource="user"/>
+        <xilinx:configElementInfo xilinx:referenceId="PARAM_VALUE.S02_HAS_REGSLICE" xilinx:valueSource="user"/>
         <xilinx:configElementInfo xilinx:referenceId="PARAM_VALUE.SYNCHRONIZATION_STAGES" xilinx:valueSource="user" xilinx:valuePermission="bd_and_user"/>
         <xilinx:configElementInfo xilinx:referenceId="PARAM_VALUE.XBAR_DATA_WIDTH" xilinx:valueSource="user" xilinx:valuePermission="bd_and_user"/>
       </xilinx:configElementInfos>

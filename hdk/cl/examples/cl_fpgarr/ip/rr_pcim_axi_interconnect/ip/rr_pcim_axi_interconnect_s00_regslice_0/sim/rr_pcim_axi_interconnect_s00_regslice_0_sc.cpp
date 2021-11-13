@@ -62,7 +62,7 @@ rr_pcim_axi_interconnect_s00_regslice_0_sc::rr_pcim_axi_interconnect_s00_regslic
   // initialize module
     xsc::common_cpp::properties model_param_props;
     model_param_props.addLong("C_AXI_PROTOCOL", "0");
-    model_param_props.addLong("C_AXI_ID_WIDTH", "15");
+    model_param_props.addLong("C_AXI_ID_WIDTH", "14");
     model_param_props.addLong("C_AXI_ADDR_WIDTH", "64");
     model_param_props.addLong("C_AXI_DATA_WIDTH", "512");
     model_param_props.addLong("C_AXI_SUPPORTS_USER_SIGNALS", "0");
