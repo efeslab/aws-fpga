@@ -86,24 +86,4 @@ rr_trace_rw #(
   .write_interrupt(),
   .read_interrupt()
 );
-
-`ifdef WRITEBACK_DEBUG
-always_ff @(posedge clk) begin
-    if (record_bus.valid & record_bus.ready)
-        $display("[record_bus]: width\t%d\tcalculated width\t%d\tdata\t%x", record_bus.len, GET_LEN(record_bus.data[0 +: LOGB_CHANNEL_CNT]), record_bus.data);
-    if (replay_bus.valid & replay_bus.ready)
-        $display("[replay_bus]: width(+offset+alignment)\t%d\tcalculated width\t%d\tdata\t%x", replay_bus.len, GET_LEN(replay_bus.data[0 +: LOGB_CHANNEL_CNT]), replay_bus.data);
-end
-`endif
-
-// demo use of GET_LEN
-logic [OFFSET_WIDTH-1:0] replay_data_len;
-assign replay_data_len = GET_LEN(replay_bus.data);
-
-// suggest:
-// Should use this bram fifo lib to instantiate big buffer for interacting with
-// PCIM. And only have one instance and dynamically configure it to be used in
-// either record or replay.
-// "hdk/cl/examples/cl_sde/lib/ram_fifo_ft.sv"
-
 endmodule

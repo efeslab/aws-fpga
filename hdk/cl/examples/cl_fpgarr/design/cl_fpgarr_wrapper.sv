@@ -225,7 +225,7 @@ rr_logging_bus_switch record_switch (
   .in(merged_SH2CL_logging_bus),
   .out(unpacked_record_bus)
 );
-`ifdef DEBUG_UNPACKED_BUS_WIDTH
+`ifdef DEBUG_MERGE_TREE_STRUCTURE
 // WARN: This will break vcs simulation synthesis
 dbg_print_rr_logging_bus_CW #(
   .LOGB_CHANNEL_CNT(unpacked_record_bus.LOGB_CHANNEL_CNT),
@@ -239,7 +239,8 @@ rr_logging_bus_unpack2pack #(
   .MERGE_TREE_HEIGHT(record_pkg::MERGE_TREE_HEIGHT),
   .MERGE_TREE_MAX_NODES(record_pkg::MERGE_TREE_MAX_NODES),
   .NODES_PER_LAYER(record_pkg::NODES_PER_LAYER),
-  .MERGE_PLAN(record_pkg::MERGE_PLAN)
+  .MERGE_PLAN(record_pkg::MERGE_PLAN),
+  .NAME("record_merge_tree")
 ) top_record_group (
   .clk(clk),
   .rstn(rstn),
@@ -267,7 +268,7 @@ rr_logging_bus_switch validate_switch (
   .out(unpacked_validate_bus)
 );
 
-`ifdef DEBUG_UNPACKED_BUS_WIDTH
+`ifdef DEBUG_MERGE_TREE_STRUCTURE
 // WARN: This will break vcs simulation synthesis
 dbg_print_rr_logging_bus_CW #(
   .LOGB_CHANNEL_CNT(unpacked_validate_bus.LOGB_CHANNEL_CNT),
@@ -281,7 +282,8 @@ rr_logging_bus_unpack2pack #(
   .MERGE_TREE_HEIGHT(validate_pkg::MERGE_TREE_HEIGHT),
   .MERGE_TREE_MAX_NODES(validate_pkg::MERGE_TREE_MAX_NODES),
   .NODES_PER_LAYER(validate_pkg::NODES_PER_LAYER),
-  .MERGE_PLAN(validate_pkg::MERGE_PLAN)
+  .MERGE_PLAN(validate_pkg::MERGE_PLAN),
+  .NAME("validate_merge_tree")
 ) top_validate_group (
   .clk(clk),
   .rstn(rstn),

@@ -483,4 +483,18 @@ module rr_trace_rw #(
         .replay_out_fifo_empty(replay_out_fifo_empty)
 `endif
     );
+
+// simulation debug
+`ifdef WRITEBACK_DEBUG
+always_ff @(posedge clk) begin
+    if (record_in_fifo_rd_en)
+        $display("[record_bus]: width\t%d (aligned to %d)\tcalculated width\t%d\tdata\t%x",
+            record_in_fifo_out_width, record_in_fifo_out_width_aligned,
+            GET_LEN(record_in_fifo_out[0 +: LOGB_CHANNEL_CNT]), record_in_fifo_out);
+    if (replay_out_fifo_rd_en)
+        $display("[replay_bus]: width(+offset+alignment)\t%d\tcalculated width\t%d\tdata\t%x",
+            replay_dout_width,
+            GET_LEN(replay_dout[0 +: LOGB_CHANNEL_CNT]), replay_dout);
+end
+`endif
 endmodule

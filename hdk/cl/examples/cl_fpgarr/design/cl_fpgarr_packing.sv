@@ -104,7 +104,8 @@ module rr_logging_bus_unpack2pack #(
   parameter int MERGE_TREE_MAX_NODES,
   parameter int NODES_PER_LAYER [0:MERGE_TREE_HEIGHT-1],
   parameter int MERGE_PLAN
-    [0:MERGE_TREE_HEIGHT-1] [0:MERGE_TREE_MAX_NODES-1][0:1]
+    [0:MERGE_TREE_HEIGHT-1] [0:MERGE_TREE_MAX_NODES-1][0:1],
+  parameter string NAME
 ) (
    input wire clk,
    input wire rstn,
@@ -151,8 +152,10 @@ for (i=0; i < LOGB_CHANNEL_CNT; i=i+1) begin: packed_logb_gen
     $error("Invalid Channel Shuffle Plan at %d, plan is (%d, %d)\n",
       i, IDX, IDX2);
   rr_packed_logb_bus_t #(WIDTH) bus();
+  `ifdef DEBUG_MERGE_TREE_STRUCTURE
   $info("Elaboration LOGB CHANNEL %d (W%d), as merge-tree leaf %d\n",
     IDX, WIDTH, i);
+  `endif
   assign bus.any_valid = in.logb_valid[IDX];
   assign bus.data = in.logb_data[GET_OFFSET(IDX) +: WIDTH];
   assign bus.len = in.logb_valid[IDX]? bus.OFFSET_WIDTH'(WIDTH) : 0;
@@ -208,20 +211,24 @@ for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
             packed_logb_gen[LID].bus,
             packed_logb_gen[RID].bus,
             plogb);
-         $info("Layer %d, Node %d(W%d), merging Leaf %d (W%d) and Leaf %d (W%d).\n",
-            h, i, plogb.FULL_WIDTH,
+         `ifdef DEBUG_MERGE_TREE_STRUCTURE
+         $info("Tree %s, Layer %d, Node %d(W%d), merging Leaf %d (W%d) and Leaf %d (W%d).\n",
+            NAME, h, i, plogb.FULL_WIDTH,
             LID, packed_logb_gen[LID].bus.FULL_WIDTH,
             RID, packed_logb_gen[RID].bus.FULL_WIDTH);
+         `endif
       end
       else begin: node
          `TREE_MARSHALLER2(
             tree_gen[h-1].level_gen[LID].agg_or_q.node.plogb,
             tree_gen[h-1].level_gen[RID].agg_or_q.node.plogb,
             plogb);
-         $info("Layer %d, Node %d(W%d), merging Leaf %d (W%d) and Leaf %d (W%d).\n",
-            h, i, plogb.FULL_WIDTH,
+         `ifdef DEBUG_MERGE_TREE_STRUCTURE
+         $info("Tree %s, Layer %d, Node %d(W%d), merging Leaf %d (W%d) and Leaf %d (W%d).\n",
+            NAME, h, i, plogb.FULL_WIDTH,
             LID, tree_gen[h-1].level_gen[LID].agg_or_q.node.plogb.FULL_WIDTH,
             RID, tree_gen[h-1].level_gen[RID].agg_or_q.node.plogb.FULL_WIDTH);
+         `endif
       end
     end
     else begin: agg_or_q
@@ -229,16 +236,20 @@ for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
       if (h==1) begin: node
          // trivially queue the signal to next level of tree
          `TREE_QUEUE(packed_logb_gen[LID].bus, plogb);
-         $info("Layer %d, Node %d(W%d), queue Leaf %d(W%d)\n",
-            h, i, plogb.FULL_WIDTH,
+         `ifdef DEBUG_MERGE_TREE_STRUCTURE
+         $info("Tree %s, Layer %d, Node %d(W%d), queue Leaf %d(W%d)\n",
+            NAME, h, i, plogb.FULL_WIDTH,
             LID, packed_logb_gen[LID].bus.FULL_WIDTH);
+         `endif
       end
       else begin: node
          `TREE_QUEUE(
             tree_gen[h-1].level_gen[LID].agg_or_q.node.plogb, plogb);
-         $info("Layer %d, Node %d(W%d), queue Leaf %d(W%d)\n",
-            h, i, plogb.FULL_WIDTH,
+         `ifdef DEBUG_MERGE_TREE_STRUCTURE
+         $info("Tree %s, Layer %d, Node %d(W%d), queue Leaf %d(W%d)\n",
+            NAME, h, i, plogb.FULL_WIDTH,
             LID, tree_gen[h-1].level_gen[LID].agg_or_q.node.plogb.FULL_WIDTH);
+         `endif
       end
     end
   end

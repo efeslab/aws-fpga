@@ -162,10 +162,10 @@ module rr_csrs (
 `ifdef WRITEBACK_DEBUG
     always_ff @(posedge clk) begin
         if (al_aw_transmitted) begin
-            $display("[cfg]: axilite write addr 0x%x", rr_cfg_bus.awaddr);
+            $display("[rr_cfg]: axilite write addr 0x%x", rr_cfg_bus.awaddr);
         end
         if (al_w_transmitted)
-            $display("[cfg]: axilite write data 0x%x", rr_cfg_bus.wdata);
+            $display("[rr_cfg]: axilite write data 0x%x", rr_cfg_bus.wdata);
     end
 `endif
 

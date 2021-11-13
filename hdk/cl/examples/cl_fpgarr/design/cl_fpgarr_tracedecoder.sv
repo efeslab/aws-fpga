@@ -150,8 +150,10 @@ generate
       .LOGB_CHANNEL_CNT(1),
       .CHANNEL_WIDTHS(CHANNEL_WIDTHS[IDX]),
       .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)) bus();
+    `ifdef DEBUG_MERGE_TREE_STRUCTURE
     $info("decoder converting packed_replay_gen[%d] to replay_bus[%d] (W%d)\n",
       i, IDX, CHANNEL_WIDTHS[IDX]);
+    `endif
     assign replay_bus.valid[IDX] = bus.valid;
     assign replay_bus.logb_valid[IDX] = bus.logb_valid[0];
     assign replay_bus.logb_data[GET_OFFSET(IDX) +: CHANNEL_WIDTHS[IDX]] =
@@ -187,35 +189,43 @@ for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
         `TREE_DEMARSHALLER2(prbus,
           packed_replay_gen[LID].bus,
           packed_replay_gen[RID].bus);
+        `ifdef DEBUG_MERGE_TREE_STRUCTURE
         $info("Decoder Layer %d, splitting Node %d(W%d) to Leaf %d(W%d) and Leaf %d(W%d).\n",
            h, i, prbus.FULL_WIDTH,
            LID, packed_replay_gen[LID].bus.FULL_WIDTH,
            RID, packed_replay_gen[RID].bus.FULL_WIDTH);
+        `endif
       end
       else begin: node
         `TREE_DEMARSHALLER2(prbus,
           tree_gen[h-1].level_gen[LID].split_or_q.node.prbus,
           tree_gen[h-1].level_gen[RID].split_or_q.node.prbus);
+        `ifdef DEBUG_MERGE_TREE_STRUCTURE
         $info("Decoder Layer %d, splitting Node %d(W%d) to Leaf %d(W%d) and Leaf %d(W%d).\n",
           h, i, prbus.FULL_WIDTH,
           LID, tree_gen[h-1].level_gen[LID].split_or_q.node.prbus.FULL_WIDTH,
           RID, tree_gen[h-1].level_gen[RID].split_or_q.node.prbus.FULL_WIDTH);
+        `endif
       end
     end
     else begin: split_or_q
       // queue
       if (h==1) begin: node
         `TREE_QUEUE(prbus, packed_replay_gen[LID].bus);
+        `ifdef DEBUG_MERGE_TREE_STRUCTURE
         $info("Decoder Layer %d, Node %d(W%d), queue Leaf %d(W%d).\n",
           h, i, prbus.FULL_WIDTH, LID,
           packed_replay_gen[LID].bus.FULL_WIDTH);
+        `endif
       end
       else begin: node
         `TREE_QUEUE(prbus,
           tree_gen[h-1].level_gen[LID].split_or_q.node.prbus);
+        `ifdef DEBUG_MERGE_TREE_STRUCTURE
         $info("Decoder Layer %d, Node %d(W%d), queue Leaf %d(W%d).\n",
           h, i, prbus.FULL_WIDTH, LID,
           tree_gen[h-1].level_gen[LID].split_or_q.node.prbus.FULL_WIDTH);
+        `endif
       end
     end
   end
