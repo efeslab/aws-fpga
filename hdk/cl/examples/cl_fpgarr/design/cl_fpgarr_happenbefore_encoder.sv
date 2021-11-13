@@ -101,6 +101,7 @@ logic fifo_oflow;
 logic fifo_empty;
 assign fifo_push = in.plogb.any_valid;
 assign fifo_pop = out.valid && out.ready;
+`ifdef AWS_FIFO
 ram_fifo_ft #(
    .WIDTH(out.FULL_WIDTH + out.OFFSET_WIDTH),
    .PTR_WIDTH(RR_LOGB_FIFO_PTR_WIDTH),
@@ -134,6 +135,31 @@ ram_fifo_ft #(
    .oflow(fifo_oflow),
    .empty(fifo_empty)
 );
+`else
+// merged_fifo (xilinx fifo_generator)
+merged_fifo #(
+   .WIDTH(out.FULL_WIDTH + out.OFFSET_WIDTH),
+   .ALMFULL_THRESHOLD(RR_LOGB_FIFO_ALMFUL_THRESHOLD)
+) logb_fifo (
+   .clk(clk),
+   .rst(!rstn),
+   .din({
+      in.plogb.data,      // -
+      loge_valid_out,     //  |-> These become out.data
+      in.logb_valid,      // -
+      out.OFFSET_WIDTH'(
+         in.plogb.len + in.LOGB_CHANNEL_CNT + in.LOGE_CHANNEL_CNT
+      ) // this is the out.len
+   }),
+   .wr_en(fifo_push),
+   .dout({out.data, out.len}),
+   .rd_en(fifo_pop),
+   .full(fifo_oflow),
+   .almfull(in.logb_almful),
+   .empty(fifo_empty)
+);
+assign out.valid = !fifo_empty;
+`endif
 
 `ifdef TEST_RECORD_FIFO_ALMFUL
 logic [1:0] cnt;
