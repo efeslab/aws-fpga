@@ -1,5 +1,6 @@
 `include "cl_fpgarr_defs.svh"
 `include "cl_fpgarr_types.svh"
+`include "cl_fpgarr_packing_cfg.svh"
 
 `ifndef CL_NAME
 `define CL_NAME unnamed_top_module
@@ -113,6 +114,14 @@ rr_mode_csr_t rr_mode_csr_q;
 // the replay bus according to the configuration.
 // After the logging module,
 // The rr_XXX_bus are connected to the CL.
+//
+// XXX_SH2CL_logging_bus:
+//  Trace the traffic from the shell (SH) to the user circuit (CL)
+//  The essential component of the record part.
+// XXX_CL2SH_logging_bus:
+//  Trace the traffic from the user circuit (CL) to the shell (SH)
+//  Auxiliary logging used to validate the happen-before is successfully
+//  preserved across record and replay.
 ////////////////////////////////////////////////////////////////////////////////
 // PCIM bus
 rr_axi_bus_t rr_pcim_record_bus();
@@ -120,24 +129,28 @@ rr_axi_bus_t rr_pcim_record_bus();
 // logged then passed through to an axi interconnect together with the logging
 // traffic
 rr_axi_bus_t rr_pcim_bus();
-`AXI_SLV_LOGGING_BUS(rr_pcim_logging_bus);
-axi_slv_recorder pcim_bus_recorder (
+`AXI_SLV_LOGGING_BUS(rr_pcim_SH2CL_logging_bus);
+`AXI_MSTR_LOGGING_BUS(rr_pcim_CL2SH_logging_bus);
+axi_recorder pcim_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
-  .inM(rr_pcim_record_bus),
-  .outS(rr_pcim_bus),
-  .axi_log(rr_pcim_logging_bus)
+  .S(rr_pcim_record_bus),
+  .M(rr_pcim_bus),
+  .log_M2S(rr_pcim_CL2SH_logging_bus),
+  .log_S2M(rr_pcim_SH2CL_logging_bus)
 );
 // PCIS bus
 rr_axi_bus_t rr_dma_pcis_record_bus();
 rr_axi_bus_t rr_dma_pcis_bus();
-`AXI_MSTR_LOGGING_BUS(rr_dma_pcis_logging_bus);
-axi_mstr_recorder dma_pcis_bus_recorder (
+`AXI_MSTR_LOGGING_BUS(rr_dma_pcis_SH2CL_logging_bus);
+`AXI_SLV_LOGGING_BUS(rr_dma_pcis_CL2SH_logging_bus);
+axi_recorder dma_pcis_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
-  .inS(rr_dma_pcis_record_bus),
-  .outM(rr_dma_pcis_bus),
-  .axi_log(rr_dma_pcis_logging_bus)
+  .M(rr_dma_pcis_record_bus),
+  .S(rr_dma_pcis_bus),
+  .log_M2S(rr_dma_pcis_SH2CL_logging_bus),
+  .log_S2M(rr_dma_pcis_CL2SH_logging_bus)
 );
 ////////////////////////////////////////////////////////////////////////////////
 // LOG AXIL bus
@@ -145,39 +158,45 @@ axi_mstr_recorder dma_pcis_bus_recorder (
 // SDA AXIL
 rr_axi_lite_bus_t rr_sda_record_bus();
 rr_axi_lite_bus_t rr_sda_bus();
-`AXIL_MSTR_LOGGING_BUS(rr_sda_logging_bus);
-axil_mstr_recorder sda_bus_recorder (
+`AXIL_MSTR_LOGGING_BUS(rr_sda_SH2CL_logging_bus);
+`AXIL_SLV_LOGGING_BUS(rr_sda_CL2SH_logging_bus);
+axil_recorder sda_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
-  .inS(rr_sda_record_bus),
-  .outM(rr_sda_bus),
-  .axil_log(rr_sda_logging_bus)
+  .M(rr_sda_record_bus),
+  .S(rr_sda_bus),
+  .log_M2S(rr_sda_SH2CL_logging_bus),
+  .log_S2M(rr_sda_CL2SH_logging_bus)
 );
 // OCL AXIL
 rr_axi_lite_bus_t rr_ocl_record_bus();
 rr_axi_lite_bus_t rr_ocl_bus();
-`AXIL_MSTR_LOGGING_BUS(rr_ocl_logging_bus);
-axil_mstr_recorder ocl_bus_recorder (
+`AXIL_MSTR_LOGGING_BUS(rr_ocl_SH2CL_logging_bus);
+`AXIL_SLV_LOGGING_BUS(rr_ocl_CL2SH_logging_bus);
+axil_recorder ocl_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
-  .inS(rr_ocl_record_bus),
-  .outM(rr_ocl_bus),
-  .axil_log(rr_ocl_logging_bus)
+  .M(rr_ocl_record_bus),
+  .S(rr_ocl_bus),
+  .log_M2S(rr_ocl_SH2CL_logging_bus),
+  .log_S2M(rr_ocl_CL2SH_logging_bus)
 );
 // BAR1 AXIL
 rr_axi_lite_bus_t rr_bar1_record_bus();
 rr_axi_lite_bus_t rr_bar1_bus();
-`AXIL_MSTR_LOGGING_BUS(rr_bar1_logging_bus);
-axil_mstr_recorder bar1_bus_recorder (
+`AXIL_MSTR_LOGGING_BUS(rr_bar1_SH2CL_logging_bus);
+`AXIL_SLV_LOGGING_BUS(rr_bar1_CL2SH_logging_bus);
+axil_recorder bar1_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
-  .inS(rr_bar1_record_bus),
-  .outM(rr_bar1_bus),
-  .axil_log(rr_bar1_logging_bus)
+  .M(rr_bar1_record_bus),
+  .S(rr_bar1_bus),
+  .log_M2S(rr_bar1_SH2CL_logging_bus),
+  .log_S2M(rr_bar1_CL2SH_logging_bus)
 );
 
 ////////////////////////////////////////////////////////////////////////////////
-// Pack the logging bus
+// Pack the SH2CL logging bus (for replay)
 ////////////////////////////////////////////////////////////////////////////////
 // the merging tree of rr_logging_bus_t
 // Note that there is a benefit to postpone the merge of wide buses.
@@ -193,43 +212,85 @@ axil_mstr_recorder bar1_bus_recorder (
 //  /    \   /   \     |
 // sda  ocl bar1 pcim pcis
 //////////////////////////
-`LOGGING_BUS_JOIN2(p0, rr_sda_logging_bus, rr_ocl_logging_bus);
-rr_logging_bus_group2 p0_group(
-  .inA(rr_sda_logging_bus),
-  .inB(rr_ocl_logging_bus),
-  .out(p0)
-);
-`LOGGING_BUS_JOIN2(p1, rr_bar1_logging_bus, rr_pcim_logging_bus);
-rr_logging_bus_group2 p1_group(
-  .inA(rr_bar1_logging_bus),
-  .inB(rr_pcim_logging_bus),
-  .out(p1)
-);
-`LOGGING_BUS_JOIN2(p2, p0, p1);
-rr_logging_bus_group2 p2_group(.inA(p0), .inB(p1), .out(p2));
-`LOGGING_BUS_JOIN2(merged_logging_bus, p2, rr_dma_pcis_logging_bus);
-rr_logging_bus_group2 logging_group(
-  .inA(p2),
-  .inB(rr_dma_pcis_logging_bus),
-  .out(merged_logging_bus)
-);
-`LOGGING_BUS_DUP(merged_logging_bus, unpacked_record_bus);
+`UNPACKED_LOGGING_BUS_GROUP2(
+  p0, rr_sda_SH2CL_logging_bus, rr_ocl_SH2CL_logging_bus);
+`UNPACKED_LOGGING_BUS_GROUP2(
+  p1, rr_bar1_SH2CL_logging_bus, rr_pcim_SH2CL_logging_bus);
+`UNPACKED_LOGGING_BUS_GROUP2(p2, p0, p1);
+`UNPACKED_LOGGING_BUS_GROUP2(
+  merged_SH2CL_logging_bus, p2, rr_dma_pcis_SH2CL_logging_bus);
+`LOGGING_BUS_DUP(merged_SH2CL_logging_bus, unpacked_record_bus);
 rr_logging_bus_switch record_switch (
   .en(rr_mode_csr_q.recordEn),
-  .in(merged_logging_bus),
+  .in(merged_SH2CL_logging_bus),
   .out(unpacked_record_bus)
 );
+`ifdef DEBUG_UNPACKED_BUS_WIDTH
+// WARN: This will break vcs simulation synthesis
+dbg_print_rr_logging_bus_CW #(
+  .LOGB_CHANNEL_CNT(unpacked_record_bus.LOGB_CHANNEL_CNT),
+  .CHANNEL_WIDTHS(unpacked_record_bus.CHANNEL_WIDTHS),
+  .PREFIX("CWs, unpacked_record_bus: ")
+) dbg_unpacked_record_bus ();
+`endif
 // the merging tree of the rr_packed_logging_bus_t is automatically generated
 `LOGGING_BUS_UNPACK2PACK(unpacked_record_bus, packed_logging_bus);
-rr_logging_bus_unpack2pack top_group(
+rr_logging_bus_unpack2pack #(
+  .MERGE_TREE_HEIGHT(record_pkg::MERGE_TREE_HEIGHT),
+  .MERGE_TREE_MAX_NODES(record_pkg::MERGE_TREE_MAX_NODES),
+  .NODES_PER_LAYER(record_pkg::NODES_PER_LAYER),
+  .MERGE_PLAN(record_pkg::MERGE_PLAN)
+) top_record_group (
   .clk(clk),
   .rstn(rstn),
   .in(unpacked_record_bus),
   .out(packed_logging_bus)
 );
 `PACKED_LOGGING_BUS_TO_WBBUS(packed_logging_bus, record_bus);
-rr_packed2writeback_bus wb_inst(
+rr_packed2writeback_bus wb_record_inst(
   .clk(clk), .rstn(rstn), .in(packed_logging_bus), .out(record_bus));
+
+////////////////////////////////////////////////////////////////////////////////
+// Pack the CL2SH logging bus (for output validation)
+////////////////////////////////////////////////////////////////////////////////
+`UNPACKED_LOGGING_BUS_GROUP2(
+  pv0, rr_sda_CL2SH_logging_bus, rr_ocl_CL2SH_logging_bus);
+`UNPACKED_LOGGING_BUS_GROUP2(
+  pv1, rr_bar1_CL2SH_logging_bus, rr_pcim_CL2SH_logging_bus);
+`UNPACKED_LOGGING_BUS_GROUP2(pv2, pv0, pv1);
+`UNPACKED_LOGGING_BUS_GROUP2(
+  merged_CL2SH_logging_bus, pv2, rr_dma_pcis_CL2SH_logging_bus);
+`LOGGING_BUS_DUP(merged_CL2SH_logging_bus, unpacked_validate_bus);
+rr_logging_bus_switch validate_switch (
+  .en(rr_mode_csr_q.outputValidateEn),
+  .in(merged_CL2SH_logging_bus),
+  .out(unpacked_validate_bus)
+);
+
+`ifdef DEBUG_UNPACKED_BUS_WIDTH
+// WARN: This will break vcs simulation synthesis
+dbg_print_rr_logging_bus_CW #(
+  .LOGB_CHANNEL_CNT(unpacked_validate_bus.LOGB_CHANNEL_CNT),
+  .CHANNEL_WIDTHS(unpacked_validate_bus.CHANNEL_WIDTHS),
+  .PREFIX("CWS, unpacked_validate_bus: ")
+) dbg_unpacked_validate_bus ();
+`endif
+// the merging tree of the rr_packed_logging_bus_t is automatically generated
+`LOGGING_BUS_UNPACK2PACK(unpacked_validate_bus, packed_validate_bus);
+rr_logging_bus_unpack2pack #(
+  .MERGE_TREE_HEIGHT(validate_pkg::MERGE_TREE_HEIGHT),
+  .MERGE_TREE_MAX_NODES(validate_pkg::MERGE_TREE_MAX_NODES),
+  .NODES_PER_LAYER(validate_pkg::NODES_PER_LAYER),
+  .MERGE_PLAN(validate_pkg::MERGE_PLAN)
+) top_validate_group (
+  .clk(clk),
+  .rstn(rstn),
+  .in(unpacked_validate_bus),
+  .out(packed_validate_bus)
+);
+`PACKED_LOGGING_BUS_TO_WBBUS(packed_validate_bus, validate_bus);
+rr_packed2writeback_bus wb_validate_inst(
+  .clk(clk), .rstn(rstn), .in(packed_validate_bus), .out(validate_bus));
 
 ////////////////////////////////////////////////////////////////////////////////
 // Unpack the replay bus
@@ -400,13 +461,16 @@ rr_axil_mstr_sel bar1_sel (
 ////////////////////////////////////////////////////////////////////////////////
 // Connect packed record and replay bus to the storage backend
 ////////////////////////////////////////////////////////////////////////////////
-// TODO: Storage backend is not implemented yet.
-// TODO: convert rr_stream_bus_t to logging_wb_bus via mjc's module
-// TODO: need an integration test
 // rr_cfg_bus is the higher 1MB of the bar1 bus.
 // It expects RW addresses in 0x100000~0x1FFFFF.
 rr_stream_bus_t #(.FULL_WIDTH(record_bus.FULL_WIDTH)) packed_replay_bus();
 
+// TODO: convert validate_bus to rr_validation_bus (i.e. validation_wb_bus)
+assign rr_validation_bus.awvalid = 0;
+assign rr_validation_bus.wvalid = 0;
+assign rr_validation_bus.arvalid = 0;
+assign rr_validation_bus.bready = 1;
+assign rr_validation_bus.rready = 1;
 rr_storage_backend_axi #(
   .LOGB_CHANNEL_CNT(unpacked_record_bus.LOGB_CHANNEL_CNT),
   .CHANNEL_WIDTHS(unpacked_record_bus.CHANNEL_WIDTHS),
@@ -420,7 +484,12 @@ rr_storage_backend_axi #(
   .counter(storage_axi_counter_csr)
 );
 
-rr_tracedecoder top_decoder(
+rr_tracedecoder #(
+  .MERGE_TREE_HEIGHT(record_pkg::MERGE_TREE_HEIGHT),
+  .MERGE_TREE_MAX_NODES(record_pkg::MERGE_TREE_MAX_NODES),
+  .NODES_PER_LAYER(record_pkg::NODES_PER_LAYER),
+  .MERGE_PLAN(record_pkg::MERGE_PLAN)
+) top_decoder (
   .clk(clk), .rstn(rstn),
   .packed_replay_bus(packed_replay_bus),
   .replay_bus(unpacked_replay_bus)

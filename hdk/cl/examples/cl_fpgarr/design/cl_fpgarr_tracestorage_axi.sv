@@ -25,7 +25,7 @@ module rr_storage_backend_axi #(
 function automatic bit [LOGB_CHANNEL_CNT-1:0]
   [RR_CHANNEL_WIDTH_BITS-1:0] GET_SHUFFLED_CHANNEL_WIDTHS();
   for (int i=0; i < LOGB_CHANNEL_CNT; i=i+1) begin
-    GET_SHUFFLED_CHANNEL_WIDTHS[i] = CHANNEL_WIDTHS[SHUFFLE_PLAN[i][0]];
+    GET_SHUFFLED_CHANNEL_WIDTHS[i] = CHANNEL_WIDTHS[record_pkg::SHUFFLE_PLAN[i][0]];
   end
 endfunction
 localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]

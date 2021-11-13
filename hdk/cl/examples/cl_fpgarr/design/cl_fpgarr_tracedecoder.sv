@@ -85,13 +85,20 @@ endmodule
 // Each channel also has a copy of the loge_valid of all other channels
 // Those N valid-ready output channels then grouped by axi(s) interfaces and
 // passed to the cl and do the final happen-before check there.
-module rr_tracedecoder (
+module rr_tracedecoder #(
+  parameter int MERGE_TREE_HEIGHT,
+  parameter int MERGE_TREE_MAX_NODES,
+  parameter int NODES_PER_LAYER [0:MERGE_TREE_HEIGHT-1],
+  parameter int MERGE_PLAN
+    [0:MERGE_TREE_HEIGHT-1] [0:MERGE_TREE_MAX_NODES-1][0:1]
+) (
   input wire clk,
   input wire rstn,
   rr_stream_bus_t.C packed_replay_bus,
   rr_replay_bus_t.P replay_bus
 );
 
+localparam int SHUFFLE_PLAN [0:MERGE_TREE_MAX_NODES-1] [0:1] = MERGE_PLAN[0];
 localparam int LOGB_CHANNEL_CNT = replay_bus.LOGB_CHANNEL_CNT;
 localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
   CHANNEL_WIDTHS = replay_bus.CHANNEL_WIDTHS;

@@ -1,3 +1,5 @@
+`include "cl_fpgarr_defs.svh"
+
 module axi_to_axil_master(
    rr_axi_bus_t.master axi,
    rr_axi_lite_bus_t.slave axil);
@@ -236,4 +238,13 @@ module rr_cfg_bar1_interconnect (
    .S00_AXI_wstrb(from_sh_bar1_bus.wstrb),
    .S00_AXI_wvalid(from_sh_bar1_bus.wvalid)
 );
+endmodule
+
+module dbg_print_rr_logging_bus_CW #(
+   parameter int LOGB_CHANNEL_CNT,
+   parameter bit [LOGB_CHANNEL_CNT-1:0]
+   [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS,
+   parameter string PREFIX
+) ();
+$info("%s\n%d,%h", PREFIX, LOGB_CHANNEL_CNT, CHANNEL_WIDTHS);
 endmodule

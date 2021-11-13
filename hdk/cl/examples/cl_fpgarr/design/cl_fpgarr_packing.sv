@@ -99,12 +99,20 @@ always_comb begin
 end
 endmodule
 
-module rr_logging_bus_unpack2pack (
+module rr_logging_bus_unpack2pack #(
+  parameter int MERGE_TREE_HEIGHT,
+  parameter int MERGE_TREE_MAX_NODES,
+  parameter int NODES_PER_LAYER [0:MERGE_TREE_HEIGHT-1],
+  parameter int MERGE_PLAN
+    [0:MERGE_TREE_HEIGHT-1] [0:MERGE_TREE_MAX_NODES-1][0:1]
+) (
    input wire clk,
    input wire rstn,
    rr_logging_bus_t.C in,
    rr_packed_logging_bus_t.P out
 );
+
+localparam int SHUFFLE_PLAN [0:MERGE_TREE_MAX_NODES-1] [0:1] = MERGE_PLAN[0];
 
 // parameter check
 generate
@@ -257,7 +265,7 @@ for (i=0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin: logb_gen
   // shuffle logb_valid together with logb_data according to the SHUFFLE_PLAN
   localparam IDX = SHUFFLE_PLAN[i][0];
   lib_pipe #(
-    .WIDTH(LOGB_CHANNEL_CNT),
+    .WIDTH(1),
     .STAGES(QUEUE_NSTAGES)
   ) logb_valid_pipe (
     .clk(clk), .rst_n(rstn),
@@ -268,7 +276,7 @@ end
 for (i=0; i < in.LOGE_CHANNEL_CNT; i=i+1) begin: loge_gen
   // loge_valid are never shuffled
   lib_pipe #(
-    .WIDTH(LOGE_CHANNEL_CNT),
+    .WIDTH(1),
     .STAGES(QUEUE_NSTAGES)
   ) logge_valid_pipe (
     .clk(clk), .rst_n(rstn),

@@ -11,13 +11,19 @@
  */
 typedef union {
     struct {
-        uint8_t recordEn : 1;
-        uint8_t replayEn : 1;
-        uint32_t unused: 30;
+        uint8_t recordEn : 1;         // bit 0
+        uint8_t replayEn : 1;         // bit 1
+        uint8_t outputValidateEn : 1; // bit 2
+        uint32_t unused: 29;
     };
     uint32_t val;
 } rr_mode_t;
-rr_mode_t rr_mode = { .recordEn = 0, .replayEn = 0, .unused = 0};
+rr_mode_t rr_mode = {
+    .recordEn = 0,
+    .replayEn = 0,
+    .outputValidateEn = 0,
+    .unused = 0
+};
 
 void init_rr() {
     char *rr_mode_env = getenv("RR_MODE");

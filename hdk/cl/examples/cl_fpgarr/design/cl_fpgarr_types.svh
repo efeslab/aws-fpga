@@ -152,6 +152,10 @@ parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
     /*{MSB, LSB }*/                                                            \
     .CHANNEL_WIDTHS({inB.CHANNEL_WIDTHS, inA.CHANNEL_WIDTHS}),                 \
     .LOGE_CHANNEL_CNT(inA.LOGE_CHANNEL_CNT + inB.LOGE_CHANNEL_CNT)) name()
+`define UNPACKED_LOGGING_BUS_GROUP2(name, _inA, _inB)                          \
+  `LOGGING_BUS_JOIN2(name, _inA, _inB);                                        \
+  rr_logging_bus_group2 name``_group(                                          \
+    .inA(_inA), .inB(_inB), .out(name))
 `define LOGGING_BUS_DUP(src, dup) \
   rr_logging_bus_t #(\
     .LOGB_CHANNEL_CNT(src.LOGB_CHANNEL_CNT), \
@@ -209,10 +213,11 @@ typedef struct packed {
 } storage_axi_counter_csr_t;
 
 // rr_mode_csr_t is a interpretation of the RR_MODE csr
+// NOTE: do not forget to sync with the cl_fpgarr.{c,h} (the software lib)
 typedef struct packed {
   logic recordEn;             // bit 0
   logic replayEn;             // bit 1
-  logic replay_PCIM_WR_En;    // bit 2 reserved
+  logic outputValidateEn;     // bit 2
 } rr_mode_csr_t;
 `endif
 // template

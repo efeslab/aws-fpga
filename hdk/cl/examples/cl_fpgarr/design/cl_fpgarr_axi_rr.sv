@@ -1,240 +1,158 @@
 `include "cl_fpgarr_types.svh"
 `include "cl_fpgarr_defs.svh"
-module axi_mstr_recorder (
+
+// There is no notion of input and outout between master and slave
+// axi_recorder will record bi-directional traffic to two separate logging bus
+module axi_recorder (
    input clk,
    input sync_rst_n,
-   rr_axi_bus_t.master inS,
-   rr_axi_bus_t.slave outM,
-   rr_logging_bus_t.P axi_log
+   rr_axi_bus_t.master M,      // a slave intf drived by an external master
+   rr_axi_bus_t.slave S,       // a master intf drived by an external slave
+   rr_logging_bus_t.P log_M2S, // AW, W, AR
+   rr_logging_bus_t.P log_S2M  // R, B
 );
-localparam int LOGB_CHANNEL_CNT = axi_log.LOGB_CHANNEL_CNT;
-localparam int LOGE_CHANNEL_CNT = axi_log.LOGE_CHANNEL_CNT;
-localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
-   CHANNEL_WIDTHS = axi_log.CHANNEL_WIDTHS;
-`DEF_GET_OFFSET(GET_OFFSET, CHANNEL_WIDTHS)
-// parameter check
-generate
-   if (LOGB_CHANNEL_CNT != 3)
-      $error("Wrong LOGB_CHANNEL_CNT %d\n", LOGB_CHANNEL_CNT);
-   if (CHANNEL_WIDTHS[LOGB_AW] != AXI_RR_AW_WIDTH)
-      $error("AW Width mismatches: see %d, expected %d\n",
-         CHANNEL_WIDTHS[LOGB_AW], AXI_RR_AW_WIDTH);
-   if (CHANNEL_WIDTHS[LOGB_W] != AXI_RR_W_WIDTH)
-      $error("W Width mismatches: see %d, expected %d\n",
-         CHANNEL_WIDTHS[LOGB_W], AXI_RR_W_WIDTH);
-   if (CHANNEL_WIDTHS[LOGB_AR] != AXI_RR_AR_WIDTH)
-      $error("AR Width mismatches: see %d, expected %d\n",
-         CHANNEL_WIDTHS[LOGB_AR], AXI_RR_AR_WIDTH);
-   if (LOGE_CHANNEL_CNT != 5)
-      $error("Wrong LOGE_CHANNEL_CNT %d\n", LOGE_CHANNEL_CNT);
-endgenerate
+// parameter check (M2S)
+localparam int M2S_LOGB_CHANNEL_CNT = log_M2S.LOGB_CHANNEL_CNT;
+localparam int M2S_LOGE_CHANNEL_CNT = log_M2S.LOGE_CHANNEL_CNT;
+localparam bit [M2S_LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
+   M2S_CHANNEL_WIDTHS = log_M2S.CHANNEL_WIDTHS;
+`DEF_GET_OFFSET(M2S_GET_OFFSET, M2S_CHANNEL_WIDTHS)
+if (M2S_LOGB_CHANNEL_CNT != 3)
+   $error("Wrong M2S_LOGB_CHANNEL_CNT %d\n", M2S_LOGB_CHANNEL_CNT);
+if (M2S_CHANNEL_WIDTHS[LOGB_AW] != AXI_RR_AW_WIDTH)
+   $error("AW Width mismatches: see %d, expected %d\n",
+      M2S_CHANNEL_WIDTHS[LOGB_AW], AXI_RR_AW_WIDTH);
+if (M2S_CHANNEL_WIDTHS[LOGB_W] != AXI_RR_W_WIDTH)
+   $error("W Width mismatches: see %d, expected %d\n",
+      M2S_CHANNEL_WIDTHS[LOGB_W], AXI_RR_W_WIDTH);
+if (M2S_CHANNEL_WIDTHS[LOGB_AR] != AXI_RR_AR_WIDTH)
+   $error("AR Width mismatches: see %d, expected %d\n",
+      M2S_CHANNEL_WIDTHS[LOGB_AR], AXI_RR_AR_WIDTH);
+if (M2S_LOGE_CHANNEL_CNT != 5)
+   $error("Wrong M2S_LOGE_CHANNEL_CNT %d\n", M2S_LOGE_CHANNEL_CNT);
+// parameter check (S2M)
+localparam int S2M_LOGB_CHANNEL_CNT = log_S2M.LOGB_CHANNEL_CNT;
+localparam int S2M_LOGE_CHANNEL_CNT = log_S2M.LOGE_CHANNEL_CNT;
+localparam bit [S2M_LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
+   S2M_CHANNEL_WIDTHS = log_S2M.CHANNEL_WIDTHS;
+`DEF_GET_OFFSET(S2M_GET_OFFSET, S2M_CHANNEL_WIDTHS)
+if (S2M_LOGB_CHANNEL_CNT != 2)
+   $error("Wrong S2M_LOGB_CHANNEL_CNT %d\n", S2M_LOGB_CHANNEL_CNT);
+if (S2M_CHANNEL_WIDTHS[LOGB_R] != AXI_RR_R_WIDTH)
+   $error("R Width mismatches: see %d, expected %d\n",
+      S2M_CHANNEL_WIDTHS[LOGB_R], AXI_RR_R_WIDTH);
+if (S2M_CHANNEL_WIDTHS[LOGB_B] != AXI_RR_B_WIDTH)
+   $error("B Width mismatches: see %d, expected %d\n",
+      S2M_CHANNEL_WIDTHS[LOGB_B], AXI_RR_B_WIDTH);
+if (S2M_LOGE_CHANNEL_CNT != 5)
+   $error("Wrong S2M_LOGE_CHANNEL_CNT %d\n", S2M_LOGE_CHANNEL_CNT);
 
-// AW Channel, inS(shell) => outM(cl)
+// common signals for both log_M2S and log_S2M
+logic logb_almful;
+assign logb_almful = log_M2S.logb_almful || log_S2M.logb_almful;
+logic loge_valid [M2S_LOGE_CHANNEL_CNT-1:0];
+assign log_M2S.loge_valid = loge_valid;
+assign log_S2M.loge_valid = loge_valid;
+
+// AW Channel, M2S
 axichannel_logger #(
    .DATA_WIDTH(AXI_RR_AW_WIDTH),
    .PIPE_DEPTH(RECORDER_PIPE_DEPTH)
 ) AW_logger (
    .clk(clk),
    .rstn(sync_rst_n),
-   .in_valid(inS.awvalid),
-   .in_ready(inS.awready),
-   .in_data(axi_rr_AW_t'{inS.awid, inS.awaddr, inS.awlen, inS.awsize}),
-   .out_valid(outM.awvalid),
-   .out_ready(outM.awready),
-   .out_data(axi_rr_AW_t'{outM.awid, outM.awaddr, outM.awlen, outM.awsize}),
-   .logb_valid(axi_log.logb_valid[LOGB_AW]),
-   .logb_data(axi_log.logb_data[GET_OFFSET(LOGB_AW) +: CHANNEL_WIDTHS[LOGB_AW]]),
-   .loge_valid(axi_log.loge_valid[LOGE_AW]),
-   .logb_almful(axi_log.logb_almful)
+   .in_valid(M.awvalid),
+   .in_ready(M.awready),
+   .in_data(axi_rr_AW_t'{M.awid, M.awaddr, M.awlen, M.awsize}),
+   .out_valid(S.awvalid),
+   .out_ready(S.awready),
+   .out_data(axi_rr_AW_t'{S.awid, S.awaddr, S.awlen, S.awsize}),
+   .logb_valid(log_M2S.logb_valid[LOGB_AW]),
+   .logb_data(log_M2S.logb_data[
+      M2S_GET_OFFSET(LOGB_AW) +: M2S_CHANNEL_WIDTHS[LOGB_AW]
+   ]),
+   .loge_valid(loge_valid[LOGE_AW]),
+   .logb_almful(logb_almful)
 );
-// W  Channel, inS(shell) => outM(cl)
+// W  Channel, M2S
 axichannel_logger #(
    .DATA_WIDTH(AXI_RR_W_WIDTH),
    .PIPE_DEPTH(RECORDER_PIPE_DEPTH)
 ) W_logger (
    .clk(clk),
    .rstn(sync_rst_n),
-   .in_valid(inS.wvalid),
-   .in_ready(inS.wready),
-   .in_data(axi_rr_W_t'{inS.wid, inS.wdata, inS.wstrb, inS.wlast}),
-   .out_valid(outM.wvalid),
-   .out_ready(outM.wready),
-   .out_data(axi_rr_W_t'{outM.wid, outM.wdata, outM.wstrb, outM.wlast}),
-   .logb_valid(axi_log.logb_valid[LOGB_W]),
-   .logb_data(axi_log.logb_data[GET_OFFSET(LOGB_W) +: CHANNEL_WIDTHS[LOGB_W]]),
-   .loge_valid(axi_log.loge_valid[LOGE_W]),
-   .logb_almful(axi_log.logb_almful)
+   .in_valid(M.wvalid),
+   .in_ready(M.wready),
+   .in_data(axi_rr_W_t'{M.wid, M.wdata, M.wstrb, M.wlast}),
+   .out_valid(S.wvalid),
+   .out_ready(S.wready),
+   .out_data(axi_rr_W_t'{S.wid, S.wdata, S.wstrb, S.wlast}),
+   .logb_valid(log_M2S.logb_valid[LOGB_W]),
+   .logb_data(log_M2S.logb_data[
+      M2S_GET_OFFSET(LOGB_W) +: M2S_CHANNEL_WIDTHS[LOGB_W]
+   ]),
+   .loge_valid(loge_valid[LOGE_W]),
+   .logb_almful(logb_almful)
 );
-// AR Channel, inS(shell) => outM(cl)
+// AR Channel, M2S
 axichannel_logger #(
    .DATA_WIDTH(AXI_RR_AR_WIDTH),
    .PIPE_DEPTH(RECORDER_PIPE_DEPTH)
 ) AR_logger (
    .clk(clk),
    .rstn(sync_rst_n),
-   .in_valid(inS.arvalid),
-   .in_ready(inS.arready),
-   .in_data(axi_rr_AR_t'{inS.arid, inS.araddr, inS.arlen, inS.arsize}),
-   .out_valid(outM.arvalid),
-   .out_ready(outM.arready),
-   .out_data(axi_rr_AR_t'{outM.arid, outM.araddr, outM.arlen, outM.arsize}),
-   .logb_valid(axi_log.logb_valid[LOGB_AR]),
-   .logb_data(axi_log.logb_data[GET_OFFSET(LOGB_AR) +: CHANNEL_WIDTHS[LOGB_AR]]),
-   .loge_valid(axi_log.loge_valid[LOGE_AR]),
-   .logb_almful(axi_log.logb_almful)
+   .in_valid(M.arvalid),
+   .in_ready(M.arready),
+   .in_data(axi_rr_AR_t'{M.arid, M.araddr, M.arlen, M.arsize}),
+   .out_valid(S.arvalid),
+   .out_ready(S.arready),
+   .out_data(axi_rr_AR_t'{S.arid, S.araddr, S.arlen, S.arsize}),
+   .logb_valid(log_M2S.logb_valid[LOGB_AR]),
+   .logb_data(log_M2S.logb_data[
+      M2S_GET_OFFSET(LOGB_AR) +: M2S_CHANNEL_WIDTHS[LOGB_AR]
+   ]),
+   .loge_valid(loge_valid[LOGE_AR]),
+   .logb_almful(logb_almful)
 );
-// B  Channel, inS(shell) <= outM(cl)
+// B  Channel, S2M
 axichannel_logger #(
    .DATA_WIDTH(AXI_RR_B_WIDTH),
    .PIPE_DEPTH(RECORDER_PIPE_DEPTH)
 ) B_logger(
    .clk(clk),
    .rstn(sync_rst_n),
-   .in_valid(outM.bvalid),
-   .in_ready(outM.bready),
-   .in_data(axi_rr_B_t'{outM.bid, outM.bresp}),
-   .out_valid(inS.bvalid),
-   .out_ready(inS.bready),
-   .out_data(axi_rr_B_t'{inS.bid, inS.bresp}),
-   .logb_valid(),
-   .logb_data(),
-   .loge_valid(axi_log.loge_valid[LOGE_B]),
-   .logb_almful(axi_log.logb_almful)
+   .in_valid(S.bvalid),
+   .in_ready(S.bready),
+   .in_data(axi_rr_B_t'{S.bid, S.bresp}),
+   .out_valid(M.bvalid),
+   .out_ready(M.bready),
+   .out_data(axi_rr_B_t'{M.bid, M.bresp}),
+   .logb_valid(log_S2M.logb_valid[LOGB_B]),
+   .logb_data(log_S2M.logb_data[
+      S2M_GET_OFFSET(LOGB_B) +: S2M_CHANNEL_WIDTHS[LOGB_B]
+   ]),
+   .loge_valid(loge_valid[LOGE_B]),
+   .logb_almful(logb_almful)
 );
-// R  Channel, inS(shell) <= outM(cl)
+// R  Channel, S2M
 axichannel_logger #(
    .DATA_WIDTH(AXI_RR_R_WIDTH),
    .PIPE_DEPTH(RECORDER_PIPE_DEPTH)
 ) R_logger (
    .clk(clk),
    .rstn(sync_rst_n),
-   .in_valid(outM.rvalid),
-   .in_ready(outM.rready),
-   .in_data(axi_rr_R_t'{outM.rid, outM.rdata, outM.rresp, outM.rlast}),
-   .out_valid(inS.rvalid),
-   .out_ready(inS.rready),
-   .out_data(axi_rr_R_t'{inS.rid, inS.rdata, inS.rresp, inS.rlast}),
-   .logb_valid(),
-   .logb_data(),
-   .loge_valid(axi_log.loge_valid[LOGE_R]),
-   .logb_almful(axi_log.logb_almful)
-);
-endmodule
-
-module axi_slv_recorder (
-   input clk,
-   input sync_rst_n,
-   rr_axi_bus_t.slave inM,
-   rr_axi_bus_t.master outS,
-   rr_logging_bus_t.P axi_log
-);
-localparam int LOGB_CHANNEL_CNT = axi_log.LOGB_CHANNEL_CNT;
-localparam int LOGE_CHANNEL_CNT = axi_log.LOGE_CHANNEL_CNT;
-localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
-   CHANNEL_WIDTHS = axi_log.CHANNEL_WIDTHS;
-`DEF_GET_OFFSET(GET_OFFSET, CHANNEL_WIDTHS)
-// parameter check
-generate
-   if (LOGB_CHANNEL_CNT != 2)
-      $error("Wrong LOGB_CHANNEL_CNT %d\n", LOGB_CHANNEL_CNT);
-   if (CHANNEL_WIDTHS[LOGB_R] != AXI_RR_R_WIDTH)
-      $error("R Width mismatches: see %d, expected %d\n",
-         CHANNEL_WIDTHS[LOGB_R], AXI_RR_R_WIDTH);
-   if (CHANNEL_WIDTHS[LOGB_B] != AXI_RR_B_WIDTH)
-      $error("B Width mismatches: see %d, expected %d\n",
-         CHANNEL_WIDTHS[LOGB_B], AXI_RR_B_WIDTH);
-   if (LOGE_CHANNEL_CNT != 5)
-      $error("Wrong LOGE_CHANNEL_CNT %d\n", LOGE_CHANNEL_CNT);
-endgenerate
-// AW Channel, inM(shell) <= outS(cl)
-axichannel_logger #(
-   .DATA_WIDTH(AXI_RR_AW_WIDTH),
-   .PIPE_DEPTH(RECORDER_PIPE_DEPTH)
-) AW_logger (
-   .clk(clk),
-   .rstn(sync_rst_n),
-   .in_valid(outS.awvalid),
-   .in_ready(outS.awready),
-   .in_data(axi_rr_AW_t'{outS.awid, outS.awaddr, outS.awlen, outS.awsize}),
-   .out_valid(inM.awvalid),
-   .out_ready(inM.awready),
-   .out_data(axi_rr_AW_t'{inM.awid, inM.awaddr, inM.awlen, inM.awsize}),
-   .logb_valid(),
-   .logb_data(),
-   .loge_valid(axi_log.loge_valid[LOGE_AW]),
-   .logb_almful(axi_log.logb_almful)
-);
-// W  Channel, inM(shell) <= outS(cl)
-axichannel_logger #(
-   .DATA_WIDTH(AXI_RR_W_WIDTH),
-   .PIPE_DEPTH(RECORDER_PIPE_DEPTH)
-) W_logger (
-   .clk(clk),
-   .rstn(sync_rst_n),
-   .in_valid(outS.wvalid),
-   .in_ready(outS.wready),
-   .in_data(axi_rr_W_t'{outS.wid, outS.wdata, outS.wstrb, outS.wlast}),
-   .out_valid(inM.wvalid),
-   .out_ready(inM.wready),
-   .out_data(axi_rr_W_t'{inM.wid, inM.wdata, inM.wstrb, inM.wlast}),
-   .logb_valid(),
-   .logb_data(),
-   .loge_valid(axi_log.loge_valid[LOGE_W]),
-   .logb_almful(axi_log.logb_almful)
-);
-// AR Channel, inM(shell) <= outS(cl)
-axichannel_logger #(
-   .DATA_WIDTH(AXI_RR_AR_WIDTH),
-   .PIPE_DEPTH(RECORDER_PIPE_DEPTH)
-) AR_logger (
-   .clk(clk),
-   .rstn(sync_rst_n),
-   .in_valid(outS.arvalid),
-   .in_ready(outS.arready),
-   .in_data(axi_rr_AR_t'{outS.arid, outS.araddr, outS.arlen, outS.arsize}),
-   .out_valid(inM.arvalid),
-   .out_ready(inM.arready),
-   .out_data(axi_rr_AR_t'{inM.arid, inM.araddr, inM.arlen, inM.arsize}),
-   .logb_valid(),
-   .logb_data(),
-   .loge_valid(axi_log.loge_valid[LOGE_AR]),
-   .logb_almful(axi_log.logb_almful)
-);
-// B  Channel, inM(shell) => outS(cl)
-axichannel_logger #(
-   .DATA_WIDTH(AXI_RR_B_WIDTH),
-   .PIPE_DEPTH(RECORDER_PIPE_DEPTH)
-) B_logger (
-   .clk(clk),
-   .rstn(sync_rst_n),
-   .in_valid(inM.bvalid),
-   .in_ready(inM.bready),
-   .in_data(axi_rr_B_t'{inM.bid, inM.bresp}),
-   .out_valid(outS.bvalid),
-   .out_ready(outS.bready),
-   .out_data(axi_rr_B_t'{outS.bid, outS.bresp}),
-   .logb_valid(axi_log.logb_valid[LOGB_B]),
-   .logb_data(axi_log.logb_data[GET_OFFSET(LOGB_B) +: CHANNEL_WIDTHS[LOGB_B]]),
-   .loge_valid(axi_log.loge_valid[LOGE_B]),
-   .logb_almful(axi_log.logb_almful)
-);
-// R  CHannel, inM(shell) => outS(cl)
-axichannel_logger #(
-   .DATA_WIDTH(AXI_RR_R_WIDTH),
-   .PIPE_DEPTH(RECORDER_PIPE_DEPTH)
-) R_logger (
-   .clk(clk),
-   .rstn(sync_rst_n),
-   .in_valid(inM.rvalid),
-   .in_ready(inM.rready),
-   .in_data(axi_rr_R_t'{inM.rid, inM.rdata, inM.rresp, inM.rlast}),
-   .out_valid(outS.rvalid),
-   .out_ready(outS.rready),
-   .out_data(axi_rr_R_t'{outS.rid, outS.rdata, outS.rresp, outS.rlast}),
-   .logb_valid(axi_log.logb_valid[LOGB_R]),
-   .logb_data(axi_log.logb_data[GET_OFFSET(LOGB_R) +: CHANNEL_WIDTHS[LOGB_R]]),
-   .loge_valid(axi_log.loge_valid[LOGE_R]),
-   .logb_almful(axi_log.logb_almful)
+   .in_valid(S.rvalid),
+   .in_ready(S.rready),
+   .in_data(axi_rr_R_t'{S.rid, S.rdata, S.rresp, S.rlast}),
+   .out_valid(M.rvalid),
+   .out_ready(M.rready),
+   .out_data(axi_rr_R_t'{M.rid, M.rdata, M.rresp, M.rlast}),
+   .logb_valid(log_S2M.logb_valid[LOGB_R]),
+   .logb_data(log_S2M.logb_data[
+      S2M_GET_OFFSET(LOGB_R) +: S2M_CHANNEL_WIDTHS[LOGB_R]
+   ]),
+   .loge_valid(loge_valid[LOGE_R]),
+   .logb_almful(logb_almful)
 );
 endmodule
 

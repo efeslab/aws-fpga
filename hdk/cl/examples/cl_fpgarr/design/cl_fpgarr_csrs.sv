@@ -156,7 +156,7 @@ module rr_csrs (
     assign rr_mode_csr = '{
         recordEn: csrs[RR_MODE][0],
         replayEn: csrs[RR_MODE][1],
-        replay_PCIM_WR_En: csrs[RR_MODE][2]
+        outputValidateEn: csrs[RR_MODE][2]
     };
 
 `ifdef WRITEBACK_DEBUG

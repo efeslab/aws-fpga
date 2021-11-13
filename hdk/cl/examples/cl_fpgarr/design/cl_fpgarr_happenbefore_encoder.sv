@@ -36,7 +36,7 @@ module rr_packed2writeback_bus (
 // The number of the elements in the fifo should be a power of 2
 // WATERMARK is (2**RR_LOGB_FIFO_PTR_WIDTH - RR_LOGB_FIFO_ALMFUL_THRESHOLD)
 localparam int RR_LOGB_FIFO_ALMFUL_THRESHOLD =
-   2*RECORDER_PIPE_DEPTH + 2*MERGE_TREE_HEIGHT + 16;
+   2*RECORDER_PIPE_DEPTH + 2*record_pkg::MERGE_TREE_HEIGHT + 16;
 localparam int RR_LOGB_FIFO_PTR_WIDTH = 7;
 // parameter check
 generate

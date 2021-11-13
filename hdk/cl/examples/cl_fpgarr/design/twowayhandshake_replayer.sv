@@ -28,7 +28,7 @@ module twowayhandshake_replayer #(
 );
 
 // the packet counter to enforce happen-before
-localparam ON_THE_FLY_CNT = MERGE_TREE_HEIGHT + REPLAYER_PIPE_DEPTH;
+localparam ON_THE_FLY_CNT = record_pkg::MERGE_TREE_HEIGHT + REPLAYER_PIPE_DEPTH;
 localparam PKT_CNT_WIDTH = $clog2(2 * ON_THE_FLY_CNT);
 logic [PKT_CNT_WIDTH-1:0] rt_loge_cnt [LOGE_CHANNEL_CNT-1:0];
 
