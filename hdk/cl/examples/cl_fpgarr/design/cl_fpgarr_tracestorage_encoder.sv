@@ -71,6 +71,14 @@ module rr_trace_merge #(
     logic do_record_finish;
 
     assign record_in_fifo_rd_en = ~record_in_fifo_empty && ~record_out_fifo_almfull && record_unhandled_size <= AXI_WIDTH;
+    always_comb begin
+        record_leftover_next = {'hx, record_leftover[0 +: AXI_WIDTH]};
+        for (int i = 0; i < AXI_WIDTH/PACKET_ALIGNMENT; i++) begin
+            record_leftover_next[`GET_FORCE_ALIGNED_FRAME(record_leftover_size) + i]
+                                            = current_record_unhandled[i * PACKET_ALIGNMENT +: PACKET_ALIGNMENT];
+        end
+    end
+
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
             record_unhandled_size <= 0;
@@ -116,14 +124,9 @@ module rr_trace_merge #(
             assert(record_curr < NSTAGES);
             current_record_unhandled <= record_unhandled[record_curr];
 
-            record_leftover_next = record_leftover;
-            for (int i = 0; i < AXI_WIDTH/PACKET_ALIGNMENT; i++) begin
-                record_leftover_next[`GET_FORCE_ALIGNED_FRAME(record_leftover_size) + i]
-                                                = current_record_unhandled[i * PACKET_ALIGNMENT +: PACKET_ALIGNMENT];
-            end
-
             if (record_leftover_size + current_record_unhandled_size >= AXI_WIDTH) begin
                 record_leftover[0 +: AXI_WIDTH] <= record_leftover_next[AXI_WIDTH/PACKET_ALIGNMENT +: AXI_WIDTH/PACKET_ALIGNMENT];
+                record_leftover[AXI_WIDTH +: AXI_WIDTH] <= 'hx;
                 record_leftover_size <= record_leftover_size + current_record_unhandled_size - AXI_WIDTH;
                 record_out_fifo_in <= record_leftover_next[0 +: AXI_WIDTH/PACKET_ALIGNMENT];
                 record_out_fifo_in_size <= AXI_WIDTH;
