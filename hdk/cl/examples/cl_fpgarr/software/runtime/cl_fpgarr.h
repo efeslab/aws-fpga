@@ -19,6 +19,8 @@ typedef enum {
   REPLAY_BITS_LO,       // 13
 } rr_csr_enum;
 #define RR_CSR_ADDR(idx) (CL_FPGARR_CSR_BASE + 0x4 * idx)
+#define UINT64_HI32(x) ((((uint64_t) x) >> 32) & 0xffffffff)
+#define UINT64_LO32(x) ( ((uint64_t) x) & 0xffffffff)
 
 extern void init_rr();
 extern void do_record_start();

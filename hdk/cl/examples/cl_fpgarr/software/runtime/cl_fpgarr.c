@@ -42,10 +42,10 @@ void init_rr() {
  * Setup record/replay trace buffer
  */
 uint8_t *trace_buffer = NULL;
-uint64_t trace_buffer_hi = 0;
-uint64_t trace_buffer_lo = 0;
-uint64_t trace_buffer_size_hi = 0;
-uint64_t trace_buffer_size_lo = 0;
+uint32_t trace_buffer_hi = 0;
+uint32_t trace_buffer_lo = 0;
+uint32_t trace_buffer_size_hi = 0;
+uint32_t trace_buffer_size_lo = 0;
 void do_record_start() {
     trace_buffer = aligned_alloc(4096, 0x1000000);
     sv_map_host_memory(trace_buffer);
@@ -99,29 +99,29 @@ void do_record_stop() {
     free(trace_buffer);
 }
 void do_replay_start() {
-    trace_buffer = aligned_alloc(4096, 0x1000000);
-    sv_map_host_memory(trace_buffer);
-    trace_buffer_hi = ((uint64_t) trace_buffer >> 32) & 0xffffffff;
-    trace_buffer_lo = ((uint64_t) trace_buffer) & 0xffffffff;
-    trace_buffer_size_hi = 0;
-    trace_buffer_size_lo = 0x1000000;
-
-    uint64_t record_bits;
-
     int fd = open("record.dump", O_RDONLY);
+    uint64_t replay_bits;
+    read(fd, &replay_bits, 8);
+    uint32_t replay_bits_hi = UINT64_HI32(replay_bits);
+    uint32_t replay_bits_lo = UINT64_LO32(replay_bits);
+    uint64_t trace_buffer_size = ((replay_bits - 1) / 512 + 1) * 64;
 
-    read(fd, &record_bits, 8);
-    uint64_t trace_buffer_size = ((record_bits - 1) / 512 + 1) * 64;
-    trace_buffer_size_hi = (trace_buffer_size >> 32) & 0xffffffff;
-    trace_buffer_size_lo = trace_buffer_size & 0xffffffff;
+    trace_buffer = aligned_alloc(4096, trace_buffer_size);
+    sv_map_host_memory(trace_buffer);
+    trace_buffer_hi = UINT64_HI32(trace_buffer);
+    trace_buffer_lo = UINT64_LO32(trace_buffer);
+    trace_buffer_size_hi = UINT64_HI32(trace_buffer_size);
+    trace_buffer_size_lo = UINT64_LO32(trace_buffer_size);
 
-    read(fd, trace_buffer, 0x1000000);
+    read(fd, trace_buffer, trace_buffer_size);
     close(fd);
     // configure csrs via rr_cfg_bus
     cl_poke_bar1(RR_CSR_ADDR(BUF_ADDR_HI), trace_buffer_hi);
     cl_poke_bar1(RR_CSR_ADDR(BUF_ADDR_LO), trace_buffer_lo);
     cl_poke_bar1(RR_CSR_ADDR(BUF_SIZE_HI), trace_buffer_size_hi);
     cl_poke_bar1(RR_CSR_ADDR(BUF_SIZE_LO), trace_buffer_size_lo);
+    cl_poke_bar1(RR_CSR_ADDR(REPLAY_BITS_HI), replay_bits_hi);
+    cl_poke_bar1(RR_CSR_ADDR(REPLAY_BITS_LO), replay_bits_lo);
     cl_poke_bar1(RR_CSR_ADDR(RR_MODE), 0x2); // 0b010
     cl_poke_bar1(RR_CSR_ADDR(READ_BUF_UPDATE), 1);
 }
