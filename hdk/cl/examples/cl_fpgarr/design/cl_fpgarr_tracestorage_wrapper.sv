@@ -45,7 +45,9 @@ module rr_trace_rw #(
     output logic read_interrupt,
 
     // The number of recorded bits, will used by the software
-    output logic [63:0] record_bits
+    output logic [63:0] record_bits,
+    // The number of bits expected to replay, will be setup by the software
+    input logic [63:0] replay_bits
 );
 
 `ifdef TEST_REPLAY
@@ -491,7 +493,8 @@ module rr_trace_rw #(
         .replay_out_fifo_wr_en(replay_out_fifo_wr_en),
         .replay_out_fifo_full(replay_out_fifo_full),
         .replay_out_fifo_almfull(replay_out_fifo_almfull),
-        .replay_out_fifo_empty(replay_out_fifo_empty)
+        .replay_out_fifo_empty(replay_out_fifo_empty),
+        .replay_bits(replay_bits)
 `endif
     );
 

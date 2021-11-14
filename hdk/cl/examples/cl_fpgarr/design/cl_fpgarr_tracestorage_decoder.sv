@@ -313,7 +313,9 @@ module rr_parse_replay_trace #(
     output logic replay_out_fifo_wr_en,
     input logic replay_out_fifo_full,
     input logic replay_out_fifo_almfull,
-    input logic replay_out_fifo_empty
+    input logic replay_out_fifo_empty,
+    // number of bits expected to replay (including paddings for alignment)
+    input logic [63:0] replay_bits
 );
 
 // highlevel structure
@@ -323,10 +325,11 @@ module rr_parse_replay_trace #(
 //    HI_FSM for the [AXI_WIDTH +: AXI_WIDTH]
 // 2. assemble buffer, [LOGGING_UNIT_WIDTH-1:0], managed by ASM_FSM
 // AXI_OFFSET_WIDTH is used to index inside the LO part of the shifting buffer
-// AXI_ALIGNED_OFFSET_WIDTH is used to index inside the LO part of the shifting
-// buffer (in terms of alignment units)
 // ALIGNED_OFFSET_WIDTH is used to describe the length of a logging unit (in
 // terms of alignment units)
+// AXI_ALIGNED_WIDTH is the number of aligned packets contained in AXI_WIDTH
+// AXI_ALIGNED_OFFSET_WIDTH is used to index inside the LO part of the shifting
+// buffer (in terms of alignment units)
 localparam AXI_OFFSET_WIDTH = $clog2(AXI_WIDTH);
 localparam SHIFTBUF_WIDTH = 2*AXI_WIDTH;
 localparam NUM_ALIGNED = SHIFTBUF_WIDTH / PACKET_ALIGNMENT;
@@ -372,8 +375,22 @@ endgenerate
 typedef enum { HI_EMPTY, HI_FULL} HI_FSM_t;
 (* fsm_encoding = "one_hot" *) HI_FSM_t hi_fsm, hi_fsm_next;
 logic hi_in; // read data in to the hi buffer
-assign hi_in = replay_in_fifo_rd_en;
 logic hi_full; // single bit reg shortcut for hi_fsm == HI_FULL
+// replay_axi_total is the number of AXI_WIDTH transmission expected to contain
+// the entire trace. It has to ALWAYS >= rt_replay_axi_cnt.
+// rt_replay_axi_cnt is the realtime counter of AXI_WIDTH transmission
+// It is used to signal the last zero additional padding to the HI.
+// AXI_CNT_WIDTH defines the width of an counter that tracks how many AXI_WIDTH
+// transmission can happen.
+localparam AXI_CNT_WIDTH = 64 - AXI_OFFSET_WIDTH;
+logic [AXI_CNT_WIDTH-1:0] replay_axi_total;
+logic [AXI_CNT_WIDTH-1:0] rt_replay_axi_cnt;
+// hi_pad_last means all replay trace has been read in so we need to insert an
+// additional all-zero padding to HI to "push" all remaining valid trace out of
+// the shifting buffer
+// hi_pad_last is only valid when hi_full
+// So when the replay_bits is not set, it is still fine since we are in HI_EMPTY
+logic hi_pad_last;
 /// }}}
 
 // LO_FSM declaration
@@ -424,6 +441,20 @@ assign lo_exhaust =
 logic lo_valid_satisfied;
 assign lo_valid_satisfied =
     lo_remain_len <= AXI_ALIGNED_WIDTH;
+// replay_pkt_total is the number of alignment expected to replay in the entire
+// trace.
+// rt_replay_pkt_cnt is the realtime counter of alignment transmitted from LO to
+// the assemble buffer.
+// PACKET_CNT)WIDTH defines the width of an counter that tracks how many
+// aligned packets have been trasmitted.
+localparam PACKET_CNT_WIDTH = 64 - PACKET_ALIGNMENT_WIDTH;
+logic [PACKET_CNT_WIDTH-1:0] replay_pkt_total;
+logic [PACKET_CNT_WIDTH-1:0] rt_replay_pkt_cnt;
+// lo_replay_done means all packets (in terms of alignment units) have been sent
+// to the assemble buffer and will be eventually replay.
+// All remaining trace in the shifting buffer should be padding. No more traces
+// shall be parsed and output to the assemble buffer anymore.
+logic lo_replay_done;
 /// }}}
 
 // ASM_FSM
@@ -464,7 +495,7 @@ assign replay_out_fifo_in = trace_data[0 +: LOGGING_UNIT_WIDTH];
 /// }}}
 
 // HI_FSM definition
-//                  /--\ +- flow
+//                  /--\ +- flow/pad_last
 //                  |  |
 //           load   |  v
 //  -------    +   ------
@@ -487,7 +518,7 @@ always_comb begin
             else
                 hi_fsm_next = HI_EMPTY;
         HI_FULL:
-            if (hi_lo_shift && !hi_in)
+            if (hi_lo_shift && !hi_in && !hi_pad_last)
                 // unload
                 hi_fsm_next = HI_EMPTY;
             else
@@ -505,6 +536,7 @@ assign replay_in_fifo_rd_en =
     !replay_in_fifo_empty && // has data
     !replay_out_fifo_almfull && // rate limit
     (!hi_full || hi_lo_shift);
+assign hi_in = replay_in_fifo_rd_en;
 // HI_FSM other states
 always_ff @(posedge clk)
     if (!sync_rst_n) begin
@@ -513,12 +545,12 @@ always_ff @(posedge clk)
     else begin
         case (hi_fsm)
             HI_EMPTY:
-                if (hi_in)
+                if (hi_in || hi_pad_last)
                     hi_full <= 1;
                 else
                     hi_full <= 0;
             HI_FULL:
-                if (hi_lo_shift && !hi_in)
+                if (hi_lo_shift && !(hi_in || hi_pad_last))
                     hi_full <= 0;
                 else
                     hi_full <= 1;
@@ -527,6 +559,24 @@ always_ff @(posedge clk)
            end
         endcase
     end
+// count replay_axi_cnt
+logic [63:0] tmp_replay_axi_total_pad;
+assign tmp_replay_axi_total_pad = replay_bits + AXI_WIDTH - 1;
+assign replay_axi_total = tmp_replay_axi_total_pad[63:AXI_OFFSET_WIDTH];
+always_ff @(posedge clk)
+    if (!sync_rst_n)
+        rt_replay_axi_cnt <= 0;
+    else if (hi_in || hi_pad_last)
+        rt_replay_axi_cnt <= rt_replay_axi_cnt + 1;
+always_ff @(posedge clk)
+   if (!sync_rst_n)
+      hi_pad_last <= 0;
+   else
+      hi_pad_last <=
+         // only insert padding when we have received non-zero things
+         (rt_replay_axi_cnt != 0) &&
+         // only insert padding when we have received enough things
+         (rt_replay_axi_cnt == replay_axi_total);
 
 // LO_FSM definition
 //                  /--\ +- header_flow
@@ -599,7 +649,7 @@ end
 // Note that in the case of last packet resides in LO and it contains a complete
 // logging unit, I assume an additional zero AXI_WIDTH to be padded.
 assign lo_out =
-    hi_full && !lo_empty;
+    hi_full && !lo_empty && !lo_replay_done;
 // shift data from HI to LO when HI has valid data and either
 // 1. the LO is initially empty
 // OR
@@ -643,7 +693,7 @@ always_ff @(posedge clk)
                     // LO_HEADER/LO_BODY |-> stall
                     lo_valid_off <= lo_valid_off;
         endcase
-
+// lo_empty is shortcut to lo_fsm == EMPTY
 always_ff @(posedge clk)
     if (!sync_rst_n)
         lo_empty <= 1;
@@ -657,6 +707,17 @@ always_ff @(posedge clk)
             default:
                 lo_empty <= 0;
         endcase
+// LO: maintain replay_pkt_cnt
+assign replay_pkt_total = replay_bits[63:PACKET_ALIGNMENT_WIDTH];
+always_ff @(posedge clk)
+   if (!sync_rst_n)
+      rt_replay_pkt_cnt <= 0;
+   else if (lo_out && lo_valid_satisfied)
+      rt_replay_pkt_cnt <= rt_replay_pkt_cnt + lo_remain_len;
+   else if (lo_out && !lo_valid_satisfied)
+      rt_replay_pkt_cnt <= rt_replay_pkt_cnt + AXI_ALIGNED_WIDTH;
+assign lo_replay_done = (replay_pkt_total == rt_replay_pkt_cnt);
+// LO: maintain lo_remain_len
 reg [ALIGNED_OFFSET_WIDTH-1:0] lo_remain_len_reg;
 always_comb
     case (lo_fsm)
@@ -695,6 +756,8 @@ always_ff @(posedge clk) begin
     // state machine)
     if (hi_in)
         shift_buf[AXI_WIDTH +: AXI_WIDTH] <= replay_in_fifo_out;
+    else if (hi_lo_shift && hi_pad_last)
+        shift_buf[AXI_WIDTH +: AXI_WIDTH] <= 0;
     if (hi_lo_shift)
         shift_buf[0 +: AXI_WIDTH] <= shift_buf[AXI_WIDTH +: AXI_WIDTH];
 end
