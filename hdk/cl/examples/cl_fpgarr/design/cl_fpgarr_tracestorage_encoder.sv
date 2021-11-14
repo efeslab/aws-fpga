@@ -64,7 +64,7 @@ module rr_trace_merge #(
     logic [AXI_WIDTH-1:0] record_unhandled [NSTAGES-1:0];
     logic [AXI_WIDTH-1:0] current_record_unhandled;
     logic [OFFSET_WIDTH-1:0] current_record_unhandled_size;
-    logic [AXI_WIDTH*2-1:0] record_leftover;
+    logic [AXI_WIDTH-1:0] record_leftover;
     logic [AXI_WIDTH*2/PACKET_ALIGNMENT-1:0][PACKET_ALIGNMENT-1:0] record_leftover_next;
     logic [$clog2(AXI_WIDTH):0] record_leftover_size;
     logic [$clog2(NSTAGES):0] record_curr;
@@ -72,7 +72,7 @@ module rr_trace_merge #(
 
     assign record_in_fifo_rd_en = ~record_in_fifo_empty && ~record_out_fifo_almfull && record_unhandled_size <= AXI_WIDTH;
     always_comb begin
-        record_leftover_next = {'hx, record_leftover[0 +: AXI_WIDTH]};
+        record_leftover_next = {'hx, record_leftover};
         for (int i = 0; i < AXI_WIDTH/PACKET_ALIGNMENT; i++) begin
             record_leftover_next[`GET_FORCE_ALIGNED_FRAME(record_leftover_size) + i]
                                             = current_record_unhandled[i * PACKET_ALIGNMENT +: PACKET_ALIGNMENT];
@@ -125,8 +125,7 @@ module rr_trace_merge #(
             current_record_unhandled <= record_unhandled[record_curr];
 
             if (record_leftover_size + current_record_unhandled_size >= AXI_WIDTH) begin
-                record_leftover[0 +: AXI_WIDTH] <= record_leftover_next[AXI_WIDTH/PACKET_ALIGNMENT +: AXI_WIDTH/PACKET_ALIGNMENT];
-                record_leftover[AXI_WIDTH +: AXI_WIDTH] <= 'hx;
+                record_leftover <= record_leftover_next[AXI_WIDTH/PACKET_ALIGNMENT +: AXI_WIDTH/PACKET_ALIGNMENT];
                 record_leftover_size <= record_leftover_size + current_record_unhandled_size - AXI_WIDTH;
                 record_out_fifo_in <= record_leftover_next[0 +: AXI_WIDTH/PACKET_ALIGNMENT];
                 record_out_fifo_in_size <= AXI_WIDTH;
@@ -134,13 +133,13 @@ module rr_trace_merge #(
             end else if (do_record_finish && record_in_fifo_empty && ~record_din_valid) begin
                 if (record_leftover_size > 0) begin
                     record_out_fifo_wr_en <= 1;
-                    record_out_fifo_in <= record_leftover[0 +: AXI_WIDTH];
+                    record_out_fifo_in <= record_leftover;
                     record_out_fifo_in_size <= record_leftover_size;
                     do_record_finish <= 0;
                     record_leftover_size <= 0;
                 end
             end else begin
-                record_leftover <= record_leftover_next;
+                record_leftover <= record_leftover_next[0 +: AXI_WIDTH/PACKET_ALIGNMENT];
                 record_leftover_size <= record_leftover_size + current_record_unhandled_size;
                 record_out_fifo_wr_en <= 0;
             end
