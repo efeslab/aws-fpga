@@ -55,7 +55,7 @@
 COMPONENT fifo_128x128
   PORT (
     clk : IN STD_LOGIC;
-    rst : IN STD_LOGIC;
+    srst : IN STD_LOGIC;
     din : IN STD_LOGIC_VECTOR(127 DOWNTO 0);
     wr_en : IN STD_LOGIC;
     rd_en : IN STD_LOGIC;
@@ -76,7 +76,7 @@ END COMPONENT;
 your_instance_name : fifo_128x128
   PORT MAP (
     clk => clk,
-    rst => rst,
+    srst => srst,
     din => din,
     wr_en => wr_en,
     rd_en => rd_en,

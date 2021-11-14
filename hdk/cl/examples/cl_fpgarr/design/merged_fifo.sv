@@ -36,14 +36,16 @@ module merged_fifo #(
         for (i = 0; i < NFIFOS; i++) begin
             fifo_128x128 fifo_inst(
                 .clk(clk),
-                .rst(rst),
+                .srst(rst),
                 .din(fifo_din[i]),
                 .wr_en(wr_en),
                 .rd_en(rd_en),
                 .dout(fifo_dout[i]),
                 .full(fifo_full[i]),
                 .empty(fifo_empty[i]),
-                .data_count(fifo_data_count[i])
+                .data_count(fifo_data_count[i]),
+                .wr_rst_busy(),
+                .rd_rst_busy()
             );
         end
     endgenerate
