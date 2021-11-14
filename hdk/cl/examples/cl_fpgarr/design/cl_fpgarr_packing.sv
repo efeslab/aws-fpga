@@ -92,10 +92,13 @@ always_comb begin
    valid_len_A = inA_q.any_valid? inA_q.len: 0;
    valid_len_B = inB_q.any_valid? inB_q.len: 0;
    out.len = out.OFFSET_WIDTH'(valid_len_A) + out.OFFSET_WIDTH'(valid_len_B);
-   // do not use "if" to avoid latches
+   // The inX.any_valid ? inX.data : 0
+   // can enforce the alignment padding to be 0
+   // I hope this won't cost too much resource
+   // TODO: do some comparison and revisit this.
    out.data = 'bx;
-   out.data[0 +: inA.FULL_WIDTH] = inA_q.data;
-   out.data[valid_len_A +: inB.FULL_WIDTH] = inB_q.data;
+   out.data[0 +: inA.FULL_WIDTH] = inA_q.any_valid ? inA_q.data : 0;
+   out.data[valid_len_A +: inB.FULL_WIDTH] = inB_q.any_valid ? inB_q.data : 0;
 end
 endmodule
 
