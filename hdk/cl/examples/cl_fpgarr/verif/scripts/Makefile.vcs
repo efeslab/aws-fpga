@@ -31,6 +31,8 @@ compile: $(COMPLIB_DIR)
 
 run:
 
+# deterministic RNG: +ntb_random_seed=12
+# non-determisnistic RNG: +ntb_random_seed_automatic
 ifeq ($(TEST),test_null)
 	cd $(SIM_DIR) && ./simv -l $(C_TEST).log $(PLUSARGS) +ntb_random_seed_automatic +vpdfile+$(TEST).vpd
 else
