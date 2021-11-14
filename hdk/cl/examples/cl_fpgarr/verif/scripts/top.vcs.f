@@ -114,6 +114,7 @@ ${CL_ROOT}/ip/rr_pcim_axi_interconnect/sim/rr_pcim_axi_interconnect.v
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_xbar_0/sim/rr_pcim_axi_interconnect_xbar_0.v
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_s00_regslice_0/sim/rr_pcim_axi_interconnect_s00_regslice_0.v
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_s01_regslice_0/sim/rr_pcim_axi_interconnect_s01_regslice_0.v
+${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_s02_regslice_0/sim/rr_pcim_axi_interconnect_s02_regslice_0.v
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_m00_regslice_0/sim/rr_pcim_axi_interconnect_m00_regslice_0.v
 # start of rr_cfg_axil_interconnect
 ${CL_ROOT}/ip/rr_cfg_axil_interconnect/sim/rr_cfg_axil_interconnect.v

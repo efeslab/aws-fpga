@@ -347,6 +347,7 @@ rr_csrs csrs (
 );
 
 rr_axi_bus_t rr_storage_bus();
+rr_axi_bus_t rr_validation_bus();
 // With TEST_BRIDGE_REC_REP, the packed recording data will be directly used as
 // packed replay data (without going to the backend storage)
 ////////////////////////////////////////////////////////////////////////////////
@@ -447,6 +448,7 @@ rr_storage_pcim_axi_interconnect pcim_interconnect (
   .clk(clk),
   .rstn(rstn),
   .logging_wb_bus(rr_storage_bus),
+  .validation_wb_bus(rr_validation_bus),
   .cl_pcim_bus(cl_pcim_bus),
   .sh_pcim_bus(sh_pcim_bus_q)
 );
