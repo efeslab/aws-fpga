@@ -74,10 +74,12 @@ void do_record_stop() {
     cl_peek_bar1(RR_CSR_ADDR(RECORD_BITS_LO), &record_bits_lo);
     record_bits = (record_bits_hi << 32) | record_bits_lo;
 
-    printf("record_bits: %d\n", record_bits);
+    int total_bytes = (record_bits + 7) / 8;
 
+    printf("record_bits: %d (%d B)\n", record_bits, total_bytes);
     printf("Trace Buffer Dump:\n");
-    for (int i = 0; i < 1024; i++) {
+    for (int i = 0; i < total_bytes; i++) {
+        // put 1-byte a time
         printf("%02x", trace_buffer[i]);
         if (i % 64 == 63) {
             printf("\n");
@@ -87,6 +89,7 @@ void do_record_stop() {
             printf("_");
         }
     }
+    putchar('\n');
 
     int fd = open("record.dump", O_RDWR|O_CREAT, S_IRUSR|S_IWUSR);
     write(fd, &record_bits, 8);
