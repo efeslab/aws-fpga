@@ -174,6 +174,9 @@ localparam int NUM_BURST = 3;
             record_din_width <= tmp_packet_len;
             record_din_valid <= 1;
             #period;
+            while (~record_din_ready) begin
+              #period;
+            end
         end
 
         record_din_valid <= 0;
@@ -187,6 +190,9 @@ localparam int NUM_BURST = 3;
             record_din_width <= tmp_packet_len;
             record_din_valid <= 1;
             #period;
+            while (~record_din_ready) begin
+              #period;
+            end
         end
 
         replay_dout_ready <= 0;
@@ -201,6 +207,9 @@ localparam int NUM_BURST = 3;
             record_din_width <= tmp_packet_len;
             record_din_valid <= 1;
             #period;
+            while (~record_din_ready) begin
+              #period;
+            end
         end
 
         // last packet, all zero
@@ -211,6 +220,9 @@ localparam int NUM_BURST = 3;
         record_din_width <= tmp_packet_len;
         record_din_valid <= 1;
         #period;
+        while (~record_din_ready) begin
+          #period;
+        end
         // end of last packet
 
         record_din <= 0;
@@ -268,7 +280,7 @@ localparam int NUM_BURST = 3;
 
         // FIXME: should be record_din_valid && record_din_ready
         // But need to fix the trace_rw record_in_fifo wr_en signal first
-        if (record_din_valid) begin
+        if (record_din_valid & record_din_ready) begin
             record_trace[record_curr][0 +: WIDTH] <= record_din;
             record_trace[record_curr][WIDTH +: WIDTH] <= 0;
             record_curr <= record_curr + 1;
