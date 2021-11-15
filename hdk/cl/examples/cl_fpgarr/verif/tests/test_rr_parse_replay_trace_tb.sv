@@ -1,6 +1,16 @@
 `include "cl_fpgarr_defs.svh"
 
 module test_rr_parse_replay_trace_tb;
+// TEST configuration
+`define PKT_GEN_RULE_BALANCE ($urandom() % 2)
+`define PKT_GEN_RULE_SMALL   (($urandom() % 10) == 0)
+`define PKT_GEN_RULE_LARGE   ($urandom() % 10)
+// TODO: test all three gen rules
+`define PKT_GEN_RULE `PKT_GEN_RULE_BALANCE
+// TODO: Can we make TEST_BURST_LEN to test up to 200?
+localparam int TEST_BURST_LEN = 20;
+localparam int NUM_BURST = 3;
+// end of TEST configuration
 
 `ifdef TEST_REPLAY
 
@@ -53,7 +63,7 @@ module test_rr_parse_replay_trace_tb;
         GET_RANDOM_PKT = WIDTH'(0);
         k = LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT;
         for (int i = 0; i < LOGB_CHANNEL_CNT; i++) begin
-            if ($urandom() % 2) begin
+            if (`PKT_GEN_RULE) begin
                 GET_RANDOM_PKT[i] = 1;
                 for (int j = k; j < k + SHUFFLED_CHANNEL_WIDTHS[i]; j++) begin
                     GET_RANDOM_PKT[j] = 1;
@@ -123,8 +133,6 @@ module test_rr_parse_replay_trace_tb;
         #halfperiod;
     end
 
-    localparam int TEST_BURST_LEN = 10;
-    localparam int NUM_BURST = 3;
     logic [WIDTH-1:0] tmp_packet;
     logic [OFFSET_WIDTH-1:0] tmp_packet_len;
 
@@ -233,7 +241,7 @@ module test_rr_parse_replay_trace_tb;
     int record_curr, replay_curr;
     int len;
 
-    logic replay_dout_valid_q;
+    logic replay_dout_valid_ready_q;
 
     initial begin
         record_curr = 0;
@@ -242,34 +250,37 @@ module test_rr_parse_replay_trace_tb;
             record_trace[i] = 0;
             replay_trace[i] = 0;
         end
-        replay_dout_valid_q = 0;
+        replay_dout_valid_ready_q = 0;
     end
 
     always @(posedge clk) begin
-        replay_dout_valid_q <= replay_dout_valid;
+        replay_dout_valid_ready_q <= replay_dout_valid && replay_dout_ready;
     end
 
     always @(posedge clk) begin
-        if (replay_dout_valid) begin
-            $display("[wb_tb]: replay width %d (+width %d aligned to %d) data %x",
+        if (replay_dout_valid && replay_dout_ready) begin
+            $display("[wb_tb@%t]: replay width %d (+width %d aligned to %d) data %x",
+                $time,
                 GET_LEN(replay_dout[0 +: LOGB_CHANNEL_CNT]),
                 GET_LEN(replay_dout[0 +: LOGB_CHANNEL_CNT]) + OFFSET_WIDTH'(OFFSET_WIDTH),
                 replay_dout_width, replay_dout);
         end
 
+        // FIXME: should be record_din_valid && record_din_ready
+        // But need to fix the trace_rw record_in_fifo wr_en signal first
         if (record_din_valid) begin
             record_trace[record_curr][0 +: WIDTH] <= record_din;
             record_trace[record_curr][WIDTH +: WIDTH] <= 0;
             record_curr <= record_curr + 1;
         end
 
-        if (replay_dout_valid) begin
+        if (replay_dout_valid && replay_dout_ready) begin
             replay_trace[replay_curr][0 +: WIDTH] <= replay_dout;
             replay_trace[replay_curr][WIDTH +: WIDTH] <= 0;
             replay_curr <= replay_curr + 1;
         end
 
-        if (replay_dout_valid_q) begin
+        if (replay_dout_valid_ready_q) begin
             assert(replay_curr <= record_curr);
 
             record_len = GET_LEN(
