@@ -98,6 +98,7 @@ ${CL_ROOT}/design/cl_fpgarr_rt_loge_crossbar.sv
 ## fpgarr tracestorage files
 ${CL_ROOT}/design/cl_fpgarr_tracestorage_axi.sv
 ${CL_ROOT}/design/cl_fpgarr_tracestorage_wrapper.sv
+${CL_ROOT}/design/cl_fpgarr_tracestorage_wrapper_writeonly.sv
 ${CL_ROOT}/design/cl_fpgarr_tracestorage_encoder.sv
 ${CL_ROOT}/design/cl_fpgarr_tracestorage_decoder.sv
 ${CL_ROOT}/design/cl_fpgarr_pcim_interconnect.sv

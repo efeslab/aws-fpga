@@ -96,6 +96,8 @@ module rr_csrs (
             // They are the statistics from the tracestorage module.
             csrs[RECORD_BITS_HI] <= storage_axi_counter_csr.record_bits[32 +: 32];
             csrs[RECORD_BITS_LO] <= storage_axi_counter_csr.record_bits[0 +: 32];
+            csrs[VALIDATE_BITS_HI] <= storage_axi_counter_csr.validate_bits[32 +: 32];
+            csrs[VALIDATE_BITS_LO] <= storage_axi_counter_csr.validate_bits[0 +: 32];
         end
     end
 
@@ -150,7 +152,9 @@ module rr_csrs (
         read_buf_update: al_write_transmitted_q && (al_addr == READ_BUF_UPDATE),
         record_force_finish: al_write_transmitted_q && (al_addr == RECORD_FORCE_FINISH),
         // replay_start: al_write_transmitted_q && (al_addr == REPLAY_START)
-        replay_bits: {csrs[REPLAY_BITS_HI], csrs[REPLAY_BITS_LO]}
+        replay_bits: {csrs[REPLAY_BITS_HI], csrs[REPLAY_BITS_LO]},
+        validate_buf_update: al_write_transmitted_q && (al_addr == VALIDATE_BUF_UPDATE),
+        validate_force_finish: al_write_transmitted_q && (al_addr == VALIDATE_FORCE_FINISH)
     };
 
     assign rr_mode_csr = '{

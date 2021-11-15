@@ -77,6 +77,7 @@ file copy -force $CL_DIR/design/cl_fpgarr_rt_loge_crossbar.sv      $TARGET_DIR
 ## fpgarr tracestorage files
 file copy -force $CL_DIR/design/cl_fpgarr_tracestorage_axi.sv      $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_tracestorage_wrapper.sv  $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fpgarr_tracestorage_wrapper_writeonly.sv  $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_tracestorage_encoder.sv  $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_tracestorage_decoder.sv  $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_pcim_interconnect.sv     $TARGET_DIR

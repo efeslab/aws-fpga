@@ -206,10 +206,13 @@ typedef struct packed {
   logic read_buf_update;
   // logic replay_start;
   logic [63:0] replay_bits;
+  logic validate_buf_update;
+  logic validate_force_finish;
 } storage_axi_csr_t;
 
 typedef struct packed {
     logic [63:0] record_bits;
+    logic [63:0] validate_bits;
 } storage_axi_counter_csr_t;
 
 // rr_mode_csr_t is a interpretation of the RR_MODE csr

@@ -56,13 +56,6 @@ generate
       FULL_WIDTH, replay_bus.FULL_WIDTH);
 endgenerate
 
-// TODO: convert validate_bus to rr_validation_bus (i.e. validation_wb_bus)
-assign validate_wb_bus.awvalid = 0;
-assign validate_wb_bus.wvalid = 0;
-assign validate_wb_bus.arvalid = 0;
-assign validate_wb_bus.bready = 1;
-assign validate_wb_bus.rready = 1;
-
 rr_trace_rw #(
   .WIDTH(FULL_WIDTH),
   .AXI_WIDTH(512),
@@ -96,4 +89,32 @@ rr_trace_rw #(
   .write_interrupt(),
   .read_interrupt()
 );
+
+localparam VALIDATE_BUS_WIDTH = validate_bus.FULL_WIDTH;
+localparam VALIDATE_BUS_OFFSET_WIDTH = $clog2(VALIDATE_BUS_WIDTH+1);
+
+rr_trace_writeonly #(
+  .WIDTH(VALIDATE_BUS_WIDTH),
+  .AXI_WIDTH(512),
+  .OFFSET_WIDTH(VALIDATE_BUS_OFFSET_WIDTH),
+  .AXI_ADDR_WIDTH(64),
+  .LOGB_CHANNEL_CNT(LOGB_CHANNEL_CNT),
+  .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
+  .SHUFFLED_CHANNEL_WIDTHS(SHUFFLED_CHANNEL_WIDTHS)
+) validate_writeback (
+  .clk(clk),
+  .sync_rst_n(rstn),
+  .record_din_valid(validate_bus.valid),
+  .record_din_ready(validate_bus.ready),
+  .record_finish(csr.validate_force_finish),
+  .record_din(validate_bus.data),
+  .record_din_width(validate_bus.len),
+  .axi_out(validate_wb_bus),
+  .write_buf_addr(csr.buf_addr),
+  .write_buf_size(csr.buf_size),
+  .write_buf_update(csr.validate_buf_update),
+  .record_bits(counter.validate_bits),
+  .write_interrupt()
+);
+
 endmodule
