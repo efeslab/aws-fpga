@@ -80,7 +80,7 @@ module rr_trace_rw #(
         .rst(~sync_rst_n),
         .din({record_din,record_din_width}),
         .dout({record_in_fifo_out,record_in_fifo_out_width}),
-        .wr_en(record_din_valid),
+        .wr_en(record_din_valid & record_din_ready),
         .rd_en(record_in_fifo_rd_en),
         .full(record_in_fifo_full),
         .almfull(record_in_fifo_almfull),
