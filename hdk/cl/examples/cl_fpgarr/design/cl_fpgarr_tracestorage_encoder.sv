@@ -75,7 +75,7 @@ module rr_trace_merge #(
         if (~sync_rst_n) begin
             record_unhandled_size <= 0;
             record_leftover_size <= 0;
-            record_curr <= NSTAGES - 1;
+            record_curr <= NSTAGES;
             do_record_finish <= 0;
             record_out_fifo_in <= 0;
             record_out_fifo_wr_en <= 0;
@@ -92,7 +92,7 @@ module rr_trace_merge #(
                 for (int i = 0; i < NSTAGES; i++) begin
                     record_unhandled[i] <= record_in_fifo_out_wrap[i*AXI_WIDTH+:AXI_WIDTH];
                 end
-            end else if (record_curr + 1 < NSTAGES) begin
+            end else if (record_curr + 1 <= NSTAGES) begin
                 record_curr <= record_curr + 1;
                 if (record_unhandled_size >= AXI_WIDTH) begin
                     record_unhandled_size <= record_unhandled_size - AXI_WIDTH;
@@ -100,20 +100,12 @@ module rr_trace_merge #(
                     record_unhandled_size <= 0;
                 end
             end
-            else if (do_record_finish && record_in_fifo_empty && ~record_din_valid && record_leftover_size > 0) begin
-                record_curr <= 0;
-                record_unhandled_size <= AXI_WIDTH - record_leftover_size;
-                record_unhandled[0] <= {AXI_WIDTH{1'h0}};
-                do_record_finish <= 0;
-            end
 
             if (record_unhandled_size >= AXI_WIDTH) begin
                 current_record_unhandled_size <= AXI_WIDTH;
             end else begin
                 current_record_unhandled_size <= record_unhandled_size;
             end
-            // This may not matter, but I do not want any buffer overflow.
-            assert(record_curr < NSTAGES);
             current_record_unhandled <= record_unhandled[record_curr];
 
             record_leftover_next = record_leftover;
