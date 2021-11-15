@@ -48,6 +48,12 @@ module rr_trace_rw #(
     output logic [63:0] record_bits
 );
 
+`ifdef TEST_REPLAY
+    localparam ALMFULL_THRESHOLD = 10;
+`else
+    localparam ALMFULL_THRESHOLD = 100;
+`endif
+
     localparam NSTAGES = (WIDTH - 1) / AXI_WIDTH + 1;
     localparam EXT_WIDTH = NSTAGES * AXI_WIDTH;
 
@@ -74,7 +80,7 @@ module rr_trace_rw #(
 
     merged_fifo #(
         .WIDTH(WIDTH+OFFSET_WIDTH),
-        .ALMFULL_THRESHOLD(12))
+        .ALMFULL_THRESHOLD(ALMFULL_THRESHOLD))
     mfifo_inst_record_in(
         .clk(clk),
         .rst(~sync_rst_n),
@@ -132,7 +138,7 @@ module rr_trace_rw #(
 
     merged_fifo #(
         .WIDTH(AXI_WIDTH+OFFSET_WIDTH),
-        .ALMFULL_THRESHOLD(12))
+        .ALMFULL_THRESHOLD(ALMFULL_THRESHOLD))
     mfifo_inst_record_out(
         .clk(clk),
         .rst(~sync_rst_n),
@@ -237,7 +243,16 @@ module rr_trace_rw #(
                 axi_out.wdata <= record_out_fifo_out;
         end
     end
+
+    logic [AXI_WIDTH-1:0] replay_in_fifo_in, replay_in_fifo_out;
+    logic replay_in_fifo_wr_en, replay_in_fifo_rd_en;
+    logic replay_in_fifo_full, replay_in_fifo_almfull, replay_in_fifo_empty;
+
+`ifndef TEST_REPLAY
     assign record_out_fifo_rd_en = ~axi_aw_working & ~axi_w_working & ~record_out_fifo_empty & (write_buf_curr != write_buf_end);
+`else
+    assign record_out_fifo_rd_en = ~record_out_fifo_empty & ~replay_in_fifo_almfull;
+`endif
 
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
@@ -289,13 +304,9 @@ module rr_trace_rw #(
     end
 `endif
 
-    logic [AXI_WIDTH-1:0] replay_in_fifo_in, replay_in_fifo_out;
-    logic replay_in_fifo_wr_en, replay_in_fifo_rd_en;
-    logic replay_in_fifo_full, replay_in_fifo_almfull, replay_in_fifo_empty;
-
     merged_fifo #(
         .WIDTH(AXI_WIDTH),
-        .ALMFULL_THRESHOLD(12))
+        .ALMFULL_THRESHOLD(ALMFULL_THRESHOLD))
     mfifo_inst_replay_in(
         .clk(clk),
         .rst(~sync_rst_n),
@@ -315,7 +326,7 @@ module rr_trace_rw #(
 
     merged_fifo #(
         .WIDTH(ALIGNED_WIDTH),
-        .ALMFULL_THRESHOLD(12))
+        .ALMFULL_THRESHOLD(ALMFULL_THRESHOLD))
     mfifo_inst_replay_out(
         .clk(clk),
         .rst(~sync_rst_n),
