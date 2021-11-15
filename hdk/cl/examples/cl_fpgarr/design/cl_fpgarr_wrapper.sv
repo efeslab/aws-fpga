@@ -248,7 +248,9 @@ rr_logging_bus_unpack2pack #(
   .out(packed_logging_bus)
 );
 `PACKED_LOGGING_BUS_TO_WBBUS(packed_logging_bus, record_bus);
-rr_packed2writeback_bus wb_record_inst(
+rr_packed2writeback_bus #(
+  .MERGE_TREE_HEIGHT(record_pkg::MERGE_TREE_HEIGHT)
+) wb_record_inst(
   .clk(clk), .rstn(rstn), .in(packed_logging_bus), .out(record_bus));
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -291,7 +293,9 @@ rr_logging_bus_unpack2pack #(
   .out(packed_validate_bus)
 );
 `PACKED_LOGGING_BUS_TO_WBBUS(packed_validate_bus, validate_bus);
-rr_packed2writeback_bus wb_validate_inst(
+rr_packed2writeback_bus #(
+  .MERGE_TREE_HEIGHT(validate_pkg::MERGE_TREE_HEIGHT)
+) wb_validate_inst(
   .clk(clk), .rstn(rstn), .in(packed_validate_bus), .out(validate_bus));
 
 ////////////////////////////////////////////////////////////////////////////////

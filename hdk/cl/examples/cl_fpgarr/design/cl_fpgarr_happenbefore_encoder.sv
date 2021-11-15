@@ -23,7 +23,9 @@
 //     logb packing module. almful is also pipelined
 // 2. 2*MERGE_TREE_HEIGHT, the pipeline stages in the merge tree. almful is also
 //    pipelined
-module rr_packed2writeback_bus (
+module rr_packed2writeback_bus #(
+   parameter int MERGE_TREE_HEIGHT
+) (
    input wire clk,
    input wire rstn,
    rr_packed_logging_bus_t.C in,
@@ -36,7 +38,9 @@ module rr_packed2writeback_bus (
 // The number of the elements in the fifo should be a power of 2
 // WATERMARK is (2**RR_LOGB_FIFO_PTR_WIDTH - RR_LOGB_FIFO_ALMFUL_THRESHOLD)
 localparam int RR_LOGB_FIFO_ALMFUL_THRESHOLD =
-   2*RECORDER_PIPE_DEPTH + 2*record_pkg::MERGE_TREE_HEIGHT + 16;
+   2*RECORDER_PIPE_DEPTH +
+   2*(MERGE_TREE_HEIGHT - 1 + MERGETREE_OUT_QUEUE_NSTAGES) +
+   16;
 localparam int RR_LOGB_FIFO_PTR_WIDTH = 7;
 // parameter check
 generate
