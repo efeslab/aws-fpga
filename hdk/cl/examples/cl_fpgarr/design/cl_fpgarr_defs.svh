@@ -3,6 +3,7 @@
 parameter RECORDER_PIPE_DEPTH=4;
 parameter MERGETREE_OUT_QUEUE_NSTAGES=2;
 parameter REPLAYER_PIPE_DEPTH=4;
+parameter CSR_PIPE_DEPTH=2;
 // index allocation of AXI channels
 parameter LOGB_AW=0;
 parameter LOGB_W=1;

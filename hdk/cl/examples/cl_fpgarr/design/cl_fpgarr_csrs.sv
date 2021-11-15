@@ -1,6 +1,7 @@
 `include "cl_fpgarr_defs.svh"
 
-module rr_csrs (
+module rr_csrs #(
+    parameter REG_STAGES=1) (
     input wire clk,
     input wire rstn,
     rr_axi_lite_bus_t.master rr_cfg_bus,
@@ -72,6 +73,17 @@ module rr_csrs (
         end
     end
 
+    storage_axi_counter_csr_t storage_axi_counter_csr_i;
+    lib_pipe #(
+        .WIDTH($bits(storage_axi_counter_csr_t)),
+        .STAGES(REG_STAGES))
+    pipe_storage_axi_counter_csr(
+        .clk(clk),
+        .rst_n(rstn),
+        .in_bus(storage_axi_counter_csr),
+        .out_bus(storage_axi_counter_csr_i)
+    );
+
     // Write register update
     always_ff @(posedge clk) begin
         if (~rstn) begin
@@ -94,10 +106,10 @@ module rr_csrs (
 
             // RECORD_BITS_HI and RECORD_BITS_LO should not be written.
             // They are the statistics from the tracestorage module.
-            csrs[RECORD_BITS_HI] <= storage_axi_counter_csr.record_bits[32 +: 32];
-            csrs[RECORD_BITS_LO] <= storage_axi_counter_csr.record_bits[0 +: 32];
-            csrs[VALIDATE_BITS_HI] <= storage_axi_counter_csr.validate_bits[32 +: 32];
-            csrs[VALIDATE_BITS_LO] <= storage_axi_counter_csr.validate_bits[0 +: 32];
+            csrs[RECORD_BITS_HI] <= storage_axi_counter_csr_i.record_bits[32 +: 32];
+            csrs[RECORD_BITS_LO] <= storage_axi_counter_csr_i.record_bits[0 +: 32];
+            csrs[VALIDATE_BITS_HI] <= storage_axi_counter_csr_i.validate_bits[32 +: 32];
+            csrs[VALIDATE_BITS_LO] <= storage_axi_counter_csr_i.validate_bits[0 +: 32];
         end
     end
 
@@ -145,7 +157,8 @@ module rr_csrs (
         end
     end
 
-    assign storage_axi_csr = '{
+    storage_axi_csr_t storage_axi_csr_o;
+    assign storage_axi_csr_o = '{
         buf_addr: {csrs[BUF_ADDR_HI], csrs[BUF_ADDR_LO]},
         buf_size: {csrs[BUF_SIZE_HI], csrs[BUF_SIZE_LO]},
         write_buf_update: al_write_transmitted_q && (al_addr == WRITE_BUF_UPDATE),
@@ -156,12 +169,31 @@ module rr_csrs (
         validate_buf_update: al_write_transmitted_q && (al_addr == VALIDATE_BUF_UPDATE),
         validate_force_finish: al_write_transmitted_q && (al_addr == VALIDATE_FORCE_FINISH)
     };
+    lib_pipe #(
+        .WIDTH($bits(storage_axi_csr_t)),
+        .STAGES(REG_STAGES))
+    pipe_storage_axi_csr(
+        .clk(clk),
+        .rst_n(rstn),
+        .in_bus(storage_axi_csr_o),
+        .out_bus(storage_axi_csr)
+    );
 
-    assign rr_mode_csr = '{
+    rr_mode_csr_t rr_mode_csr_o;
+    assign rr_mode_csr_o = '{
         recordEn: csrs[RR_MODE][0],
         replayEn: csrs[RR_MODE][1],
         outputValidateEn: csrs[RR_MODE][2]
     };
+    lib_pipe #(
+        .WIDTH($bits(rr_mode_csr_t)),
+        .STAGES(REG_STAGES))
+    pipe_rr_mode_csr(
+        .clk(clk),
+        .rst_n(rstn),
+        .in_bus(rr_mode_csr_o),
+        .out_bus(rr_mode_csr)
+    );
 
 `ifdef WRITEBACK_DEBUG
     always_ff @(posedge clk) begin
