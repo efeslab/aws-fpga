@@ -709,14 +709,24 @@ always_ff @(posedge clk)
         endcase
 // LO: maintain replay_pkt_cnt
 assign replay_pkt_total = replay_bits[63:PACKET_ALIGNMENT_WIDTH];
+logic [ALIGNED_OFFSET_WIDTH-1:0] rt_replay_pkt_cnt_add;
 always_ff @(posedge clk)
-   if (!sync_rst_n)
+   if (!sync_rst_n) begin
       rt_replay_pkt_cnt <= 0;
-   else if (lo_out && lo_valid_satisfied)
-      rt_replay_pkt_cnt <= rt_replay_pkt_cnt + lo_remain_len;
-   else if (lo_out && !lo_valid_satisfied)
-      rt_replay_pkt_cnt <= rt_replay_pkt_cnt + AXI_ALIGNED_WIDTH;
-assign lo_replay_done = (replay_pkt_total == rt_replay_pkt_cnt);
+      rt_replay_pkt_cnt_add <= 0;
+   end
+   else begin
+      rt_replay_pkt_cnt <= rt_replay_pkt_cnt + rt_replay_pkt_cnt_add;
+      if (lo_out && lo_valid_satisfied)
+         rt_replay_pkt_cnt_add <= lo_remain_len;
+      else if (lo_out && !lo_valid_satisfied)
+         rt_replay_pkt_cnt_add <= AXI_ALIGNED_WIDTH;
+      else
+         rt_replay_pkt_cnt_add <= 0;
+   end
+assign lo_replay_done = (
+   replay_pkt_total ==
+   (rt_replay_pkt_cnt + rt_replay_pkt_cnt_add));
 // LO: maintain lo_remain_len
 reg [ALIGNED_OFFSET_WIDTH-1:0] lo_remain_len_reg;
 always_comb
