@@ -511,4 +511,5 @@ always_ff @(posedge clk) begin
             GET_LEN(replay_dout[0 +: LOGB_CHANNEL_CNT]), replay_dout);
 end
 `endif
+
 endmodule

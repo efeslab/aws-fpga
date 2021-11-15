@@ -467,12 +467,6 @@ rr_axil_mstr_sel bar1_sel (
 // It expects RW addresses in 0x100000~0x1FFFFF.
 rr_stream_bus_t #(.FULL_WIDTH(record_bus.FULL_WIDTH)) packed_replay_bus();
 
-// TODO: convert validate_bus to rr_validation_bus (i.e. validation_wb_bus)
-assign rr_validation_bus.awvalid = 0;
-assign rr_validation_bus.wvalid = 0;
-assign rr_validation_bus.arvalid = 0;
-assign rr_validation_bus.bready = 1;
-assign rr_validation_bus.rready = 1;
 rr_storage_backend_axi #(
   .LOGB_CHANNEL_CNT(unpacked_record_bus.LOGB_CHANNEL_CNT),
   .CHANNEL_WIDTHS(unpacked_record_bus.CHANNEL_WIDTHS),
@@ -480,8 +474,10 @@ rr_storage_backend_axi #(
 ) trace_storage (
   .clk(clk), .rstn(rstn),
   .storage_backend_bus(rr_storage_bus),
+  .validate_wb_bus(rr_validation_bus),
   .record_bus(record_bus),
   .replay_bus(packed_replay_bus),
+  .validate_bus(validate_bus),
   .csr(storage_axi_csr),
   .counter(storage_axi_counter_csr)
 );

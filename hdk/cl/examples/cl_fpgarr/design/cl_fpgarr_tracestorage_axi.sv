@@ -16,8 +16,10 @@ module rr_storage_backend_axi #(
   input wire clk,
   input wire rstn,
   rr_axi_bus_t.slave storage_backend_bus,
+  rr_axi_bus_t.slave validate_wb_bus,
   rr_stream_bus_t.C record_bus,
   rr_stream_bus_t.P replay_bus,
+  rr_stream_bus_t.C validate_bus,
   input storage_axi_csr_t csr,
   output storage_axi_counter_csr_t counter
 );
@@ -53,6 +55,13 @@ generate
     $error("FULL_WIDTH mismatches: from parameter %d, replay_bus %d\n",
       FULL_WIDTH, replay_bus.FULL_WIDTH);
 endgenerate
+
+// TODO: convert validate_bus to rr_validation_bus (i.e. validation_wb_bus)
+assign validate_wb_bus.awvalid = 0;
+assign validate_wb_bus.wvalid = 0;
+assign validate_wb_bus.arvalid = 0;
+assign validate_wb_bus.bready = 1;
+assign validate_wb_bus.rready = 1;
 
 rr_trace_rw #(
   .WIDTH(FULL_WIDTH),
