@@ -259,21 +259,39 @@ for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
 end
 endgenerate
 
-// output packed_logb_bus, register one more stage for timing
+// output packed_logb_bus, register MERGETREE_QUEUE_NSTAGES more stages for
+// timing
 `undef TREE_TOP
 `define TREE_TOP tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].agg_or_q.node.plogb
-always_ff @(posedge clk)
-  if (!rstn)
-    out.plogb.any_valid <= 0;
-  else
-    out.plogb.any_valid <= `TREE_TOP.any_valid;
-always_ff @(posedge clk) begin
-  out.plogb.data <= `TREE_TOP.data;
-  out.plogb.len <= `TREE_TOP.len;
-end
+lib_pipe #(
+  .WIDTH(1),
+  .STAGES(MERGETREE_OUT_QUEUE_NSTAGES)
+) plogb_any_valid_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(`TREE_TOP.any_valid),
+  .out_bus(out.plogb.any_valid)
+);
+lib_pipe #(
+  .WIDTH(out.LOGB_DATA_WIDTH),
+  .STAGES(MERGETREE_OUT_QUEUE_NSTAGES)
+) plogb_data_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(`TREE_TOP.data),
+  .out_bus(out.plogb.data)
+);
+lib_pipe #(
+  .WIDTH(out.LOGB_OFFSET_WIDTH),
+  .STAGES(MERGETREE_OUT_QUEUE_NSTAGES)
+) plogb_len_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(`TREE_TOP.len),
+  .out_bus(out.plogb.len)
+);
 
-localparam QUEUE_NSTAGES = MERGE_TREE_HEIGHT;
+localparam QUEUE_NSTAGES = (MERGE_TREE_HEIGHT - 1) + MERGETREE_OUT_QUEUE_NSTAGES;
 // Queue logb_valid and loge_valid for the correct number of cycles
+// i.e. the stages of the tree itself plus the stages queued for the output of
+// the tree
 generate
 for (i=0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin: logb_gen
   // shuffle logb_valid together with logb_data according to the SHUFFLE_PLAN
