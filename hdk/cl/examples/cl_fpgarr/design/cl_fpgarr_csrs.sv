@@ -161,13 +161,12 @@ module rr_csrs #(
     assign storage_axi_csr_o = '{
         buf_addr: {csrs[BUF_ADDR_HI], csrs[BUF_ADDR_LO]},
         buf_size: {csrs[BUF_SIZE_HI], csrs[BUF_SIZE_LO]},
-        write_buf_update: al_write_transmitted_q && (al_addr == WRITE_BUF_UPDATE),
-        read_buf_update: al_write_transmitted_q && (al_addr == READ_BUF_UPDATE),
+        write_buf_update: al_write_transmitted_q && (al_addr == RECORD_BUF_UPDATE),
+        read_buf_update: al_write_transmitted_q && (al_addr == REPLAY_BUF_UPDATE),
         record_force_finish: al_write_transmitted_q && (al_addr == RECORD_FORCE_FINISH),
         // replay_start: al_write_transmitted_q && (al_addr == REPLAY_START)
         replay_bits: {csrs[REPLAY_BITS_HI], csrs[REPLAY_BITS_LO]},
-        validate_buf_update: al_write_transmitted_q && (al_addr == VALIDATE_BUF_UPDATE),
-        validate_force_finish: al_write_transmitted_q && (al_addr == VALIDATE_FORCE_FINISH)
+        validate_buf_update: al_write_transmitted_q && (al_addr == VALIDATE_BUF_UPDATE)
     };
     lib_pipe #(
         .WIDTH($bits(storage_axi_csr_t)),

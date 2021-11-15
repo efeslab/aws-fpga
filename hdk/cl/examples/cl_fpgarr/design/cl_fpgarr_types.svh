@@ -207,7 +207,6 @@ typedef struct packed {
   // logic replay_start;
   logic [63:0] replay_bits;
   logic validate_buf_update;
-  logic validate_force_finish;
 } storage_axi_csr_t;
 
 typedef struct packed {

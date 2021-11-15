@@ -241,22 +241,33 @@ endfunction
 parameter int RR_CSR_CNT = 32;
 parameter int RR_CSR_ADDR_WIDTH = $clog2(RR_CSR_CNT);
 typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
+  // BUF_ADDR and BUF_SIZE are the address and size of a buffer in CPU-side
+  // memory. The address should be physical addresses. To tell the writeback
+  // module about a new buffer, the software need to write the address and
+  // size of the buffer to BUF_ADDR and BUF_SIZE, and write 1 to one of the
+  // *_BUF_UPDATE registers.
   BUF_ADDR_HI,              // 0
   BUF_ADDR_LO,              // 1
   BUF_SIZE_HI,              // 2
   BUF_SIZE_LO,              // 3
-  WRITE_BUF_UPDATE,         // 4
-  READ_BUF_UPDATE,          // 5
+  RECORD_BUF_UPDATE,        // 4
+  REPLAY_BUF_UPDATE,        // 5
+  // Software needs to write 1 to RECORD_FORCE_FINISH after the computation
+  // is done. Writing to this CSR would flush the last packet to the memory.
+  // Before writing this CSR, it's recommanded for the software to sleep for
+  // a few microseconds.
   RECORD_FORCE_FINISH,      // 6
   REPLAY_START,             // 7, currently not used
   RR_MODE,                  // 8
-  RR_RSVD_1,                // 9
+  RR_RSVD_1,                // 9, 4 bytes reserved to align RECORD_BITS
+  // *_BITS are used to tell how many bits is recorded or needs to be replayed.
+  // Software need to write this before replay, and read it back after record.
   RECORD_BITS_HI,           // 10
   RECORD_BITS_LO,           // 11
   REPLAY_BITS_HI,           // 12
   REPLAY_BITS_LO,           // 13
   VALIDATE_BUF_UPDATE,      // 14
-  VALIDATE_FORCE_FINISH,    // 15
+  RR_RSVD_2,                // 15, 4 bytes recerved to align VALIDATE_BITS
   VALIDATE_BITS_HI,         // 16
   VALIDATE_BITS_LO,         // 17
   RR_CSR_LAST_DONT_USE = RR_CSR_CNT - 1

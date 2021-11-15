@@ -106,7 +106,7 @@ rr_trace_writeonly #(
   .sync_rst_n(rstn),
   .record_din_valid(validate_bus.valid),
   .record_din_ready(validate_bus.ready),
-  .record_finish(csr.validate_force_finish),
+  .record_finish(csr.record_force_finish),
   .record_din(validate_bus.data),
   .record_din_width(validate_bus.len),
   .axi_out(validate_wb_bus),
