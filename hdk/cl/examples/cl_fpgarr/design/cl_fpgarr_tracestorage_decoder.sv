@@ -401,12 +401,23 @@ assign lo_out_data = shift_buf_aligned[lo_valid_off +: AXI_ALIGNED_WIDTH];
 // NOTE that in the following usage, lo_remain_len is only used when lo_out,
 // which guarantees lo_remain_len has valid data.
 logic [ALIGNED_OFFSET_WIDTH-1:0] lo_remain_len;
-// all LO (valid) data has been transmitted to the ASM buffer
-// only valid when lo_out
+// lo_exhaust means all (valid) LO data has been transmitted to the ASM buffer
+// lo_exhaust is only valid when lo_out
+//
+// Note that both lo_remain_len and lo_valid_off can be large (near the maximum
+// representable integer given their individual width).
+// For lo_remain_len, it means almost the entire logging unit has valid data,
+// i.e. all channels sent some data.
+// For lo_valid_off, it means the LO part is almost exhausted.
+//
+// To prevent integer addition overflow, I cast both of them to higher widths.
+localparam EXHAUST_CHECK_WIDTH =
+   ALIGNED_OFFSET_WIDTH + AXI_ALIGNED_OFFSET_WIDTH;
 logic lo_exhaust;
 assign lo_exhaust =
-    (lo_remain_len + ALIGNED_OFFSET_WIDTH'(lo_valid_off)) >=
-    ALIGNED_OFFSET_WIDTH'(AXI_ALIGNED_WIDTH);
+    (EXHAUST_CHECK_WIDTH'(lo_remain_len) + EXHAUST_CHECK_WIDTH'(lo_valid_off))
+    >=
+    EXHAUST_CHECK_WIDTH'(AXI_ALIGNED_WIDTH);
 // Whether the output of LO contains the remaining of the logging unit
 // only valid when lo_out
 // Note that I assume only output when HI and LO have continuous valid data
@@ -811,5 +822,9 @@ logic [AXI_WIDTH-1:0] hi_buf;
 assign hi_buf = shift_buf[AXI_WIDTH +: AXI_WIDTH];
 logic [AXI_WIDTH-1:0] lo_buf;
 assign lo_buf = shift_buf[0 +: AXI_WIDTH];
+logic [OFFSET_WIDTH-1:0] asm_out_len;
+assign asm_out_len = trace_data[0 +: OFFSET_WIDTH];
+logic [LOGGING_UNIT_WIDTH-OFFSET_WIDTH-1:0] asm_out_data;
+assign asm_out_data = trace_data[LOGGING_UNIT_WIDTH-1:OFFSET_WIDTH];
 `endif
 endmodule
