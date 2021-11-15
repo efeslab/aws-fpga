@@ -141,6 +141,8 @@ void usage(const char* program_name) {
 /**
  * Write 4 identical buffers to the 4 different DRAM channels of the AFI
  */
+#define TEST_PCIM
+#undef TEST_PCIS
 int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 {
     uint8_t *host_mem;
@@ -164,29 +166,90 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         /*channel*/ 0, /*is_read*/ false);
     fail_on((rc = (write_fd < 0) ? -1 : 0), out, "unable to open write dma queue");
 #else
+
+#if defined(TEST_PCIM) || defined(TEST_PCIS)
+        init_ddr();
+#endif
     init_rr();
     do_pre_rr();
 
     if (is_record()) {
-        //init_ddr();
         deselect_atg_hw();
 
+        // {{{ setup test for pcim
+#ifdef TEST_PCIM
         sv_map_host_memory(host_mem);
         printf("host_mem: %p\n", host_mem);
+        // 0x30: A value of 0 will drive PCIS/XDMA transactions to DDR.
         cl_poke_ocl(0x030, 0);
+        //Offset 0x10:
+        //     15:0 - Write Num Inst - Number of write instructions
+        //     31:16 - Read Num inst - Number of read instructions
         cl_poke_ocl(0x010, 1);
+        // Offset 0x20: Write address low - Write instruction address
         cl_poke_ocl(0x020, (uint64_t)(host_mem) & 0xffffffff);
+        // Offset 0x24: Write address high - Write instruction address
         cl_poke_ocl(0x024, ((uint64_t)host_mem >> 32) & 0xffffffff);
+        // Offset 0x28: Write data - Write instruction start data.  All other data will be incrementing or PRBS
         cl_poke_ocl(0x028,0x1234);
+        // Offset 0x2c: Write length/User - Write instruction length (number of data phases.  note there are no partial data phases)
+        //     7:0 - Length -- this is the number of AXI data phases.   Lower address bits define first data offset
+        //     15:8 - Last data adj -- Number of DW to adj last data phase (0 means all DW are valid, 1 means all but 1DW valid, etc...)
+        //     31:16 - User
         cl_poke_ocl(0x02c,0x5);
-        //cl_poke_ocl(0x008,0x1);
-        //sv_pause(500);
-        //for (uint8_t i = 0; i < 100; ++i) {
-        //    printf("[%p]=%#x\n", host_mem+i, host_memory_getc(host_mem+i));
-        //}
-        rc = 0;
-    }
+        //Offset 0x08:
+        //     0 - Write Go (read back write in progress) - Write this bit to start executing the write instructions.  Reads back '1' while write instructions are in progress.
+        //     1 - Read Go (read back write in progress) - Write this bit to start executing the read instructions.  Reads back '1' while read instructions are in progress.
+        //     2 - Read response pending (read only).  REad only, reads back '1' while read responses are pending.
+        cl_poke_ocl(0x008,0x1);
 #endif
+        // }}} end of set for pcim
+        
+        // {{{setup test for pcis
+#ifdef TEST_PCIS
+        printf("filling buffer with  random data...\n") ;
+
+        rc = fill_buffer_urandom(write_buffer, buffer_size);
+        fail_on(rc, out, "unable to initialize buffer");
+
+        printf("Now performing the DMA transactions...\n");
+        for (dimm = 0; dimm < 4; dimm++) {
+            rc = do_dma_write(write_fd, write_buffer, buffer_size,
+                dimm * MEM_16G, dimm, slot_id);
+            fail_on(rc, out, "DMA write failed on DIMM: %d", dimm);
+        }
+
+        bool passed = true;
+        for (dimm = 0; dimm < 4; dimm++) {
+            rc = do_dma_read(read_fd, read_buffer, buffer_size,
+                dimm * MEM_16G, dimm, slot_id);
+            fail_on(rc, out, "DMA read failed on DIMM: %d", dimm);
+            uint64_t differ = buffer_compare(read_buffer, write_buffer, buffer_size);
+            if (differ != 0) {
+                log_error("DIMM %d failed with %lu bytes which differ", dimm, differ);
+                passed = false;
+            } else {
+                log_info("DIMM %d passed!", dimm);
+            }
+        }
+        rc = (passed) ? 0 : 1;
+#else
+        rc = 0;
+#endif
+        // }}} end of test for pcis
+
+        // wait for pcim test to finish
+#ifdef TEST_PCIM
+        sv_pause(10);
+        for (uint8_t i = 0; i < 100; ++i) {
+            printf("[%p]=%#x\n", host_mem+i, host_memory_getc(host_mem+i));
+        }
+        rc = rc || 0;
+#else
+        rc = 0;
+#endif
+    }
+#endif // end of SV_TEST
 
     do_post_rr();
 
