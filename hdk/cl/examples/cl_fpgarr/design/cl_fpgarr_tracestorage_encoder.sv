@@ -109,7 +109,6 @@ module rr_trace_merge #(
                 current_record_unhandled_size <= record_unhandled_size;
             end
             current_record_unhandled <= record_unhandled[record_curr];
-            assert(record_curr < NSTAGES);
 
             record_leftover_next = record_leftover;
             for (int i = 0; i < AXI_WIDTH/PACKET_ALIGNMENT; i++) begin
@@ -138,5 +137,8 @@ module rr_trace_merge #(
             end
         end
     end
+    always_ff @(posedge clk)
+        if (sync_rst_n)
+            assert(record_curr < NSTAGES);
 endmodule
 
