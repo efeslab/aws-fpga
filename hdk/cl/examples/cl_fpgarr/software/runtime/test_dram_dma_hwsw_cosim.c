@@ -142,13 +142,26 @@ void usage(const char* program_name) {
  * Write 4 identical buffers to the 4 different DRAM channels of the AFI
  */
 #define TEST_PCIM
-#undef TEST_PCIS
+#define TEST_PCIS
 int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 {
+    int rc;
+#ifdef TEST_PCIS
+    uint8_t *write_buffer = malloc(buffer_size);
+    uint8_t *read_buffer = malloc(buffer_size);
+    if (write_buffer == NULL || read_buffer == NULL) {
+        rc = -ENOMEM;
+        goto out;
+    }
+    setup_send_rdbuf_to_c(read_buffer, buffer_size);
+    int write_fd, read_fd;
+    write_fd = -1;
+    read_fd = -1;
+#endif // TEST_PCIS
+
     uint8_t *host_mem;
     posix_memalign(&host_mem, 64, buffer_size);
     memset(host_mem, 0, buffer_size);
-    int rc;
 
     if (host_mem == NULL) {
         rc = -ENOMEM;
@@ -168,16 +181,19 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 #else
 
 #if defined(TEST_PCIM) || defined(TEST_PCIS)
-        init_ddr();
+    printf("Starting DDR init...\n");
+    init_ddr();
+    printf("Done DDR init...\n");
 #endif
-    init_rr();
+    rc = init_rr();
+    fail_on(rc, out, "init_rr failed");
     do_pre_rr();
 
     if (is_record()) {
         deselect_atg_hw();
 
-        // {{{ setup test for pcim
 #ifdef TEST_PCIM
+        // {{{ setup test for pcim
         sv_map_host_memory(host_mem);
         printf("host_mem: %p\n", host_mem);
         // 0x30: A value of 0 will drive PCIS/XDMA transactions to DDR.
@@ -213,14 +229,14 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         fail_on(rc, out, "unable to initialize buffer");
 
         printf("Now performing the DMA transactions...\n");
-        for (dimm = 0; dimm < 4; dimm++) {
+        for (int dimm = 0; dimm < 4; dimm++) {
             rc = do_dma_write(write_fd, write_buffer, buffer_size,
                 dimm * MEM_16G, dimm, slot_id);
             fail_on(rc, out, "DMA write failed on DIMM: %d", dimm);
         }
 
         bool passed = true;
-        for (dimm = 0; dimm < 4; dimm++) {
+        for (int dimm = 0; dimm < 4; dimm++) {
             rc = do_dma_read(read_fd, read_buffer, buffer_size,
                 dimm * MEM_16G, dimm, slot_id);
             fail_on(rc, out, "DMA read failed on DIMM: %d", dimm);
@@ -240,7 +256,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 
         // wait for pcim test to finish
 #ifdef TEST_PCIM
-        sv_pause(10);
+        sv_pause(5);
         for (uint8_t i = 0; i < 100; ++i) {
             printf("[%p]=%#x\n", host_mem+i, host_memory_getc(host_mem+i));
         }
@@ -255,6 +271,14 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 
 out:
     free(host_mem);
+#ifdef TEST_PCIS
+    if (write_buffer != NULL) {
+        free(write_buffer);
+    }
+    if (read_buffer != NULL) {
+        free(read_buffer);
+    }
+#endif
 #if !defined(SV_TEST)
     abort();
     if (write_fd >= 0) {
