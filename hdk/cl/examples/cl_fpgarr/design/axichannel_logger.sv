@@ -45,7 +45,10 @@ twowayhandshake_logger #(.DATA_WIDTH(DATA_WIDTH)) logger (
   .logb_ready(!logb_almful_p),
   .logb_data(logb_data_p),
   .loge_valid(loge_valid_p),
-  .loge_ready(1'b1), // loge is not guarded by logb_almful
+  // loge is not guarded by logb_almful
+  // loge should also be guaranteed to not stall (see comments in
+  // twowayhandshake_logger.sv for more details)
+  .loge_ready(1'b1),
   .out_valid(out_valid),
   .out_ready(out_ready),
   .out_data(out_data)
