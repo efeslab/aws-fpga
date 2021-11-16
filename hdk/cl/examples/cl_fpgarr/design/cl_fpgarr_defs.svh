@@ -1,9 +1,9 @@
 `ifndef CL_FPGARR_DEFS
 `define CL_FPGARR_DEFS
-parameter RECORDER_PIPE_DEPTH=4;
-parameter MERGETREE_OUT_QUEUE_NSTAGES=2;
-parameter REPLAYER_PIPE_DEPTH=4;
-parameter CSR_PIPE_DEPTH=2;
+parameter RECORDER_PIPE_DEPTH=2;
+parameter MERGETREE_OUT_QUEUE_NSTAGES=1;
+parameter REPLAYER_PIPE_DEPTH=2;
+parameter CSR_PIPE_DEPTH=1;
 // index allocation of AXI channels
 parameter LOGB_AW=0;
 parameter LOGB_W=1;
