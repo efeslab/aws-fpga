@@ -168,16 +168,18 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 #else
 
 #if defined(TEST_PCIM) || defined(TEST_PCIS)
-        init_ddr();
+    printf("Starting DDR init...\n");
+    init_ddr();
+    printf("Done DDR init...\n");
 #endif
-    init_rr();
+    rc = init_rr();
+    fail_on(rc, out, "init_rr failed");
     do_pre_rr();
 
     if (is_record()) {
         deselect_atg_hw();
 
         // {{{ setup test for pcim
-#ifdef TEST_PCIM
         sv_map_host_memory(host_mem);
         printf("host_mem: %p\n", host_mem);
         // 0x30: A value of 0 will drive PCIS/XDMA transactions to DDR.
@@ -197,6 +199,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         //     15:8 - Last data adj -- Number of DW to adj last data phase (0 means all DW are valid, 1 means all but 1DW valid, etc...)
         //     31:16 - User
         cl_poke_ocl(0x02c,0x5);
+#ifdef TEST_PCIM
         //Offset 0x08:
         //     0 - Write Go (read back write in progress) - Write this bit to start executing the write instructions.  Reads back '1' while write instructions are in progress.
         //     1 - Read Go (read back write in progress) - Write this bit to start executing the read instructions.  Reads back '1' while read instructions are in progress.
@@ -240,7 +243,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 
         // wait for pcim test to finish
 #ifdef TEST_PCIM
-        sv_pause(10);
+        sv_pause(5);
         for (uint8_t i = 0; i < 100; ++i) {
             printf("[%p]=%#x\n", host_mem+i, host_memory_getc(host_mem+i));
         }
