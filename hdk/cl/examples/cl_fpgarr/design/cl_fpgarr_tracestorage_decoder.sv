@@ -512,13 +512,13 @@ always_ff @(posedge clk)
 always_comb begin
     case (hi_fsm)
         HI_EMPTY:
-            if (hi_in)
+            if (hi_in || hi_pad_last)
                 // load
                 hi_fsm_next = HI_FULL;
             else
                 hi_fsm_next = HI_EMPTY;
         HI_FULL:
-            if (hi_lo_shift && !hi_in && !hi_pad_last)
+            if (hi_lo_shift && !(hi_in || hi_pad_last))
                 // unload
                 hi_fsm_next = HI_EMPTY;
             else
@@ -766,7 +766,7 @@ always_ff @(posedge clk) begin
     // state machine)
     if (hi_in)
         shift_buf[AXI_WIDTH +: AXI_WIDTH] <= replay_in_fifo_out;
-    else if (hi_lo_shift && hi_pad_last)
+    else if (hi_pad_last)
         shift_buf[AXI_WIDTH +: AXI_WIDTH] <= 0;
     if (hi_lo_shift)
         shift_buf[0 +: AXI_WIDTH] <= shift_buf[AXI_WIDTH +: AXI_WIDTH];
