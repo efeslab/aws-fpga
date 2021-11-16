@@ -5,10 +5,9 @@ module test_rr_parse_replay_trace_tb;
 `define PKT_GEN_RULE_BALANCE ($urandom() % 2)
 `define PKT_GEN_RULE_SMALL   (($urandom() % 10) == 0)
 `define PKT_GEN_RULE_LARGE   ($urandom() % 10)
-// TODO: test all three gen rules
+// TODO: Remember to test all three gen rules
 `define PKT_GEN_RULE `PKT_GEN_RULE_BALANCE
-// TODO: Can we make TEST_BURST_LEN to test up to 200?
-localparam int TEST_BURST_LEN = 100;
+localparam int TEST_BURST_LEN = 200;
 localparam int NUM_BURST = 3;
 // end of TEST configuration
 
