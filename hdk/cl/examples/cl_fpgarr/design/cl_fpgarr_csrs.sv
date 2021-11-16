@@ -110,6 +110,7 @@ module rr_csrs #(
             csrs[RECORD_BITS_LO] <= storage_axi_counter_csr_i.record_bits[0 +: 32];
             csrs[VALIDATE_BITS_HI] <= storage_axi_counter_csr_i.validate_bits[32 +: 32];
             csrs[VALIDATE_BITS_LO] <= storage_axi_counter_csr_i.validate_bits[0 +: 32];
+            csrs[RR_CSR_VERSION] <= RR_CSR_VERSION_INT;
         end
     end
 
