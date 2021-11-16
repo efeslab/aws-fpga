@@ -131,7 +131,7 @@ module rr_csrs #(
     end
 
     // Read control
-    logic [3:0] al_araddr;
+    logic [RR_CSR_ADDR_WIDTH-1:0] al_araddr;
     logic al_ar_transmitted, al_r_transmitted, al_r_working;
 
     // Only accepting read data when the previous read response is accepted by master
@@ -140,7 +140,7 @@ module rr_csrs #(
     assign al_ar_transmitted = rr_cfg_bus.arvalid & rr_cfg_bus.arready;
     assign al_r_working = rr_cfg_bus.rvalid & ~rr_cfg_bus.rready;
     assign al_r_transmitted = rr_cfg_bus.rvalid & rr_cfg_bus.rready;
-    assign al_araddr = rr_cfg_bus.araddr[5:2];
+    assign al_araddr = rr_cfg_bus.araddr[2 +: RR_CSR_ADDR_WIDTH];
 
     always_ff @(posedge clk) begin
         if (~rstn) begin
