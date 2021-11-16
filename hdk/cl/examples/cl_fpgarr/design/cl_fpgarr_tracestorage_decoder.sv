@@ -454,6 +454,7 @@ logic [PACKET_CNT_WIDTH-1:0] rt_replay_pkt_cnt;
 // to the assemble buffer and will be eventually replay.
 // All remaining trace in the shifting buffer should be padding. No more traces
 // shall be parsed and output to the assemble buffer anymore.
+// TODO: update comments
 logic lo_replay_done;
 /// }}}
 
@@ -649,7 +650,7 @@ end
 // Note that in the case of last packet resides in LO and it contains a complete
 // logging unit, I assume an additional zero AXI_WIDTH to be padded.
 assign lo_out =
-    hi_full && !lo_empty && !lo_replay_done;
+    hi_full && !lo_empty;
 // shift data from HI to LO when HI has valid data and either
 // 1. the LO is initially empty
 // OR
@@ -717,9 +718,9 @@ always_ff @(posedge clk)
    end
    else begin
       rt_replay_pkt_cnt <= rt_replay_pkt_cnt + rt_replay_pkt_cnt_add;
-      if (lo_out && lo_valid_satisfied)
+      if (lo_out && lo_valid_satisfied && !lo_replay_done)
          rt_replay_pkt_cnt_add <= lo_remain_len;
-      else if (lo_out && !lo_valid_satisfied)
+      else if (lo_out && !lo_valid_satisfied && !lo_replay_done)
          rt_replay_pkt_cnt_add <= AXI_ALIGNED_WIDTH;
       else
          rt_replay_pkt_cnt_add <= 0;
@@ -780,7 +781,7 @@ always_ff @(posedge clk) begin
    if (!sync_rst_n)
       asm_valid <= 0;
    else
-      asm_valid <= lo_out;
+      asm_valid <= lo_out && !lo_replay_done;
    asm_data_in <= lo_out_data;
    asm_valid_len_in <=
        // MSB: logging unit length in terms of alignment units
