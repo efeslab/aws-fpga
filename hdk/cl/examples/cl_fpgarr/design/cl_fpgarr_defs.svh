@@ -2,7 +2,7 @@
 `define CL_FPGARR_DEFS
 // register pipeline related configuration
 parameter RECORDER_PIPE_DEPTH=4;
-parameter MERGETREE_OUT_QUEUE_NSTAGES=2;
+parameter MERGETREE_OUT_QUEUE_NSTAGES=1;
 parameter REPLAYER_PIPE_DEPTH=4;
 parameter CSR_PIPE_DEPTH=2;
 parameter RECORD_FIFO_DEPTH=128;
