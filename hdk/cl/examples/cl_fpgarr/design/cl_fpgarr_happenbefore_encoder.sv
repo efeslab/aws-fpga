@@ -144,47 +144,14 @@ always_ff @(posedge clk)
 
 // The FIFO to handle almful
 // MSB to LSB: out.data, out.len
-logic fifo_oflow;
+logic fifo_full;
 logic fifo_empty;
 assign fifo_push =
    in.plogb.any_valid || // generate new packet for logb
    new_pkt_for_loge;     // generate new packet for loge
 assign fifo_pop = out.valid && out.ready;
-`ifdef AWS_FIFO
-ram_fifo_ft #(
-   .WIDTH(out.FULL_WIDTH + out.OFFSET_WIDTH),
-   .PTR_WIDTH(RR_LOGB_FIFO_PTR_WIDTH),
-   .WATERMARK(2**RR_LOGB_FIFO_PTR_WIDTH - RR_LOGB_FIFO_ALMFUL_THRESHOLD),
-   .PIPELINE(1)
-) logb_fifo (
-   .clk(clk),
-   .rst_n(rstn),
-   .push(fifo_push),
-   .push_data({
-      in.plogb.data,      // -
-      loge_valid_out,     //  |-> These become out.data
-      in.logb_valid,      // -
-      out.OFFSET_WIDTH'(
-         in.plogb.len + in.LOGB_CHANNEL_CNT + in.LOGE_CHANNEL_CNT
-      ) // this is the out.len
-   }),
-   `ifdef TEST_RECORD_FIFO_ALMFUL
-   .wmark(),
-   `else
-   .wmark(in.logb_almful),
-   `endif
-   .pop(fifo_pop),
-   // out.data from LSB to MSB:
-   // logb_valid, loge_valid, packed_logb_data
-   // i.e. assign out.data = {in.plogb.data, loge_valid_out, in.logb_valid};
-
-   .pop_data({out.data, out.len}),
-   .valid(out.valid),
-   .free_entries(),
-   .oflow(fifo_oflow),
-   .empty(fifo_empty)
-);
-`else
+`define USE_XPM_FIFO_SYNC
+`ifndef USE_XPM_FIFO_SYNC
 // merged_fifo (xilinx fifo_generator)
 merged_fifo #(
    .WIDTH(out.FULL_WIDTH + out.OFFSET_WIDTH),
@@ -203,11 +170,36 @@ merged_fifo #(
    .wr_en(fifo_push),
    .dout({out.data, out.len}),
    .rd_en(fifo_pop),
-   .full(fifo_oflow),
+   .full(fifo_full),
    .almfull(in.logb_almful),
    .empty(fifo_empty)
 );
 assign out.valid = !fifo_empty;
+`else
+// test xpm_fifo_sync
+xpm_fifo_sync_wrapper #(
+   .WIDTH(out.FULL_WIDTH + out.OFFSET_WIDTH),
+   .DEPTH(2**RR_LOGB_FIFO_PTR_WIDTH),
+   .ALMFUL_THRESHOLD(2**RR_LOGB_FIFO_PTR_WIDTH-RR_LOGB_FIFO_ALMFUL_THRESHOLD)
+) xpm_inst (
+   .clk(clk), .rst(!rstn),
+   .din({
+      in.plogb.data,      // -
+      loge_valid_out,     //  |-> These become out.data
+      in.logb_valid,      // -
+      out.OFFSET_WIDTH'(
+         in.plogb.len + in.LOGB_CHANNEL_CNT + in.LOGE_CHANNEL_CNT
+      ) // this is the out.len
+   }),
+   .wr_en(fifo_push),
+   .dout({out.data, out.len}),
+   .rd_en(fifo_pop),
+   .full(fifo_full),
+   .almful(in.logb_almful),
+   .dout_valid(out.valid),
+   .empty(fifo_empty)
+);
+// end of test xpm_fifo_sync
 `endif
 
 `ifdef TEST_RECORD_FIFO_ALMFUL
