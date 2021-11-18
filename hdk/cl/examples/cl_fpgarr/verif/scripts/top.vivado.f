@@ -39,9 +39,6 @@
 --include ${HDK_SHELL_DESIGN_DIR}/ip/cl_axi_interconnect/ipshared/7e3a/hdl
 --include ${HDK_SHELL_DESIGN_DIR}/sh_ddr/sim
 
--f ${HDK_COMMON_DIR}/verif/tb/filelists/tb.${SIMULATOR}.f
-${TEST_NAME}
-
 ${CL_ROOT}/design/cl_dram_dma_defines.vh
 ${HDK_SHELL_DESIGN_DIR}/ip/axi_clock_converter_0/sim/axi_clock_converter_0.v
 ${HDK_SHELL_DESIGN_DIR}/ip/dest_register_slice/sim/dest_register_slice.v
@@ -63,6 +60,7 @@ ${HDK_SHELL_DESIGN_DIR}/ip/axi_clock_converter_0/hdl/axi_clock_converter_v2_1_vl
 ${HDK_SHELL_DESIGN_DIR}/ip/axi_clock_converter_0/hdl/fifo_generator_v13_2_rfs.v
 
 
+${HDK_COMMON_DIR}/verif/models/ddr4_model/arch_package.sv
 ${HDK_COMMON_DIR}/verif/models/ddr4_rdimm_wrapper/ddr4_bi_delay.sv
 ${HDK_COMMON_DIR}/verif/models/ddr4_rdimm_wrapper/ddr4_db_delay_model.sv
 ${HDK_COMMON_DIR}/verif/models/ddr4_rdimm_wrapper/ddr4_db_dly_dir.sv
@@ -102,10 +100,55 @@ ${CL_ROOT}/design/cl_dram_dma.sv
 # fpgarr project
 ${CL_ROOT}/design/cl_fpgarr_pkg.sv
 ${CL_ROOT}/design/cl_fpgarr_utils.sv
-${CL_ROOT}/design/cl_axi_rr.sv
-${CL_ROOT}/design/cl_axil_rr.sv
+${CL_ROOT}/design/cl_fpgarr_axi_rr.sv
+${CL_ROOT}/design/cl_fpgarr_axil_rr.sv
 ${CL_ROOT}/design/twowayhandshake_logger.sv
+${CL_ROOT}/design/twowayhandshake_replayer.sv
 ${CL_ROOT}/design/transkidbuf.sv
 ${CL_ROOT}/design/transkidbuf_pipeline.sv
 ${CL_ROOT}/design/axichannel_logger.sv
+${CL_ROOT}/design/axichannel_replayer.sv
 ${CL_ROOT}/design/cl_fpgarr_packing.sv
+${CL_ROOT}/design/cl_fpgarr_happenbefore_encoder.sv
+${CL_ROOT}/design/cl_fpgarr_csrs.sv
+${CL_ROOT}/design/cl_fpgarr_tracedecoder.sv
+${CL_ROOT}/design/cl_fpgarr_chgrouping.sv
+${CL_ROOT}/design/cl_fpgarr_rr_sel.sv
+${CL_ROOT}/design/cl_fpgarr_rt_loge_crossbar.sv
+
+## fpgarr tracestorage files
+${CL_ROOT}/design/cl_fpgarr_tracestorage_axi.sv
+${CL_ROOT}/design/cl_fpgarr_tracestorage_wrapper.sv
+${CL_ROOT}/design/cl_fpgarr_tracestorage_wrapper_writeonly.sv
+${CL_ROOT}/design/cl_fpgarr_tracestorage_encoder.sv
+${CL_ROOT}/design/cl_fpgarr_tracestorage_decoder.sv
+${CL_ROOT}/design/cl_fpgarr_pcim_interconnect.sv
+${CL_ROOT}/design/merged_fifo.sv
+
+## fpgarr 3rd-party lib
+### parameterized bram fifo
+${CL_ROOT}/design/lib/ram_fifo_ft.sv
+${CL_ROOT}/design/lib/bram_1w1r.sv
+${CL_ROOT}/design/lib/ft_fifo_p.v
+${CL_ROOT}/design/lib/xpm_fifo_sync_wrapper.sv
+
+# start of rr_pcim_axi_interconnect
+${CL_ROOT}/ip/rr_pcim_axi_interconnect/sim/rr_pcim_axi_interconnect.v
+${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_xbar_0/sim/rr_pcim_axi_interconnect_xbar_0.v
+${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_s00_regslice_0/sim/rr_pcim_axi_interconnect_s00_regslice_0.v
+${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_s01_regslice_0/sim/rr_pcim_axi_interconnect_s01_regslice_0.v
+${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_s02_regslice_0/sim/rr_pcim_axi_interconnect_s02_regslice_0.v
+${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_m00_regslice_0/sim/rr_pcim_axi_interconnect_m00_regslice_0.v
+${CL_ROOT}/ip/rr_pcim_axi_interconnect/ipshared/af2c/hdl/axi_register_slice_v2_1_vl_rfs.v
+${CL_ROOT}/ip/rr_pcim_axi_interconnect/ipshared/bc0a/hdl/axi_crossbar_v2_1_vl_rfs.v
+# start of rr_cfg_axil_interconnect
+${CL_ROOT}/ip/rr_cfg_axil_interconnect/sim/rr_cfg_axil_interconnect.v
+${CL_ROOT}/ip/rr_cfg_axil_interconnect/ip/rr_cfg_axil_interconnect_xbar_2/sim/rr_cfg_axil_interconnect_xbar_2.v
+#../../ip/rr_pcim_axi_interconnect/ip/
+# fpgarr top module
+${CL_ROOT}/design/cl_fpgarr_wrapper.sv
+
+# simulation top module
+-f ${HDK_COMMON_DIR}/verif/tb/filelists/tb.${SIMULATOR}.f
+${TEST_NAME}
+
