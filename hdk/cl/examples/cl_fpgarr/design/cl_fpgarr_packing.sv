@@ -28,18 +28,16 @@ module rr_packed_logb_bus_pipe (
    rr_packed_logb_bus_t.P out
 );
 // parameter check
-generate
-  if (in.FULL_WIDTH != out.FULL_WIDTH)
-     $error("FULL_WIDTH mismatches: in %d, out %d\n", in.FULL_WIDTH, out.FULL_WIDTH);
-endgenerate
-always_ff @(posedge clk)
+if (in.FULL_WIDTH != out.FULL_WIDTH)
+   $error("FULL_WIDTH mismatches: in %d, out %d\n", in.FULL_WIDTH, out.FULL_WIDTH);
+always_ff @(posedge clk) begin
   if (!rstn)
     out.any_valid <= 0;
-  else begin
+  else
     out.any_valid <= in.any_valid;
-    out.data <= in.data;
-    out.len <= in.len;
-  end
+  out.data <= in.data;
+  out.len <= in.len;
+end
 endmodule
 
 module rr_logging_bus_marshaller2 #(
@@ -304,6 +302,7 @@ for (i=0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin: logb_gen
 end
 for (i=0; i < in.LOGE_CHANNEL_CNT; i=i+1) begin: loge_gen
   // loge_valid are never shuffled
+  // because loge_valid are not packed in the merge tree
   lib_pipe #(
     .WIDTH(1),
     .STAGES(QUEUE_NSTAGES)
