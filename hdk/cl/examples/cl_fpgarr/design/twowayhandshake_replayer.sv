@@ -27,8 +27,24 @@ module twowayhandshake_replayer #(
   output wire [DATA_WIDTH-1:0] out_data
 );
 
-// the packet counter to enforce happen-before
-localparam ON_THE_FLY_CNT = record_pkg::MERGE_TREE_HEIGHT + REPLAYER_PIPE_DEPTH;
+// The packet counter to enforce happen-before
+// the number of on-the-fly packets are boudned to be fit in the replay fifo of
+// individual channel (guaranteed by the almful)
+//
+// More detailed explanation:
+// The counter should be wide enough to guarantee that the rt_loge_cnt can be
+// compared with loge_cnt.
+// e.g. given 8 bit, imagine you put all representable integers [0..255] on
+// a circle, then any two intergers whose difference is always < 128 (always on
+// the same half-circle) can be compared.
+// In this packet counter case, the max difference of rt_loge_cnt and loge_cnt
+// happens when the replay fifo is full (i.e. almful takes effect).
+// In this case, assuming the channel whose replay fifo is full is CHA, then the
+// next packet to replay in CHA will see AT MOST "fifo-size" number of packets
+// finishes (i.e. rt_loge) at another channel.
+// So the max number number of on-the-fly packets equal to the size of the
+// replay fifo
+localparam ON_THE_FLY_CNT = REPLAY_FIFO_DEPTH;
 localparam PKT_CNT_WIDTH = $clog2(2 * ON_THE_FLY_CNT);
 logic [PKT_CNT_WIDTH-1:0] rt_loge_cnt [LOGE_CHANNEL_CNT-1:0];
 

@@ -107,6 +107,9 @@
    logic loge_valid [LOGE_CHANNEL_CNT-1:0];
    // almful works with a big FIFO in the end of a series of modules
    // In fpgarr, almful is generated and handeled in the happenbefore_encoder
+   // even though multiple channels share a single logb_almful, the
+   // axichannel_logger will register and propogate logb_almful to individual
+   // channels from the merge tree.
    logic logb_almful;
    modport P (output logb_valid, output logb_data,
               output loge_valid, input logb_almful);
@@ -198,17 +201,19 @@
        [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS,
      parameter int LOGE_CHANNEL_CNT
    );
-   `DEF_SUM_WIDTH(GET_FULL_WIDTH, CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
-   // This FULL_WIDTH does not include logb_valid
-   parameter int FULL_WIDTH = GET_FULL_WIDTH();
+   `DEF_SUM_WIDTH(GET_LOGB_DATA_WIDTH, CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
+   // This LOGB_DATA_WIDTH does not include logb_valid
+   parameter int LOGB_DATA_WIDTH = GET_LOGB_DATA_WIDTH();
 
    logic valid [LOGB_CHANNEL_CNT-1:0];
    logic logb_valid [LOGB_CHANNEL_CNT-1:0];
-   logic [FULL_WIDTH-1:0] logb_data;
+   logic [LOGB_DATA_WIDTH-1:0] logb_data;
    logic [LOGE_CHANNEL_CNT-1:0] loge_valid [LOGB_CHANNEL_CNT-1:0];
-   logic ready [LOGB_CHANNEL_CNT-1:0];
+   // this logb_almful originates from individual replay channel
+   // (axichannel_replayer) and aggregated in the replay decoder tree
+   logic almful [LOGB_CHANNEL_CNT-1:0];
 
-   modport P(output valid, logb_valid, logb_data, loge_valid, input ready);
-   modport C(input valid, logb_valid, logb_data, loge_valid, output ready);
+   modport P(output valid, logb_valid, logb_data, loge_valid, input almful);
+   modport C(input valid, logb_valid, logb_data, loge_valid, output almful);
    endinterface
 `endif

@@ -86,12 +86,12 @@ generate
   if (LOGB_LEFT_CNT + LOGB_RIGHT_CNT != LOGB_CHANNEL_CNT)
     $error("LOGB_CHANNEL_CNT mismatch: LOGB_CHANNEL_CNT %d, outA %d, outB %d\n",
       LOGB_CHANNEL_CNT, LOGB_LEFT_CNT, LOGB_RIGHT_CNT);
-  if (LEFT_WIDTH != outA.FULL_WIDTH)
+  if (LEFT_WIDTH != outA.LOGB_DATA_WIDTH)
     $error("LEFT_WIDTH mismatch: LEFT_WIDTH %d, outA %d\n",
-      LEFT_WIDTH, outA.FULL_WIDTH);
-  if (RIGHT_WIDTH != outB.FULL_WIDTH)
+      LEFT_WIDTH, outA.LOGB_DATA_WIDTH);
+  if (RIGHT_WIDTH != outB.LOGB_DATA_WIDTH)
     $error("RIGHT_WIDTH mismatch: RIGHT_WIDTH %d, outB %d\n",
-      RIGHT_WIDTH, outB.FULL_WIDTH);
+      RIGHT_WIDTH, outB.LOGB_DATA_WIDTH);
   if ((LOGE_CHANNEL_CNT != outA.LOGE_CHANNEL_CNT) ||
       (LOGE_CHANNEL_CNT != outB.LOGE_CHANNEL_CNT))
     $error("LOGE_CHANNEL_CNT mismatch: in %d, outA %d, outB %d\n",
@@ -101,7 +101,7 @@ endgenerate
 genvar i;
 generate
   for (i=0; i < LOGB_LEFT_CNT; i=i+1) begin
-    assign in.ready[i] = outA.ready[i];
+    assign in.almful[i] = outA.almful[i];
     assign outA.valid[i] = in.valid[i];
     assign outA.logb_valid[i] = in.logb_valid[i];
     assign outA.loge_valid[i] = in.loge_valid[i];
@@ -109,7 +109,7 @@ generate
   assign outA.logb_data = in.logb_data[0 +: LEFT_WIDTH];
   for (i=0; i < LOGB_RIGHT_CNT; i=i+1) begin
     localparam IDX = LOGB_LEFT_CNT + i;
-    assign in.ready[IDX] = outB.ready[i];
+    assign in.almful[IDX] = outB.almful[i];
     assign outB.valid[i] = in.valid[IDX];
     assign outB.logb_valid[i] = in.logb_valid[IDX];
     assign outB.loge_valid[i] = in.loge_valid[IDX];
