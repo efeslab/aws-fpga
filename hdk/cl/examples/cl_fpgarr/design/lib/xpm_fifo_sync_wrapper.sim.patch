@@ -1,0 +1,36 @@
+--- Xilinx/Vivado/2020.2/data/ip/xpm/xpm_fifo/hdl/xpm_fifo.sv	2021-11-17 19:50:08.394581407 -0500
++++ Xilinx/Vivado/2020.2/data/ip/xpm/xpm_fifo/hdl/xpm_fifo.sv	2021-11-18 04:22:59.538095713 -0500
+@@ -1485,8 +1485,13 @@
+   end : gnuf
+ 
+   if (EN_OF == 1) begin : gof
++    logic overflow_i_test;
++    assign overflow_i_test = (wrst_busy | rst_d1 | ram_full_i) & wr_en;
+     always @ (posedge wr_clk) begin
+      overflow_i  <=  (wrst_busy | rst_d1 | ram_full_i) & wr_en;
++     if (overflow_i_test)
++       $display("Overflow? wrst_busy %d, rst_d1 %d, ram_full_i %d, wr_en %d\n",
++          wrst_busy, rst_d1, ram_full_i, wr_en);
+     end
+     assign overflow    = overflow_i;
+   end : gof
+@@ -1578,17 +1583,13 @@
+ 
+   if (SIM_ASSERT_CHK == 1) begin : rst_empty_chk
+     assert property (@(posedge rd_clk )
+-      ($rose(rd_rst_busy) || (empty && $rose(rd_rst_busy))) |-> ##1 $rose(empty))
++      $rose(rd_rst_busy)) |-> ##1 (empty || $rose(empty)))
+     else 
+       $error("[%s %s-%0d] Reset is applied, but empty flag is not 1 or transitioning to 1 at %0t.", "EMPTY_CHECK", "S", 4, $time);
+ 
+-    assert property (@(posedge wr_clk )
+-      ($changed(rd_pntr) |->  ##1 ($past(rd_pntr) == rd_pntr_wr)))
+-    else 
+-      $error("[%s %s-%0d] 'sleep' is deasserted at %0t, but wr_en must be low for %0d wr_clk cycles after %0t", "SLEEP_CHECK", "S", 5, $time, WAKEUP_TIME, $time);
+   end : rst_empty_chk
+ 
+-  if (SIM_ASSERT_CHK == 1) begin : sleep_chk
++  if ((SIM_ASSERT_CHK == 1) && (WAKEUP_TIME != 0)) begin : sleep_chk
+     assert property (@(posedge wr_clk )
+       ($fell(sleep) |->  !wr_en[*WAKEUP_TIME]))
+     else 

@@ -109,6 +109,7 @@ ${CL_ROOT}/design/merged_fifo.sv
 ${CL_ROOT}/design/lib/ram_fifo_ft.sv
 ${CL_ROOT}/design/lib/bram_1w1r.sv
 ${CL_ROOT}/design/lib/ft_fifo_p.v
+${CL_ROOT}/design/lib/xpm_fifo_sync_wrapper.sv
 
 # start of rr_pcim_axi_interconnect
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/sim/rr_pcim_axi_interconnect.v
