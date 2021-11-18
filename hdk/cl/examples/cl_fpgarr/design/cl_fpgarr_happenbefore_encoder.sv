@@ -62,13 +62,6 @@ localparam int RR_LOGB_FIFO_ALMFUL_THRESHOLD =
    in.LOGE_CHANNEL_CNT +
    8;
 
-// RR_LOGB_FIFO_PTR_WIDTH:
-// The number of the elements in the fifo should be a power of 2
-// WATERMARK is (2**RR_LOGB_FIFO_PTR_WIDTH - RR_LOGB_FIFO_ALMFUL_THRESHOLD)
-// NOTE that mjc's fifo_128x128 has a fixed depth of 128. So do not change this
-// parameter
-localparam int RR_LOGB_FIFO_PTR_WIDTH = 7;
-
 // parameter check
 generate
    if (in.LOGB_CHANNEL_CNT + in.LOGE_CHANNEL_CNT + in.LOGB_DATA_WIDTH
@@ -76,11 +69,11 @@ generate
     $error("Writeback FULL_WIDTH mismatch: logb W%d, loge W%d, packed_logb_data W%d, writeback W%d\n",
       in.LOGB_CHANNEL_CNT, in.LOGE_CHANNEL_CNT, in.LOGB_DATA_WIDTH,
       out.FULL_WIDTH);
-   if (RR_LOGB_FIFO_ALMFUL_THRESHOLD >= 2**RR_LOGB_FIFO_PTR_WIDTH)
-      $error("Invalid RR_LOGB_FIFO config: ALMFUL_THRESHOLD %d, PTR_WIDTH %d\n",
-         RR_LOGB_FIFO_ALMFUL_THRESHOLD, RR_LOGB_FIFO_PTR_WIDTH);
+   if (RR_LOGB_FIFO_ALMFUL_THRESHOLD >= RECORD_FIFO_DEPTH)
+      $error("Invalid RR_LOGB_FIFO config: ALMFUL_THRESHOLD %d, RECORD_FIFO_DEPTH %d\n",
+         RR_LOGB_FIFO_ALMFUL_THRESHOLD, RECORD_FIFO_DEPTH);
    $info("LOGB FIFO config: in total %d entries, threshold is %d entries left\n",
-      2**RR_LOGB_FIFO_PTR_WIDTH, RR_LOGB_FIFO_ALMFUL_THRESHOLD);
+      RECORD_FIFO_DEPTH, RR_LOGB_FIFO_ALMFUL_THRESHOLD);
 endgenerate
 // forward declare logb_fifo control signals
 logic fifo_push;
@@ -179,8 +172,8 @@ assign out.valid = !fifo_empty;
 // test xpm_fifo_sync
 xpm_fifo_sync_wrapper #(
    .WIDTH(out.FULL_WIDTH + out.OFFSET_WIDTH),
-   .DEPTH(2**RR_LOGB_FIFO_PTR_WIDTH),
-   .ALMFUL_THRESHOLD(2**RR_LOGB_FIFO_PTR_WIDTH-RR_LOGB_FIFO_ALMFUL_THRESHOLD)
+   .DEPTH(RECORD_FIFO_DEPTH),
+   .ALMFUL_THRESHOLD(RECORD_FIFO_DEPTH - RR_LOGB_FIFO_ALMFUL_THRESHOLD)
 ) xpm_inst (
    .clk(clk), .rst(!rstn),
    .din({
