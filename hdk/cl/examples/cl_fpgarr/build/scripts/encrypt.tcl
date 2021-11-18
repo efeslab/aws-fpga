@@ -82,11 +82,7 @@ file copy -force $CL_DIR/design/cl_fpgarr_tracestorage_encoder.sv  $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_tracestorage_decoder.sv  $TARGET_DIR
 file copy -force $CL_DIR/design/cl_fpgarr_pcim_interconnect.sv     $TARGET_DIR
 file copy -force $CL_DIR/design/merged_fifo.sv                     $TARGET_DIR
-## fpgarr 3rd-party lib
-### parameterized bram fifo
-file copy -force $CL_DIR/design/lib/ram_fifo_ft.sv                 $TARGET_DIR
-file copy -force $CL_DIR/design/lib/bram_1w1r.sv                   $TARGET_DIR
-file copy -force $CL_DIR/design/lib/ft_fifo_p.v                    $TARGET_DIR
+### parameterized fifo
 file copy -force $CL_DIR/design/lib/xpm_fifo_sync_wrapper.sv       $TARGET_DIR
 
 # fpgarr top module
