@@ -1,3 +1,5 @@
+`include "cl_fpgarr_defs.svh"
+
 // High level design notes:
 // 1. Since I want to make individual replay channel to be asynchronous. That
 // means each replay channel has its own valid/ready signal and one full channel
@@ -31,49 +33,45 @@ interface rr_packed_replay_bus_t #(
      [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS,
    parameter int LOGE_CHANNEL_CNT
 );
-`DEF_SUM_WIDTH(GET_FULL_WIDTH, CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
-// This FULL_WIDTH does not include logb_valid
-parameter int FULL_WIDTH = GET_FULL_WIDTH();
+`DEF_SUM_WIDTH(GET_LOGB_DATA_WIDTH, CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
+// This LOGB_DATA_WIDTH does not include logb_valid
+parameter int LOGB_DATA_WIDTH = GET_LOGB_DATA_WIDTH();
 logic valid;
 logic [LOGB_CHANNEL_CNT-1:0] logb_valid;
-logic [FULL_WIDTH-1:0] logb_data;
+logic [LOGB_DATA_WIDTH-1:0] logb_data;
 logic [LOGE_CHANNEL_CNT-1:0] loge_valid;
-logic ready;
+logic almful;
 
-modport P(output valid, logb_valid, logb_data, loge_valid, input ready);
-modport C(input valid, logb_valid, logb_data, loge_valid, output ready);
+modport P(output valid, logb_valid, logb_data, loge_valid, input almful);
+modport C(input valid, logb_valid, logb_data, loge_valid, output almful);
 endinterface
 
-module rr_packed_replay_bus_sbuf (
+module rr_packed_replay_bus_pipe (
   input wire clk,
   input wire rstn,
   rr_packed_replay_bus_t.C in,
   rr_packed_replay_bus_t.P out
 );
 // parameter check
-generate
-  if (in.FULL_WIDTH != out.FULL_WIDTH)
-    $error("FULL_WIDTH mismatch: in %d, out %d\n",
-      in.FULL_WIDTH, out.FULL_WIDTH);
-  if (in.LOGB_CHANNEL_CNT != out.LOGB_CHANNEL_CNT)
-    $error("LOGB_CHANNEL_CNT mismatch: in %d, out %d\n",
-      in.LOGB_CHANNEL_CNT, out.LOGB_CHANNEL_CNT);
-  if (in.LOGE_CHANNEL_CNT != out.LOGE_CHANNEL_CNT)
-    $error("LOGE_CHANNEL_CNT mismatch: in %d, out %d\n",
-      in.LOGE_CHANNEL_CNT, out.LOGE_CHANNEL_CNT);
-endgenerate
-transkidbuf #(
-  .DATA_WIDTH(in.FULL_WIDTH + in.LOGB_CHANNEL_CNT + in.LOGE_CHANNEL_CNT),
-  .PASS_STALL(0)
-) sbuf (
-  .clk(clk), .rstn(rstn),
-  .in_valid(in.valid),
-  .in_data({in.logb_data, in.loge_valid, in.logb_valid}),
-  .in_ready(in.ready),
-  .out_valid(out.valid),
-  .out_data({out.logb_data, out.loge_valid, out.logb_valid}),
-  .out_ready(out.ready)
-);
+if (in.LOGB_DATA_WIDTH != out.LOGB_DATA_WIDTH)
+  $error("LOGB_DATA_WIDTH mismatch: in %d, out %d\n",
+    in.LOGB_DATA_WIDTH, out.LOGB_DATA_WIDTH);
+if (in.LOGB_CHANNEL_CNT != out.LOGB_CHANNEL_CNT)
+  $error("LOGB_CHANNEL_CNT mismatch: in %d, out %d\n",
+    in.LOGB_CHANNEL_CNT, out.LOGB_CHANNEL_CNT);
+if (in.LOGE_CHANNEL_CNT != out.LOGE_CHANNEL_CNT)
+  $error("LOGE_CHANNEL_CNT mismatch: in %d, out %d\n",
+    in.LOGE_CHANNEL_CNT, out.LOGE_CHANNEL_CNT);
+always_ff @(posedge clk) begin
+  if (!rstn)
+    out.valid <= 0;
+  else
+    out.valid <= in.valid;
+  out.logb_valid <= in.logb_valid;
+  out.loge_valid <= in.loge_valid;
+  out.logb_data <= in.logb_data;
+  in.almful <= out.almful;
+end
 endmodule
 
 // The SHUFFLED_CHANNEL_WIDTHS is the channel widths config used in the replay
@@ -103,9 +101,9 @@ localparam int LOGB_CHANNEL_CNT = replay_bus.LOGB_CHANNEL_CNT;
 localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
   CHANNEL_WIDTHS = replay_bus.CHANNEL_WIDTHS;
 `DEF_GET_OFFSET(GET_OFFSET, CHANNEL_WIDTHS)
-`DEF_SUM_WIDTH(GET_FULL_WIDTH, CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
-// the FULL_WIDTH only considers logb_data
-parameter FULL_WIDTH = GET_FULL_WIDTH();
+`DEF_SUM_WIDTH(GET_LOGB_DATA_WIDTH, CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
+// the LOGB_DATA_WIDTH only considers logb_data
+parameter LOGB_DATA_WIDTH = GET_LOGB_DATA_WIDTH();
 //
 // Idea:
 // Use a tree structure (from root to leaf) to distribute the unpacked logging
@@ -120,15 +118,12 @@ parameter FULL_WIDTH = GET_FULL_WIDTH();
 
 // parameter check
 localparam LOGE_CHANNEL_CNT = replay_bus.LOGE_CHANNEL_CNT;
-genvar i;
-generate
-  if (LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT + FULL_WIDTH !=
-      packed_replay_bus.FULL_WIDTH)
-    $error("Trace Decode FULL_WIDTH mismatch: logb W%d, loge W%d, ",
-           LOGB_CHANNEL_CNT, LOGE_CHANNEL_CNT,
-           "logb_data W%d, packed_replay_bus W%d\n",
-           FULL_WIDTH, packed_replay_bus.FULL_WIDTH);
-endgenerate
+if (LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT + LOGB_DATA_WIDTH !=
+    packed_replay_bus.FULL_WIDTH)
+  $error("Trace Decode FULL_WIDTH mismatch: logb W%d, loge W%d, ",
+         LOGB_CHANNEL_CNT, LOGE_CHANNEL_CNT,
+         "logb_data W%d, packed_replay_bus W%d\n",
+         LOGB_DATA_WIDTH, packed_replay_bus.FULL_WIDTH);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Convert the shuffled rr_replay_bus to the unshuffled one
@@ -137,6 +132,7 @@ endgenerate
 // This generate creates the leaf nodes of the demarshaller tree.
 // Note that the loge_valid are never shuffled, so I just leave it be.
 ////////////////////////////////////////////////////////////////////////////////
+genvar i;
 generate
   for (i=0; i < LOGB_CHANNEL_CNT; i=i+1) begin: packed_replay_gen
     // connect shuffled replay bus at index i to the unshuffled replay_bus
@@ -159,7 +155,7 @@ generate
     assign replay_bus.logb_data[GET_OFFSET(IDX) +: CHANNEL_WIDTHS[IDX]] =
       bus.logb_data;
     assign replay_bus.loge_valid[IDX] = bus.loge_valid;
-    assign bus.ready = replay_bus.ready[IDX];
+    assign bus.almful = replay_bus.almful[IDX];
   end
 endgenerate
 
@@ -174,8 +170,8 @@ endgenerate
 // define new interface for _in, then wire from _in to _out
 `define TREE_QUEUE(_in, _out) \
   `PACKED_REPLAY_BUS_DUP(_out, _in); \
-  rr_packed_replay_bus_sbuf q(.clk(clk), .rstn(rstn), .in(_in), .out(_out))
-// TODO: Can I omit the queued nodes?
+  rr_packed_replay_bus_pipe q(.clk(clk), .rstn(rstn), .in(_in), .out(_out))
+
 genvar h;
 generate
 for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
@@ -191,9 +187,9 @@ for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
           packed_replay_gen[RID].bus);
         `ifdef DEBUG_MERGE_TREE_STRUCTURE
         $info("Decoder Layer %d, splitting Node %d(W%d) to Leaf %d(W%d) and Leaf %d(W%d).\n",
-           h, i, prbus.FULL_WIDTH,
-           LID, packed_replay_gen[LID].bus.FULL_WIDTH,
-           RID, packed_replay_gen[RID].bus.FULL_WIDTH);
+           h, i, prbus.LOGB_DATA_WIDTH,
+           LID, packed_replay_gen[LID].bus.LOGB_DATA_WIDTH,
+           RID, packed_replay_gen[RID].bus.LOGB_DATA_WIDTH);
         `endif
       end
       else begin: node
@@ -202,9 +198,9 @@ for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
           tree_gen[h-1].level_gen[RID].split_or_q.node.prbus);
         `ifdef DEBUG_MERGE_TREE_STRUCTURE
         $info("Decoder Layer %d, splitting Node %d(W%d) to Leaf %d(W%d) and Leaf %d(W%d).\n",
-          h, i, prbus.FULL_WIDTH,
-          LID, tree_gen[h-1].level_gen[LID].split_or_q.node.prbus.FULL_WIDTH,
-          RID, tree_gen[h-1].level_gen[RID].split_or_q.node.prbus.FULL_WIDTH);
+          h, i, prbus.LOGB_DATA_WIDTH,
+          LID, tree_gen[h-1].level_gen[LID].split_or_q.node.prbus.LOGB_DATA_WIDTH,
+          RID, tree_gen[h-1].level_gen[RID].split_or_q.node.prbus.LOGB_DATA_WIDTH);
         `endif
       end
     end
@@ -214,8 +210,8 @@ for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
         `TREE_QUEUE(prbus, packed_replay_gen[LID].bus);
         `ifdef DEBUG_MERGE_TREE_STRUCTURE
         $info("Decoder Layer %d, Node %d(W%d), queue Leaf %d(W%d).\n",
-          h, i, prbus.FULL_WIDTH, LID,
-          packed_replay_gen[LID].bus.FULL_WIDTH);
+          h, i, prbus.LOGB_DATA_WIDTH, LID,
+          packed_replay_gen[LID].bus.LOGB_DATA_WIDTH);
         `endif
       end
       else begin: node
@@ -223,8 +219,8 @@ for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
           tree_gen[h-1].level_gen[LID].split_or_q.node.prbus);
         `ifdef DEBUG_MERGE_TREE_STRUCTURE
         $info("Decoder Layer %d, Node %d(W%d), queue Leaf %d(W%d).\n",
-          h, i, prbus.FULL_WIDTH, LID,
-          tree_gen[h-1].level_gen[LID].split_or_q.node.prbus.FULL_WIDTH);
+          h, i, prbus.LOGB_DATA_WIDTH, LID,
+          tree_gen[h-1].level_gen[LID].split_or_q.node.prbus.LOGB_DATA_WIDTH);
         `endif
       end
     end
@@ -240,13 +236,46 @@ endgenerate
 `undef TREE_TOP
 `define TREE_TOP \
   tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].split_or_q.node.prbus
-assign `TREE_TOP.valid = packed_replay_bus.valid;
-assign `TREE_TOP.logb_valid = packed_replay_bus.data[LOGB_CHANNEL_CNT-1:0];
-assign `TREE_TOP.logb_data =
-  packed_replay_bus.data[LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT +: FULL_WIDTH];
-assign `TREE_TOP.loge_valid =
-  packed_replay_bus.data[LOGB_CHANNEL_CNT +: LOGE_CHANNEL_CNT];
-assign packed_replay_bus.ready = `TREE_TOP.ready;
+
+lib_pipe #(
+  .WIDTH(1), .STAGES(MERGETREE_OUT_QUEUE_NSTAGES)
+) valid_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(packed_replay_bus.valid),
+  .out_bus(`TREE_TOP.valid)
+);
+lib_pipe #(
+  .WIDTH(LOGB_CHANNEL_CNT), .STAGES(MERGETREE_OUT_QUEUE_NSTAGES)
+) logb_valid_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(packed_replay_bus.data[0 +: LOGB_CHANNEL_CNT]),
+  .out_bus(`TREE_TOP.logb_valid)
+);
+lib_pipe #(
+  .WIDTH(LOGE_CHANNEL_CNT), .STAGES(MERGETREE_OUT_QUEUE_NSTAGES)
+) loge_valid_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(packed_replay_bus.data[LOGB_CHANNEL_CNT +: LOGE_CHANNEL_CNT]),
+  .out_bus(`TREE_TOP.loge_valid)
+);
+lib_pipe #(
+  .WIDTH(LOGB_DATA_WIDTH), .STAGES(MERGETREE_OUT_QUEUE_NSTAGES)
+) logb_data_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(packed_replay_bus.data[
+    LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT +: LOGB_DATA_WIDTH]),
+  .out_bus(`TREE_TOP.logb_data)
+);
+// for almful
+logic packed_replay_bus_almful;
+lib_pipe #(
+  .WIDTH(1), .STAGES(MERGETREE_OUT_QUEUE_NSTAGES)
+) almful_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(`TREE_TOP.almful),
+  .out_bus(packed_replay_bus_almful)
+);
+assign packed_replay_bus.ready = !packed_replay_bus_almful;
 endmodule
 
 // The input packed replay will be demarshalled to two subtree/leaves
@@ -270,13 +299,13 @@ localparam bit [LOGB_CHANNEL_CNT-1:0]
 localparam LOGE_CHANNEL_CNT = in.LOGE_CHANNEL_CNT;
 localparam LOGB_LEFT_CNT = outA.LOGB_CHANNEL_CNT;
 localparam LOGB_RIGHT_CNT = outB.LOGB_CHANNEL_CNT;
-`DEF_SUM_WIDTH(GET_FULL_WIDTH, CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
+`DEF_SUM_WIDTH(GET_LOGB_DATA_WIDTH, CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
 `DEF_SUM_WIDTH(GET_LEFT_WIDTH, CHANNEL_WIDTHS, 0, LOGB_LEFT_CNT)
 `DEF_SUM_WIDTH(GET_RIGHT_WIDTH, CHANNEL_WIDTHS, LOGB_LEFT_CNT, LOGB_CHANNEL_CNT)
-localparam FULL_WIDTH = GET_FULL_WIDTH();
+localparam LOGB_DATA_WIDTH = GET_LOGB_DATA_WIDTH();
 localparam LEFT_WIDTH = GET_LEFT_WIDTH();
 localparam RIGHT_WIDTH = GET_RIGHT_WIDTH();
-localparam OFFSET_WIDTH = $clog2(FULL_WIDTH+1);
+localparam OFFSET_WIDTH = $clog2(LOGB_DATA_WIDTH+1);
 function automatic [OFFSET_WIDTH-1:0] get_len_L
   (logic [LOGB_LEFT_CNT-1:0] logb_valid);
   get_len_L = 0;
@@ -287,12 +316,12 @@ endfunction
 
 // parameter check
 generate
-  if (LEFT_WIDTH != outA.FULL_WIDTH)
-    $error("LEFT FULL_WIDTH mismatch: from parameter %d, out.A %d\n",
-      LEFT_WIDTH, outA.FULL_WIDTH);
-  if (RIGHT_WIDTH != outB.FULL_WIDTH)
-    $error("RIGHT FULL_WIDTH mismatch: from parameter %d, out.B %d\n",
-      RIGHT_WIDTH, outB.FULL_WIDTH);
+  if (LEFT_WIDTH != outA.LOGB_DATA_WIDTH)
+    $error("LEFT LOGB_DATA_WIDTH mismatch: from parameter %d, out.A %d\n",
+      LEFT_WIDTH, outA.LOGB_DATA_WIDTH);
+  if (RIGHT_WIDTH != outB.LOGB_DATA_WIDTH)
+    $error("RIGHT LOGB_DATA_WIDTH mismatch: from parameter %d, out.B %d\n",
+      RIGHT_WIDTH, outB.LOGB_DATA_WIDTH);
   if (LOGB_CHANNEL_CNT != LOGB_LEFT_CNT + LOGB_RIGHT_CNT)
     $error("LOGB_CHANNEL_CNT mismatch: total %d, left %d, right %d\n",
       LOGB_CHANNEL_CNT, LOGB_LEFT_CNT, LOGB_RIGHT_CNT);
@@ -310,51 +339,26 @@ rr_packed_replay_bus_t #(
   .LOGB_CHANNEL_CNT(LOGB_CHANNEL_CNT),
   .CHANNEL_WIDTHS(CHANNEL_WIDTHS),
   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)) in_q();
-rr_packed_replay_bus_sbuf in_sbuf (
+rr_packed_replay_bus_pipe in_pipe (
   .clk(clk), .rstn(rstn), .in(in), .out(in_q)
 );
 
-// stall logic: handle cases if only one downstream channel finishes the
-// transaction
-logic stall_A;
-logic stall_B;
-always @(posedge clk)
-  if (!rstn) begin
-    stall_A <= 0;
-    stall_B <= 0;
-  end
-  else begin
-    if (stall_A)
-      stall_A <= !(in_q.valid && in_q.ready);
-    else
-      stall_A <= (outA.valid && outA.ready) && !(in_q.valid && in_q.ready);
-    if (stall_B)
-      stall_B <= !(in_q.valid && in_q.ready);
-    else
-      stall_B <= (outB.valid && outB.ready) && !(in_q.valid && in_q.ready);
-  end
-
-logic i_outA_ready; // internal ready abstraction
-logic i_outB_ready; // internal ready abstraction
-assign i_outA_ready = stall_A || outA.ready;
-assign i_outB_ready = stall_B || outB.ready;
-assign in_q.ready = i_outA_ready && i_outB_ready;
-
-// Duplicate loge_valid
+// in_q is almful if any of the two output is almful
+assign in_q.almful = outA.almful || outB.almful;
+// Duplicate valid and loge_valid
+assign outA.valid = in_q.valid;
+assign outB.valid = in_q.valid;
 assign outA.loge_valid = in_q.loge_valid;
 assign outB.loge_valid = in_q.loge_valid;
-
 ////// The de-marshaller
 // The left subtree
 logic [LOGB_LEFT_CNT-1:0] logb_valid_L;
 assign logb_valid_L = in_q.logb_valid[LOGB_LEFT_CNT-1:0];
-assign outA.valid = stall_A? 0: in_q.valid;
 assign outA.logb_valid = logb_valid_L;
 assign outA.logb_data = in_q.logb_data[LEFT_WIDTH-1:0];
 // The right subtree
 logic [LOGB_RIGHT_CNT-1:0] logb_valid_R;
 assign logb_valid_R = in_q.logb_valid[LOGB_CHANNEL_CNT-1:LOGB_LEFT_CNT];
-assign outB.valid = stall_B? 0: in_q.valid;
 assign outB.logb_valid = logb_valid_R;
 assign outB.logb_data = in_q.logb_data[get_len_L(logb_valid_L) +: RIGHT_WIDTH];
 endmodule
