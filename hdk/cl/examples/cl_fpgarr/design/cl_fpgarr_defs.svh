@@ -8,11 +8,14 @@ parameter CSR_PIPE_DEPTH=2;
 parameter RECORD_FIFO_DEPTH=128;
 parameter REPLAY_FIFO_DEPTH=32;
 // index allocation of AXI channels
+//// For logging from master to slave
 parameter LOGB_AW=0;
 parameter LOGB_W=1;
 parameter LOGB_AR=2;
+//// For logging from slave to master
 parameter LOGB_R=0;
 parameter LOGB_B=1;
+//// For logging the transaction-end of all channels
 parameter LOGE_AW=0;
 parameter LOGE_W=1;
 parameter LOGE_AR=2;
@@ -21,6 +24,7 @@ parameter LOGE_R=4;
 // RR_CHANNEL_WIDTH_BITS should be long enough to encode the max amount of
 // data to log for a single channel
 parameter RR_CHANNEL_WIDTH_BITS=32;
+parameter RR_CHANNEL_NAME_BITS=32*8;
 
 // This is a workaround for vcs non-local function call.
 // the function GET_OFFSET should be a constant function bound to a specific

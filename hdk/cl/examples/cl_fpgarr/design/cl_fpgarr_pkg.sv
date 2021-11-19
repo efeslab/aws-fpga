@@ -98,10 +98,15 @@
       parameter bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS,
       // how many channel you want to log transaction ends
       // This is for logging the ordering/happen-before across transactions
-      parameter int LOGE_CHANNEL_CNT
+      parameter int LOGE_CHANNEL_CNT,
+      parameter bit [LOGB_CHANNEL_CNT-1:0]
+         [RR_CHANNEL_NAME_BITS-1:0] LOGB_CHANNEL_NAMES,
+      parameter bit [LOGE_CHANNEL_CNT-1:0]
+         [RR_CHANNEL_NAME_BITS-1:0] LOGE_CHANNEL_NAMES
    );
    `DEF_SUM_WIDTH(GET_LOGB_DATA_WIDTH, CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
-   parameter LOGB_DATA_WIDTH = GET_LOGB_DATA_WIDTH();
+   parameter int LOGB_DATA_WIDTH = GET_LOGB_DATA_WIDTH();
+   parameter int FULL_WIDTH = LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT + LOGB_DATA_WIDTH;
    logic logb_valid [LOGB_CHANNEL_CNT-1:0];
    logic [LOGB_DATA_WIDTH-1:0] logb_data;
    logic loge_valid [LOGE_CHANNEL_CNT-1:0];

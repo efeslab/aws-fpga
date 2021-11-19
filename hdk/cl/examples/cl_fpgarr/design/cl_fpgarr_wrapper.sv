@@ -129,8 +129,8 @@ rr_axi_bus_t rr_pcim_record_bus();
 // logged then passed through to an axi interconnect together with the logging
 // traffic
 rr_axi_bus_t rr_pcim_bus();
-`AXI_SLV_LOGGING_BUS(rr_pcim_SH2CL_logging_bus);
-`AXI_MSTR_LOGGING_BUS(rr_pcim_CL2SH_logging_bus);
+`AXI_SLV_LOGGING_BUS(rr_pcim_SH2CL_logging_bus, "pcim");
+`AXI_MSTR_LOGGING_BUS(rr_pcim_CL2SH_logging_bus, "pcim");
 axi_recorder pcim_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
@@ -142,8 +142,8 @@ axi_recorder pcim_bus_recorder (
 // PCIS bus
 rr_axi_bus_t rr_dma_pcis_record_bus();
 rr_axi_bus_t rr_dma_pcis_bus();
-`AXI_MSTR_LOGGING_BUS(rr_dma_pcis_SH2CL_logging_bus);
-`AXI_SLV_LOGGING_BUS(rr_dma_pcis_CL2SH_logging_bus);
+`AXI_MSTR_LOGGING_BUS(rr_dma_pcis_SH2CL_logging_bus, "pcis");
+`AXI_SLV_LOGGING_BUS(rr_dma_pcis_CL2SH_logging_bus, "pcis");
 axi_recorder dma_pcis_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
@@ -158,8 +158,8 @@ axi_recorder dma_pcis_bus_recorder (
 // SDA AXIL
 rr_axi_lite_bus_t rr_sda_record_bus();
 rr_axi_lite_bus_t rr_sda_bus();
-`AXIL_MSTR_LOGGING_BUS(rr_sda_SH2CL_logging_bus);
-`AXIL_SLV_LOGGING_BUS(rr_sda_CL2SH_logging_bus);
+`AXIL_MSTR_LOGGING_BUS(rr_sda_SH2CL_logging_bus, "sda");
+`AXIL_SLV_LOGGING_BUS(rr_sda_CL2SH_logging_bus, "sda");
 axil_recorder sda_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
@@ -171,8 +171,8 @@ axil_recorder sda_bus_recorder (
 // OCL AXIL
 rr_axi_lite_bus_t rr_ocl_record_bus();
 rr_axi_lite_bus_t rr_ocl_bus();
-`AXIL_MSTR_LOGGING_BUS(rr_ocl_SH2CL_logging_bus);
-`AXIL_SLV_LOGGING_BUS(rr_ocl_CL2SH_logging_bus);
+`AXIL_MSTR_LOGGING_BUS(rr_ocl_SH2CL_logging_bus, "ocl");
+`AXIL_SLV_LOGGING_BUS(rr_ocl_CL2SH_logging_bus, "ocl");
 axil_recorder ocl_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
@@ -184,8 +184,8 @@ axil_recorder ocl_bus_recorder (
 // BAR1 AXIL
 rr_axi_lite_bus_t rr_bar1_record_bus();
 rr_axi_lite_bus_t rr_bar1_bus();
-`AXIL_MSTR_LOGGING_BUS(rr_bar1_SH2CL_logging_bus);
-`AXIL_SLV_LOGGING_BUS(rr_bar1_CL2SH_logging_bus);
+`AXIL_MSTR_LOGGING_BUS(rr_bar1_SH2CL_logging_bus, "bar1");
+`AXIL_SLV_LOGGING_BUS(rr_bar1_CL2SH_logging_bus, "bar1");
 axil_recorder bar1_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
@@ -225,14 +225,6 @@ rr_logging_bus_switch record_switch (
   .in(merged_SH2CL_logging_bus),
   .out(unpacked_record_bus)
 );
-`ifdef DEBUG_MERGE_TREE_STRUCTURE
-// WARN: This will break vcs simulation synthesis
-dbg_print_rr_logging_bus_CW #(
-  .LOGB_CHANNEL_CNT(unpacked_record_bus.LOGB_CHANNEL_CNT),
-  .CHANNEL_WIDTHS(unpacked_record_bus.CHANNEL_WIDTHS),
-  .PREFIX("CWs, unpacked_record_bus: ")
-) dbg_unpacked_record_bus ();
-`endif
 // the merging tree of the rr_packed_logging_bus_t is automatically generated
 `LOGGING_BUS_UNPACK2PACK(unpacked_record_bus, packed_logging_bus);
 rr_logging_bus_unpack2pack #(
@@ -271,12 +263,9 @@ rr_logging_bus_switch validate_switch (
 );
 
 `ifdef DEBUG_MERGE_TREE_STRUCTURE
-// WARN: This will break vcs simulation synthesis
-dbg_print_rr_logging_bus_CW #(
-  .LOGB_CHANNEL_CNT(unpacked_validate_bus.LOGB_CHANNEL_CNT),
-  .CHANNEL_WIDTHS(unpacked_validate_bus.CHANNEL_WIDTHS),
-  .PREFIX("CWS, unpacked_validate_bus: ")
-) dbg_unpacked_validate_bus ();
+// WARN: You need to run the simulation (for a short time) to see the results
+dbg_print_rr_logging_bus_CW
+  dbg_tree_structure (unpacked_record_bus, unpacked_validate_bus);
 `endif
 // the merging tree of the rr_packed_logging_bus_t is automatically generated
 `LOGGING_BUS_UNPACK2PACK(unpacked_validate_bus, packed_validate_bus);

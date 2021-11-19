@@ -240,11 +240,26 @@ module rr_cfg_bar1_interconnect (
 );
 endmodule
 
-module dbg_print_rr_logging_bus_CW #(
-   parameter int LOGB_CHANNEL_CNT,
-   parameter bit [LOGB_CHANNEL_CNT-1:0]
-   [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS,
-   parameter string PREFIX
-) ();
-$info("%s\n%d,%h", PREFIX, LOGB_CHANNEL_CNT, CHANNEL_WIDTHS);
+module dbg_print_rr_logging_bus_CW (
+   rr_logging_bus_t record_bus,
+   rr_logging_bus_t validate_bus
+);
+int fd;
+parameter string DBG_FILE="tree.dbg.txt";
+initial begin
+   fd = $fopen(DBG_FILE, "w");
+   $fdisplay(fd, "%s,%d,%d,%d,%h,%h,%h", "record",
+      record_bus.LOGB_CHANNEL_CNT, record_bus.LOGE_CHANNEL_CNT,
+      $clog2(record_bus.FULL_WIDTH+1),
+      record_bus.CHANNEL_WIDTHS,
+      record_bus.LOGB_CHANNEL_NAMES, record_bus.LOGE_CHANNEL_NAMES);
+   $fdisplay(fd, "%s,%d,%d,%d,%h,%h,%h", "validate",
+      validate_bus.LOGB_CHANNEL_CNT, validate_bus.LOGE_CHANNEL_CNT,
+      $clog2(validate_bus.FULL_WIDTH+1),
+      validate_bus.CHANNEL_WIDTHS,
+      validate_bus.LOGB_CHANNEL_NAMES, validate_bus.LOGE_CHANNEL_NAMES);
+   $fclose(fd);
+   $display("Please see %s for tree structure debugging info", DBG_FILE);
+   $finish;
+end
 endmodule

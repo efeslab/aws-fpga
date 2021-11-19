@@ -120,47 +120,75 @@ typedef struct packed {
 parameter AXIL_RR_R_WIDTH = $bits(axil_rr_R_t);
 parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
 
-`define AXI_MSTR_LOGGING_BUS(name)\
-  rr_logging_bus_t #(\
-    .LOGB_CHANNEL_CNT(3),\
-    .CHANNEL_WIDTHS({\
-      {AXI_RR_AR_WIDTH}, {AXI_RR_W_WIDTH}, \
-      {AXI_RR_AW_WIDTH}}), \
-    .LOGE_CHANNEL_CNT(5)) name()
-`define AXI_SLV_LOGGING_BUS(name)\
-  rr_logging_bus_t #(\
-    .LOGB_CHANNEL_CNT(2),\
-    .CHANNEL_WIDTHS({\
-      {AXI_RR_B_WIDTH}, {AXI_RR_R_WIDTH}}), \
-    .LOGE_CHANNEL_CNT(5)) name()
-`define AXIL_MSTR_LOGGING_BUS(name)\
-  rr_logging_bus_t #(\
-    .LOGB_CHANNEL_CNT(3),\
-    .CHANNEL_WIDTHS({\
-      {AXIL_RR_AR_WIDTH}, {AXIL_RR_W_WIDTH}, \
-      {AXIL_RR_AW_WIDTH}}), \
-    .LOGE_CHANNEL_CNT(5)) name()
-`define AXIL_SLV_LOGGING_BUS(name)\
-  rr_logging_bus_t #(\
-    .LOGB_CHANNEL_CNT(2),\
-    .CHANNEL_WIDTHS({\
-      {AXIL_RR_B_WIDTH}, {AXIL_RR_R_WIDTH}}), \
-    .LOGE_CHANNEL_CNT(5)) name()
-`define LOGGING_BUS_JOIN2(name, inA, inB)\
-  rr_logging_bus_t #(\
+`define AXI_MSTR_GET_LOGB_CHANNEL_NAMES(intfname)                              \
+  {RR_CHANNEL_NAME_BITS'({intfname, "_AR"}),                                   \
+   RR_CHANNEL_NAME_BITS'({intfname, "_W"}),                                    \
+   RR_CHANNEL_NAME_BITS'({intfname, "_AW"})}
+`define AXI_SLV_GET_LOGB_CHANNEL_NAMES(intfname)                               \
+  {RR_CHANNEL_NAME_BITS'({intfname, "_B"}),                                    \
+   RR_CHANNEL_NAME_BITS'({intfname, "_R"})}
+`define AXI_GET_LOGE_CHANNEL_NAMES(intfname)                                   \
+  {RR_CHANNEL_NAME_BITS'({intfname, "_R"}),                                    \
+   RR_CHANNEL_NAME_BITS'({intfname, "_B"}),                                    \
+   RR_CHANNEL_NAME_BITS'({intfname, "_AR"}),                                   \
+   RR_CHANNEL_NAME_BITS'({intfname, "_W"}),                                    \
+   RR_CHANNEL_NAME_BITS'({intfname, "_AW"})}
+`define AXI_MSTR_LOGGING_BUS(name, intfname)                                   \
+  rr_logging_bus_t #(                                                          \
+    .LOGB_CHANNEL_CNT(3),                                                      \
+    .CHANNEL_WIDTHS({                                                          \
+      {AXI_RR_AR_WIDTH}, {AXI_RR_W_WIDTH},                                     \
+      {AXI_RR_AW_WIDTH}}),                                                     \
+    .LOGE_CHANNEL_CNT(5),                                                      \
+    .LOGB_CHANNEL_NAMES(`AXI_MSTR_GET_LOGB_CHANNEL_NAMES(intfname)),           \
+    .LOGE_CHANNEL_NAMES(`AXI_GET_LOGE_CHANNEL_NAMES(intfname))) name()
+`define AXI_SLV_LOGGING_BUS(name, intfname)                                    \
+  rr_logging_bus_t #(                                                          \
+    .LOGB_CHANNEL_CNT(2),                                                      \
+    .CHANNEL_WIDTHS({                                                          \
+      {AXI_RR_B_WIDTH}, {AXI_RR_R_WIDTH}}),                                    \
+    .LOGE_CHANNEL_CNT(5),                                                      \
+    .LOGB_CHANNEL_NAMES(`AXI_SLV_GET_LOGB_CHANNEL_NAMES(intfname)),            \
+    .LOGE_CHANNEL_NAMES(`AXI_GET_LOGE_CHANNEL_NAMES(intfname))) name()
+`define AXIL_MSTR_LOGGING_BUS(name, intfname)                                  \
+  rr_logging_bus_t #(                                                          \
+    .LOGB_CHANNEL_CNT(3),                                                      \
+    .CHANNEL_WIDTHS({                                                          \
+      {AXIL_RR_AR_WIDTH}, {AXIL_RR_W_WIDTH},                                   \
+      {AXIL_RR_AW_WIDTH}}),                                                    \
+    .LOGE_CHANNEL_CNT(5),                                                      \
+    .LOGB_CHANNEL_NAMES(`AXI_MSTR_GET_LOGB_CHANNEL_NAMES(intfname)),           \
+    .LOGE_CHANNEL_NAMES(`AXI_GET_LOGE_CHANNEL_NAMES(intfname))) name()
+`define AXIL_SLV_LOGGING_BUS(name, intfname)                                   \
+  rr_logging_bus_t #(                                                          \
+    .LOGB_CHANNEL_CNT(2),                                                      \
+    .CHANNEL_WIDTHS({                                                          \
+      {AXIL_RR_B_WIDTH}, {AXIL_RR_R_WIDTH}}),                                  \
+    .LOGE_CHANNEL_CNT(5),                                                      \
+    .LOGB_CHANNEL_NAMES(`AXI_SLV_GET_LOGB_CHANNEL_NAMES(intfname)),            \
+    .LOGE_CHANNEL_NAMES(`AXI_GET_LOGE_CHANNEL_NAMES(intfname))) name()
+`define LOGGING_BUS_JOIN2(name, inA, inB)                                      \
+  rr_logging_bus_t #(                                                          \
     .LOGB_CHANNEL_CNT(inA.LOGB_CHANNEL_CNT + inB.LOGB_CHANNEL_CNT),            \
     /*{MSB, LSB }*/                                                            \
     .CHANNEL_WIDTHS({inB.CHANNEL_WIDTHS, inA.CHANNEL_WIDTHS}),                 \
-    .LOGE_CHANNEL_CNT(inA.LOGE_CHANNEL_CNT + inB.LOGE_CHANNEL_CNT)) name()
+    .LOGE_CHANNEL_CNT(inA.LOGE_CHANNEL_CNT + inB.LOGE_CHANNEL_CNT),            \
+    .LOGB_CHANNEL_NAMES({inB.LOGB_CHANNEL_NAMES, inA.LOGB_CHANNEL_NAMES}),    \
+    /*{inB.LOGB_CHANNEL_NAMES, inA.LOGB_CHANNEL_NAMES}), */ \
+    .LOGE_CHANNEL_NAMES({inB.LOGE_CHANNEL_NAMES, inA.LOGE_CHANNEL_NAMES})) \
+    /*{inB.LOGE_CHANNEL_NAMES, inA.LOGE_CHANNEL_NAMES})) */ \
+    name()
 `define UNPACKED_LOGGING_BUS_GROUP2(name, _inA, _inB)                          \
   `LOGGING_BUS_JOIN2(name, _inA, _inB);                                        \
   rr_logging_bus_group2 name``_group(                                          \
     .inA(_inA), .inB(_inB), .out(name))
-`define LOGGING_BUS_DUP(src, dup) \
-  rr_logging_bus_t #(\
-    .LOGB_CHANNEL_CNT(src.LOGB_CHANNEL_CNT), \
-    .CHANNEL_WIDTHS(src.CHANNEL_WIDTHS), \
-    .LOGE_CHANNEL_CNT(src.LOGE_CHANNEL_CNT)) dup()
+`define LOGGING_BUS_DUP(src, dup)                                              \
+  rr_logging_bus_t #(                                                          \
+    .LOGB_CHANNEL_CNT(src.LOGB_CHANNEL_CNT),                                   \
+    .CHANNEL_WIDTHS(src.CHANNEL_WIDTHS),                                       \
+    .LOGE_CHANNEL_CNT(src.LOGE_CHANNEL_CNT),                                   \
+    .LOGB_CHANNEL_NAMES(src.LOGB_CHANNEL_NAMES),                               \
+    .LOGE_CHANNEL_NAMES(src.LOGE_CHANNEL_NAMES)) dup()
 `define LOGGING_BUS_UNPACK2PACK(unpackedname, packedname) \
   rr_packed_logging_bus_t #(\
     .LOGB_CHANNEL_CNT(unpackedname.LOGB_CHANNEL_CNT), \
