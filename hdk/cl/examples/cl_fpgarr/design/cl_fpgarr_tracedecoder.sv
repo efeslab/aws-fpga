@@ -342,6 +342,13 @@ rr_packed_replay_bus_t #(
 rr_packed_replay_bus_pipe in_pipe (
   .clk(clk), .rstn(rstn), .in(in), .out(in_q)
 );
+// decouple get_len_L from indexed part-select
+logic [OFFSET_WIDTH-1:0] len_L;
+always_ff @(posedge clk)
+  if (!rstn)
+    len_L <= 0;
+  else
+    len_L <= get_len_L(in.logb_valid[0 +: LOGB_LEFT_CNT]);
 
 // in_q is almful if any of the two output is almful
 assign in_q.almful = outA.almful || outB.almful;
@@ -353,12 +360,12 @@ assign outB.loge_valid = in_q.loge_valid;
 ////// The de-marshaller
 // The left subtree
 logic [LOGB_LEFT_CNT-1:0] logb_valid_L;
-assign logb_valid_L = in_q.logb_valid[LOGB_LEFT_CNT-1:0];
+assign logb_valid_L = in_q.logb_valid[0 +: LOGB_LEFT_CNT];
 assign outA.logb_valid = logb_valid_L;
-assign outA.logb_data = in_q.logb_data[LEFT_WIDTH-1:0];
+assign outA.logb_data = in_q.logb_data[0 +: LEFT_WIDTH];
 // The right subtree
 logic [LOGB_RIGHT_CNT-1:0] logb_valid_R;
-assign logb_valid_R = in_q.logb_valid[LOGB_CHANNEL_CNT-1:LOGB_LEFT_CNT];
+assign logb_valid_R = in_q.logb_valid[LOGB_LEFT_CNT +: LOGB_RIGHT_CNT];
 assign outB.logb_valid = logb_valid_R;
-assign outB.logb_data = in_q.logb_data[get_len_L(logb_valid_L) +: RIGHT_WIDTH];
+assign outB.logb_data = in_q.logb_data[len_L +: RIGHT_WIDTH];
 endmodule
