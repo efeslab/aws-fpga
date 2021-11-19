@@ -1046,6 +1046,9 @@ module sh_bfm #(
                   for(int k=0; k<4; k++) begin
                      byte t;
                      t = word[7:0];                     
+                     if (debug) begin
+                        $display("[%t] - DEBUG wr_addr+k:  %x+%x == 0x%016x", $realtime, wr_addr_t, k, wr_addr_t + k);
+                     end
                      tb.host_memory_putc(wr_addr_t + k, t);
                      word = word >> 8;
                   end                  
@@ -2575,21 +2578,21 @@ module sh_bfm #(
                   if(num_of_data_beats == 1) begin
                     num_bytes = (dop.len == 64) ? 64 : (dop.len)%64;
                     for(int i=start_addr[5:0]; i < (num_bytes+start_addr[5:0]); i++) begin
-                      axi_data.data = axi_data.data | tb.hm_get_byte(.addr(dop.buffer + byte_cnt)) << 8*i;
+                      axi_data.data = axi_data.data | tb.sv_hm_get_byte(.addr(dop.buffer + byte_cnt)) << 8*i;
                       axi_data.strb = axi_data.strb | 1 << i;
                       byte_cnt++;
                     end
                   end
                   else if(last_data_beat)  begin
                     for(int i=0; i < num_bytes; i++) begin
-                      axi_data.data = axi_data.data | tb.hm_get_byte(.addr(dop.buffer + byte_cnt)) << 8*i;
+                      axi_data.data = axi_data.data | tb.sv_hm_get_byte(.addr(dop.buffer + byte_cnt)) << 8*i;
                       axi_data.strb = axi_data.strb | 1 << i;
                       byte_cnt++;
                     end
                   end
                   else begin
                     for(int i=start_addr[5:0]; i < 64; i++) begin
-                      axi_data.data = {tb.hm_get_byte(.addr(dop.buffer + byte_cnt)), axi_data.data[511:8]};
+                      axi_data.data = {tb.sv_hm_get_byte(.addr(dop.buffer + byte_cnt)), axi_data.data[511:8]};
                       axi_data.strb = {1'b1, axi_data.strb[63:1]};
                       byte_cnt++;
                     end
@@ -2624,7 +2627,7 @@ module sh_bfm #(
               dop = c2h_data_dma_list[chan].pop_front();            
               
               for (int i = dop.cl_addr[5:0]; i < 64 ; i++) begin
-                tb.hm_put_byte(.addr(dop.buffer + byte_cnt[chan]), .d(cl_sh_rd_data[0].data[(i*8)+:8]));
+                tb.sv_hm_put_byte(.addr(dop.buffer + byte_cnt[chan]), .d(cl_sh_rd_data[0].data[(i*8)+:8]));
                 if (debug) begin
                   $display("[%t] - DEBUG read data  dop.buffer[%2d]: %0x  read_que data: %0x", 
                                             $realtime, i, dop.buffer[i], cl_sh_rd_data[0].data[(i*8)+:8]);

@@ -122,22 +122,39 @@ import tb_type_defines_pkg::*;
       tb.card.fpga.sh.poke(.addr(addr), .data(data), .intf(AxiPort::PORT_OCL));
    endtask 
    
+   function void sv_hm_put_byte(input longint unsigned addr, byte d);
+      int unsigned t;
+
+      if (tb.sv_host_memory.exists({addr[63:2], 2'b00})) begin
+         t = tb.sv_host_memory[{addr[63:2], 2'b00}];
+      end
+      else
+         t = 32'hffff_ffff;
+      
+      t = t & ~(32'h0000_00ff  << (addr[1:0] * 8) );
+      t = t | ({24'h000000, d} << (addr[1:0] * 8) );
+      tb.sv_host_memory[{addr[63:2], 2'b00}] = t;
+   endfunction
+
    function void hm_put_byte(input longint unsigned addr, byte d);
       if (tb.use_c_host_memory)
          host_memory_putc(addr, d);
       else begin
-         int unsigned t;
-
-         if (tb.sv_host_memory.exists({addr[63:2], 2'b00})) begin
-            t = tb.sv_host_memory[{addr[63:2], 2'b00}];
-         end
-         else
-            t = 32'hffff_ffff;
-         
-         t = t & ~(32'h0000_00ff  << (addr[1:0] * 8) );
-         t = t | ({24'h000000, d} << (addr[1:0] * 8) );
-         tb.sv_host_memory[{addr[63:2], 2'b00}] = t;
+         sv_hm_put_byte(addr, d);
       end
+   endfunction
+
+   function byte sv_hm_get_byte(input longint unsigned addr);
+      byte d;
+      int unsigned t;
+      if (tb.sv_host_memory.exists({addr[63:2], 2'b00})) begin
+         t = tb.sv_host_memory[{addr[63:2], 2'b00}];
+         t = t >> (addr[1:0] * 8);
+         d = t[7:0];
+      end
+      else
+         d = 'hff;
+      return d;
    endfunction
 
    function byte hm_get_byte(input longint unsigned addr);
@@ -146,14 +163,7 @@ import tb_type_defines_pkg::*;
       if (tb.use_c_host_memory)
          d = host_memory_getc(addr);
       else begin
-         int unsigned t;
-         if (tb.sv_host_memory.exists({addr[63:2], 2'b00})) begin
-            t = tb.sv_host_memory[{addr[63:2], 2'b00}];
-            t = t >> (addr[1:0] * 8);
-            d = t[7:0];
-         end
-         else
-            d = 'hff;
+         d = sv_hm_get_byte(addr);
       end
       return d;
    endfunction
@@ -276,7 +286,7 @@ end
 `ifdef QUESTA_SIM
       automatic bit debug = 0;
 `else
-      bit debug = 0;
+      bit debug = 1;
 `endif
 
       host_memory_ptr = wr_buffer_addr;
@@ -287,10 +297,10 @@ end
 
       // Put test pattern in host memory
       for (int i = 0 ; i < buf_size ; i++) begin
-         tb.hm_put_byte(.addr(host_memory_buffer_address), .d(tb.host_memory_getc(host_memory_ptr)));
          if(debug) begin
             $display("[%t] : host_memory_address = %0x wr_buffer[%d] = %0x", $realtime, host_memory_buffer_address, i, tb.host_memory_getc(host_memory_ptr)); 
          end
+         tb.sv_hm_put_byte(.addr(host_memory_buffer_address), .d(tb.host_memory_getc(host_memory_ptr)));
          host_memory_ptr++ ;
          host_memory_buffer_address++;
       end
@@ -306,6 +316,9 @@ end
       if (timeout_count >= 4000) begin
          $display("[%t] : *** ERROR *** Timeout waiting for dma transfers to cl", $realtime);
          error_count++;
+      end
+      if(debug) begin
+         $display("[%t] : sv_fpga_start_buffer_to_cl done", $realtime); 
       end
    endtask // sv_fpga_start_buffer_to_cl
    
@@ -325,7 +338,7 @@ end
 
       host_memory_buffer_address = 64'h0 + (chan+1)*64'h0_0001_3000;
       for (int i = 0 ; i < buf_size ; i++) begin
-         tb.hm_put_byte(.addr(host_memory_buffer_address + i), .d(tb.host_memory_getc(host_memory_ptr)));
+         tb.sv_hm_put_byte(.addr(host_memory_buffer_address + i), .d(tb.host_memory_getc(host_memory_ptr)));
          if(debug) begin
             $display("[%t] : host_memory_address = %0x rd_buffer[%d] = %0x", $realtime, host_memory_buffer_address + i, i, tb.host_memory_getc(host_memory_ptr)); 
          end
@@ -349,7 +362,7 @@ end
 
      host_memory_ptr = rd_buffer_addr;
      for (int i = 0 ; i < buf_size ; i++) begin
-         tb.host_memory_putc(host_memory_ptr, tb.hm_get_byte(host_memory_buffer_address + i));
+         tb.host_memory_putc(host_memory_ptr, tb.sv_hm_get_byte(host_memory_buffer_address + i));
          if(debug) begin
             $display("[%t] : host_memory_address = %0x rd_buffer[%d] = %0x", $realtime, host_memory_buffer_address + i, i, tb.hm_get_byte(host_memory_buffer_address + i)); 
          end

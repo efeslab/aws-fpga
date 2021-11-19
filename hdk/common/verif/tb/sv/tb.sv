@@ -23,6 +23,25 @@ module tb();
 
 
    
+   // This is poortly documented in AWS docs
+   // My take-away:
+   // Common things: you can either use c_host_memory (need to comply with
+   // the virtual memory abstraction) or sv_host_memory (embedded in the sv
+   // world and handled by the simulator, starting from addr 0x0)
+   // For c_host_memory, all access should use virtual memory addresses and the
+   // sv_map_host_meory does nothing besides remembering "yeah, we are using
+   // c_host_memory so do not use sv_host_memory from now on".
+   // For sv_map_host_memory, all access should be managed just like you need to
+   // allocate the physical DDR address (start from 0) on a real FPGA.
+   //
+   // However, without my patch: PCIS and PCIM cannot be simulated correctly at
+   // the same time, since once c_host_memory is used (i.e. called
+   // sv_map_host_memory), all memory access including pcis will use the
+   // c_host_memory, thus blow-up the memory address management.
+   //
+   // With my patch: PCIS related operations will be forced to use
+   // sv_host_memory and the rest is untouched (i.e. use sv_host_memory if no
+   // c_host_memory is available)
    logic [31:0]         sv_host_memory[*];
    logic                use_c_host_memory = 1'b0;
    
