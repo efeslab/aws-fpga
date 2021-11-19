@@ -241,7 +241,7 @@ lib_pipe #(
   .WIDTH(1), .STAGES(MERGETREE_OUT_QUEUE_NSTAGES)
 ) valid_pipe (
   .clk(clk), .rst_n(rstn),
-  .in_bus(packed_replay_bus.valid),
+  .in_bus(packed_replay_bus.valid && packed_replay_bus.ready),
   .out_bus(`TREE_TOP.valid)
 );
 lib_pipe #(
