@@ -117,7 +117,7 @@ fi
 
 # Check that strategy is valid
 shopt -s extglob
-if [[ $strategy != @(BASIC|DEFAULT|EXPLORE|TIMING|CONGESTION) ]]; then
+if [[ $strategy != @(BASIC|DEFAULT|EXPLORE|TIMING|CONGESTION|GEFEI) ]]; then
   err_msg "$strategy isn't a valid strategy. Valid strategies are BASIC, DEFAULT, EXPLORE, TIMING and CONGESTION."
   exit 1
 fi
