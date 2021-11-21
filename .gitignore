@@ -113,3 +113,7 @@ patches/*
 .temp
 
 .python-version
+
+*.out
+*.dump
+*.elf
