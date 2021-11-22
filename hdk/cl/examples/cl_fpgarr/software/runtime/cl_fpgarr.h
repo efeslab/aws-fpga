@@ -3,7 +3,7 @@
 #define CL_FPGARR_CSR_BASE 0x100000
 #include <stdint.h>
 
-#define RR_CSR_VERSION_INT 20211105
+#define RR_CSR_VERSION_INT 20211122
 typedef enum {
   BUF_ADDR_HI = 0,           // 0
   BUF_ADDR_LO,               // 1
@@ -23,7 +23,9 @@ typedef enum {
   RR_RSVD_2,                 // 15
   VALIDATE_BITS_HI,          // 16
   VALIDATE_BITS_LO,          // 17
-  RR_CSR_VERSION,            // 18
+  RT_REPLAY_BITS_HI,         // 18
+  RT_REPLAY_BITS_LO,         // 19
+  RR_CSR_VERSION,            // 20
 } rr_csr_enum;
 
 #define RR_CSR_ADDR(idx) (CL_FPGARR_CSR_BASE + 0x4 * idx)

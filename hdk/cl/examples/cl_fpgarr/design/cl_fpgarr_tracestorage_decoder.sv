@@ -315,7 +315,8 @@ module rr_parse_replay_trace #(
     input logic replay_out_fifo_almfull,
     input logic replay_out_fifo_empty,
     // number of bits expected to replay (including paddings for alignment)
-    input logic [63:0] replay_bits
+    input logic [63:0] replay_bits,
+    output logic [63:0] rt_replay_bits
 );
 
 // highlevel structure
@@ -450,6 +451,8 @@ assign lo_valid_satisfied =
 localparam PACKET_CNT_WIDTH = 64 - PACKET_ALIGNMENT_WIDTH;
 logic [PACKET_CNT_WIDTH-1:0] replay_pkt_total;
 logic [PACKET_CNT_WIDTH-1:0] rt_replay_pkt_cnt;
+assign rt_replay_bits[0 +: PACKET_ALIGNMENT_WIDTH] = 0;
+assign rt_replay_bits[63: PACKET_ALIGNMENT_WIDTH] = rt_replay_pkt_cnt;
 // lo_replay_done means all packets (in terms of alignment units) have been sent
 // to the assemble buffer and will be eventually replay.
 // All remaining trace in the shifting buffer should be padding. Even though

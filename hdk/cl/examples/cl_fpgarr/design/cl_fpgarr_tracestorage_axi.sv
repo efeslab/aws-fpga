@@ -86,6 +86,7 @@ rr_trace_rw #(
   .read_buf_update(csr.read_buf_update),
   .record_bits(counter.record_bits),
   .replay_bits(csr.replay_bits),
+  .rt_replay_bits(counter.rt_replay_bits),
   .write_interrupt(),
   .read_interrupt()
 );

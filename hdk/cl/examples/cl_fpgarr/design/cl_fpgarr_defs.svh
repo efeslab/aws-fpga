@@ -249,7 +249,7 @@ endfunction
 // !!!!!!!!!!!!!!!!!!!!!!!! ATTENTION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // ALWAYS update (increase) this RR_CSR_VERSION_INT after making changes to CSR
 // address allocation
-parameter int RR_CSR_VERSION_INT = 20211105;
+parameter int RR_CSR_VERSION_INT = 20211122;
 ////////////////////////////////////////////////////////////////////////////////
 parameter int RR_CSR_CNT = 32;
 parameter int RR_CSR_ADDR_WIDTH = $clog2(RR_CSR_CNT);
@@ -283,7 +283,10 @@ typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
   RR_RSVD_2,                // 15, 4 bytes recerved to align VALIDATE_BITS
   VALIDATE_BITS_HI,         // 16
   VALIDATE_BITS_LO,         // 17
-  RR_CSR_VERSION,           // 18
+  // The real-time number of bits has been replayed
+  RT_REPLAY_BITS_HI,        // 18
+  RT_REPLAY_BITS_LO,        // 19
+  RR_CSR_VERSION,           // 20
   RR_CSR_LAST_DONT_USE = RR_CSR_CNT - 1
 } rr_csr_enum;
 `define RR_CSR_ADDR(idx) (idx << 2)
