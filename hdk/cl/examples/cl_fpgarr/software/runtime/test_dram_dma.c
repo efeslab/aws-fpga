@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <poll.h>
 
+#include "fpga_hugealloc.h"
 #include "fpga_pci.h"
 #include "fpga_mgmt.h"
 #include "fpga_dma.h"
@@ -43,6 +44,9 @@ void rand_string(char *str, size_t size);
 int interrupt_example(int slot_id, int interrupt_number);
 int axi_mstr_example(int slot_id);
 int axi_mstr_ddr_access(int slot_id, pci_bar_handle_t pci_bar_handle, uint32_t ddr_hi_addr, uint32_t ddr_lo_addr, uint32_t  ddr_data);
+int pcim_example(int slot_id, size_t buffer_size);
+
+const size_t buffer_size = 1ULL << 26; // 64MB
 
 int main(int argc, char **argv) {
     int rc;
@@ -78,7 +82,7 @@ int main(int argc, char **argv) {
 #endif
 
     /* run the dma test example */
-    rc = dma_example(slot_id, 1ULL << 24);
+    rc = dma_example(slot_id, buffer_size);
     fail_on(rc, out, "DMA example failed");
 
     /* run interrupt examples */
@@ -90,6 +94,10 @@ int main(int argc, char **argv) {
     /* run axi master example */
     rc = axi_mstr_example(slot_id);
     fail_on(rc, out, "AXI Master example failed");
+
+    /* run pcim example */
+    rc = pcim_example(slot_id, buffer_size);
+    fail_on(rc, out, "PCIM example failed");
 
 out:
     log_info("TEST %s", (rc == 0) ? "PASSED" : "FAILED");
@@ -356,6 +364,66 @@ int axi_mstr_ddr_access(int slot_id, pci_bar_handle_t pci_bar_handle, uint32_t d
         fail_on(rc, out, "Resulting value, 0x%x did not match expected value 0x%x at address 0x%x%x. Something didn't work.\n", read_data, ddr_data, ddr_hi_addr, ddr_lo_addr);
     }
 
+out:
+    return rc;
+}
+
+int pcim_example(int slot_id, size_t buffer_size) {
+    int rc;
+    pci_bar_handle_t ocl_bar_handle = PCI_BAR_HANDLE_INIT;
+    rc = fpga_pci_attach(slot_id, /*pf_id*/ 0, /*bar_id*/ 0, /*flags*/ 0,
+                         &ocl_bar_handle);
+    fail_on(rc, out, "Unable to attach to the OCL bar");
+
+    void *va;
+    uint64_t pa;
+    uint64_t sizeB;
+    rc = fpga_hugealloc_get(&va, &pa, &sizeB);
+    fail_on(rc, out, "Unable to alloc hugepage");
+
+    // {{{ setup test for pcim
+    // I suppose this is to write 16 x 512 bits
+    size_t write_len = 0x10;
+    log_info("PCIM example, host_mem: va %p, pa %p, buffer size %ld", va,
+             (void *)(pa), sizeB);
+    fail_on((buffer_size > sizeB), free_huge, "HugePageAlloc Too small");
+    memset(va, 0, buffer_size);
+    // 0x30: A value of 0 will drive PCIS/XDMA transactions to DDR.
+    rc = fpga_pci_poke(ocl_bar_handle, 0x030, 0);
+    fail_on(rc, free_huge, "Unable to poke 0x030");
+    //Offset 0x10:
+    //     15:0 - Write Num Inst - Number of write instructions
+    //     31:16 - Read Num inst - Number of read instructions
+    rc = fpga_pci_poke(ocl_bar_handle, 0x010, 1);
+    fail_on(rc, free_huge, "Unable to poke 0x010");
+    // Offset 0x20: Write address low - Write instruction address
+    rc = fpga_pci_poke(ocl_bar_handle, 0x020, pa & 0xffffffff);
+    fail_on(rc, free_huge, "Unable to poke 0x020");
+    // Offset 0x24: Write address high - Write instruction address
+    rc = fpga_pci_poke(ocl_bar_handle, 0x024, (pa >> 32) & 0xffffffff);
+    fail_on(rc, free_huge, "Unable to poke 0x024");
+    // Offset 0x28: Write data - Write instruction start data.  All other data will be incrementing or PRBS
+    rc = fpga_pci_poke(ocl_bar_handle, 0x028, 0x1234);
+    fail_on(rc, free_huge, "Unable to poke 0x028");
+    // Offset 0x2c: Write length/User - Write instruction length (number of data phases.  note there are no partial data phases)
+    //     7:0 - Length -- this is the number of AXI data phases.   Lower address bits define first data offset
+    //     15:8 - Last data adj -- Number of DW to adj last data phase (0 means all DW are valid, 1 means all but 1DW valid, etc...)
+    //     31:16 - User
+    rc = fpga_pci_poke(ocl_bar_handle, 0x02c, write_len);
+    fail_on(rc, free_huge, "Unable to poke 0x02c");
+    //Offset 0x08:
+    //     0 - Write Go (read back write in progress) - Write this bit to start executing the write instructions.  Reads back '1' while write instructions are in progress.
+    //     1 - Read Go (read back write in progress) - Write this bit to start executing the read instructions.  Reads back '1' while read instructions are in progress.
+    //     2 - Read response pending (read only).  REad only, reads back '1' while read responses are pending.
+    rc = fpga_pci_poke(ocl_bar_handle, 0x008, 0x1);
+    fail_on(rc, free_huge, "Unable to poke 0x008");
+    uint32_t *va_u32 = (uint32_t*)va;
+    for (size_t i = 0; i < write_len * 512 / 8 / sizeof(*va_u32); ++i) {
+        log_info("PCIM example addr[%ld] = %x", i, va_u32[i]);
+    }
+    // }}} end of set for pcim
+free_huge:
+    fpga_hugealloc_put(va);
 out:
     return rc;
 }
