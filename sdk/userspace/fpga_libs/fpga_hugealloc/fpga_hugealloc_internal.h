@@ -15,6 +15,18 @@
 #define SIZE_1G (1*1024*1024*1024)
 #define SIZE_2M (2*1024*1024)
 
+// HUGE PAGE SIZE SELECTION
+#define USE_HUGE_1GB
+#undef USE_HUGE_2MB
+
+#ifdef USE_HUGE_1GB
+#define HUGE_SIZE SIZE_1G
+#define MMAP_HUGE_FLAGS MAP_HUGETLB | MAP_HUGE_1GB
+#elif USE_HUGE_2MB
+#define HUGE_SIZE SIZE_2M
+#define MMAP_HUGE_FLAGS MAP_HUGETLB | MAP_HUGE_2MB
+#endif
+
 #define PAGE_SHIFT 12
 
 struct pagemap_entry {

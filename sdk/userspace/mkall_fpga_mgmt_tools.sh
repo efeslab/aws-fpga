@@ -76,6 +76,9 @@ function build_exec {
 BUILD_DIR="utils"
 build_exec
 
+BUILD_DIR="fpga_libs/fpga_hugealloc"
+build_exec
+
 BUILD_DIR="fpga_libs/fpga_pci"
 build_exec
 
