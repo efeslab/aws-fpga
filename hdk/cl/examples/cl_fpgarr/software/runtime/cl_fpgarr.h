@@ -31,19 +31,14 @@ typedef enum {
 #define RR_CSR_ADDR(idx) (CL_FPGARR_CSR_BASE + 0x4 * idx)
 #define UINT64_HI32(x) ((((uint64_t) x) >> 32) & 0xffffffff)
 #define UINT64_LO32(x) ( ((uint64_t) x) & 0xffffffff)
-#define UINT64_FROM32(hi, lo) ((((uint32_t) hi) << 32) | ((uint32_t) lo))
+#define UINT64_FROM32(hi, lo) ((((uint64_t) hi) << 32) | ((uint64_t) lo))
 
 // 64 MB
 #define DEFAULT_BUFFER_SIZE (0x4000000)
 #define BUFFER_ALIGNMENT 4096
 #define TRACE_LEN_BYTES 8
 
-extern int init_rr();
-extern void do_record_start();
-extern void do_record_stop();
-extern void do_replay_start();
-extern void do_replay_stop();
-
+extern int init_rr(int slot_id);
 extern void do_pre_rr();
 extern void do_post_rr();
 

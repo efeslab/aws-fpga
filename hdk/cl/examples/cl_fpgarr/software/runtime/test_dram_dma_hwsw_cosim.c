@@ -141,8 +141,10 @@ void usage(const char* program_name) {
 /**
  * Write 4 identical buffers to the 4 different DRAM channels of the AFI
  */
+#ifdef SV_TEST
 #define TEST_PCIM
 #define TEST_PCIS
+#endif
 int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 {
     int rc;
@@ -160,7 +162,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 #endif // TEST_PCIS
 
     uint8_t *host_mem;
-    posix_memalign(&host_mem, 64, buffer_size);
+    posix_memalign((void*)(&host_mem), 64, buffer_size);
     memset(host_mem, 0, buffer_size);
 
     if (host_mem == NULL) {
@@ -170,6 +172,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 
     printf("Memory has been allocated, initializing host_memory...\n");
 #if !defined(SV_TEST)
+    int read_fd, write_fd;
     abort();
     read_fd = fpga_dma_open_queue(FPGA_DMA_XDMA, slot_id,
         /*channel*/ 0, /*is_read*/ true);
@@ -185,7 +188,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     init_ddr();
     printf("Done DDR init...\n");
 #endif
-    rc = init_rr();
+    rc = init_rr(0);
     fail_on(rc, out, "init_rr failed");
     do_pre_rr();
 
@@ -218,11 +221,11 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         //     1 - Read Go (read back write in progress) - Write this bit to start executing the read instructions.  Reads back '1' while read instructions are in progress.
         //     2 - Read response pending (read only).  REad only, reads back '1' while read responses are pending.
         cl_poke_ocl(0x008,0x1);
-#endif
         // }}} end of set for pcim
+#endif
         
-        // {{{setup test for pcis
 #ifdef TEST_PCIS
+        // {{{setup test for pcis
         printf("filling buffer with  random data...\n") ;
 
         rc = fill_buffer_urandom(write_buffer, buffer_size);
