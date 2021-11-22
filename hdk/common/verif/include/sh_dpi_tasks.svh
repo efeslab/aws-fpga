@@ -543,6 +543,19 @@ end
 
    //=================================================
    //
+   // get_pend_bit
+   //
+   //   Description: used to get an interrupt
+   //   Outputs: A bit indicating whether there's a pending interrupt
+   //
+   //=================================================
+   function bit get_pend_bit(input int slot_id = 0,
+                            int int_num);
+       `SLOT_MACRO_FUNC(get_pend_bit(.int_num(int_num)))
+   endfunction
+
+   //=================================================
+   //
    // issue_flr
    //
    //   Description: issue a FLR command

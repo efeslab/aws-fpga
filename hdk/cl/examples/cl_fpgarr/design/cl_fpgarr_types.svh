@@ -207,12 +207,12 @@ typedef struct packed {
   // logic replay_start;
   logic [63:0] replay_bits;
   logic validate_buf_update;
-} storage_axi_csr_t;
+} storage_axi_write_csr_t;
 
 typedef struct packed {
     logic [63:0] record_bits;
     logic [63:0] validate_bits;
-} storage_axi_counter_csr_t;
+} storage_axi_read_csr_t;
 
 // rr_mode_csr_t is a interpretation of the RR_MODE csr
 // NOTE: do not forget to sync with the cl_fpgarr.{c,h} (the software lib)
