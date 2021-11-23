@@ -2569,8 +2569,8 @@ module sh_bfm #(
                   axi_cmd.addr = (aligned_addr + (burst_cnt * 64));
                   axi_cmd.len  = num_of_data_beats - last_beat - burst_cnt - 1;
                   // handle the condition if addr is crossing 4k page boundry
-                  $display("Address is going to cross 4K boundary \n");
                   if( (axi_cmd.addr[11:0] + ((axi_cmd.len + 1) * 64)) > 4095) begin
+                    // $error("[@%t] Address is going to cross 4K boundary, chan %d, h2c_dma_list[chan].size == %d\n", $time, chan, h2c_dma_list[chan].size());
                     axi_cmd.len = ((4096 - axi_cmd.addr[11:0])/64) - 1;
                   end
                 end
