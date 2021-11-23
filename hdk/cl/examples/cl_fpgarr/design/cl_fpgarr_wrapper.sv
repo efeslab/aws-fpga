@@ -104,8 +104,6 @@ storage_axi_csr_t storage_axi_csr;
 storage_axi_counter_csr_t storage_axi_counter_csr;
 // rr_mode_csr is used to control the record/replay behaviour
 rr_mode_csr_t rr_mode_csr;
-// rr_mode_csr_q is the flopped version for timing
-rr_mode_csr_t rr_mode_csr_q;
 
 ////////////////////////////////////////////////////////////////////////////////
 // LOG AXI bus
@@ -221,7 +219,7 @@ axil_recorder bar1_bus_recorder (
   merged_SH2CL_logging_bus, p2, rr_dma_pcis_SH2CL_logging_bus);
 `LOGGING_BUS_DUP(merged_SH2CL_logging_bus, unpacked_record_bus);
 rr_logging_bus_switch record_switch (
-  .en(rr_mode_csr_q.recordEn),
+  .en(rr_mode_csr.recordEn),
   .in(merged_SH2CL_logging_bus),
   .out(unpacked_record_bus)
 );
@@ -257,7 +255,7 @@ rr_packed2writeback_bus #(
   merged_CL2SH_logging_bus, pv2, rr_dma_pcis_CL2SH_logging_bus);
 `LOGGING_BUS_DUP(merged_CL2SH_logging_bus, unpacked_validate_bus);
 rr_logging_bus_switch validate_switch (
-  .en(rr_mode_csr_q.outputValidateEn),
+  .en(rr_mode_csr.outputValidateEn),
   .in(merged_CL2SH_logging_bus),
   .out(unpacked_validate_bus)
 );
@@ -412,44 +410,38 @@ rr_axi_bus_t rr_validation_bus();
 // Decide which bus to record
 // It can be the bus connected to the shell, or the corresponding replay bus
 ////////////////////////////////////////////////////////////////////////////////
-// I need rr_mode_csr to synchronously arrive at all channels
-lib_pipe #(.WIDTH($bits(rr_mode_csr_t)), .STAGES(4)) rr_mode_csr_pipe (
-  .clk(clk), .rst_n(rstn),
-  .in_bus(rr_mode_csr),
-  .out_bus(rr_mode_csr_q)
-);
 // rr_mode_csr.replayEn decides
 // cl_pcim or pcim_replay_axi_bus ?
 rr_axi_slv_sel pcim_sel (
-  .sel(rr_mode_csr_q.replayEn),
+  .sel(rr_mode_csr.replayEn),
   .inAM(cl_pcim_bus),
   .inBM(pcim_replay_axi_bus),
   .outS(rr_pcim_record_bus)
 );
 // dma_pcis_bus_q or pcis_replay_axi_bus ?
 rr_axi_mstr_sel pcis_sel (
-  .sel(rr_mode_csr_q.replayEn),
+  .sel(rr_mode_csr.replayEn),
   .inAS(dma_pcis_bus_q),
   .inBS(pcis_replay_axi_bus),
   .outM(rr_dma_pcis_record_bus)
 );
 // sda_bus_q or sda_replay_axil_bus ?
 rr_axil_mstr_sel sda_sel (
-  .sel(rr_mode_csr_q.replayEn),
+  .sel(rr_mode_csr.replayEn),
   .inAS(sda_bus_q),
   .inBS(sda_replay_axil_bus),
   .outM(rr_sda_record_bus)
 );
 // ocl_bus_q or ocl_replay_axil_bus ?
 rr_axil_mstr_sel ocl_sel (
-  .sel(rr_mode_csr_q.replayEn),
+  .sel(rr_mode_csr.replayEn),
   .inAS(ocl_bus_q),
   .inBS(ocl_replay_axil_bus),
   .outM(rr_ocl_record_bus)
 );
 // cl_bar1_bus or bar1_replay_axil_bus ?
 rr_axil_mstr_sel bar1_sel (
-  .sel(rr_mode_csr_q.replayEn),
+  .sel(rr_mode_csr.replayEn),
   .inAS(cl_bar1_bus),
   .inBS(bar1_replay_axil_bus),
   .outM(rr_bar1_record_bus)
