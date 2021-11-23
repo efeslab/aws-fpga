@@ -281,7 +281,9 @@ module axil_mstr_replayer #(
    rr_replay_bus_t.C rbus,
    rr_axi_lite_bus_t.slave outM,
    output logic [LOGE_PER_AXI-1:0] o_rt_loge_valid,
-   input logic [NUM_INTERFACES-1:0] [LOGE_PER_AXI-1:0] i_rt_loge_valid
+   input logic [NUM_INTERFACES-1:0] [LOGE_PER_AXI-1:0] i_rt_loge_valid,
+   output logic fifo_overflow,
+   output logic fifo_underflow
 );
 localparam LOGB_CHANNEL_CNT = rbus.LOGB_CHANNEL_CNT;
 localparam [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
@@ -312,6 +314,10 @@ endgenerate
 
 logic rstn;
 assign rstn = sync_rst_n;
+logic [LOGB_CHANNEL_CNT-1:0] fifo_overflow_ch;
+assign fifo_overflow = |fifo_overflow_ch;
+logic [LOGB_CHANNEL_CNT-1:0] fifo_underflow_ch;
+assign fifo_underflow = |fifo_underflow_ch;
 // AW Channel
 axichannel_replayer #(
    .DATA_WIDTH(AXIL_RR_AW_WIDTH),
@@ -327,7 +333,9 @@ axichannel_replayer #(
    .rt_loge_valid(i_rt_loge_valid),
    .out_valid(outM.awvalid),
    .out_ready(outM.awready),
-   .out_data(axil_rr_AW_t'{outM.awaddr})
+   .out_data(axil_rr_AW_t'{outM.awaddr}),
+   .fifo_overflow(fifo_overflow_ch[LOGB_AW]),
+   .fifo_underflow(fifo_underflow_ch[LOGB_AW])
 );
 assign o_rt_loge_valid[LOGE_AW] = outM.awvalid && outM.awready;
 
@@ -346,7 +354,9 @@ axichannel_replayer #(
    .rt_loge_valid(i_rt_loge_valid),
    .out_valid(outM.wvalid),
    .out_ready(outM.wready),
-   .out_data(axil_rr_W_t'{outM.wdata, outM.wstrb})
+   .out_data(axil_rr_W_t'{outM.wdata, outM.wstrb}),
+   .fifo_overflow(fifo_overflow_ch[LOGB_W]),
+   .fifo_underflow(fifo_underflow_ch[LOGB_W])
 );
 assign o_rt_loge_valid[LOGE_W] = outM.wvalid && outM.wready;
 
@@ -365,7 +375,9 @@ axichannel_replayer #(
    .rt_loge_valid(i_rt_loge_valid),
    .out_valid(outM.arvalid),
    .out_ready(outM.arready),
-   .out_data(axil_rr_AR_t'{outM.araddr})
+   .out_data(axil_rr_AR_t'{outM.araddr}),
+   .fifo_overflow(fifo_overflow_ch[LOGB_AR]),
+   .fifo_underflow(fifo_underflow_ch[LOGB_AR])
 );
 assign o_rt_loge_valid[LOGE_AR] = outM.arvalid && outM.arready;
 
@@ -386,7 +398,9 @@ module axil_slv_replayer #(
    rr_replay_bus_t.C rbus,
    rr_axi_lite_bus_t.master outS,
    output logic [LOGE_PER_AXI-1:0] o_rt_loge_valid,
-   input logic [NUM_INTERFACES-1:0] [LOGE_PER_AXI-1:0] i_rt_loge_valid
+   input logic [NUM_INTERFACES-1:0] [LOGE_PER_AXI-1:0] i_rt_loge_valid,
+   output logic fifo_overflow,
+   output logic fifo_underflow
 );
 localparam LOGB_CHANNEL_CNT = rbus.LOGB_CHANNEL_CNT;
 localparam [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
@@ -413,6 +427,10 @@ endgenerate
 
 logic rstn;
 assign rstn = sync_rst_n;
+logic [LOGB_CHANNEL_CNT-1:0] fifo_overflow_ch;
+assign fifo_overflow = |fifo_overflow_ch;
+logic [LOGB_CHANNEL_CNT-1:0] fifo_underflow_ch;
+assign fifo_underflow = |fifo_underflow_ch;
 // AW Channel
 assign outS.awready = 1;
 assign o_rt_loge_valid[LOGE_AW] = outS.awvalid && outS.awready;
@@ -438,7 +456,9 @@ axichannel_replayer #(
    .rt_loge_valid(i_rt_loge_valid),
    .out_valid(outS.bvalid),
    .out_ready(outS.bready),
-   .out_data(axil_rr_B_t'{outS.bresp})
+   .out_data(axil_rr_B_t'{outS.bresp}),
+   .fifo_overflow(fifo_overflow_ch[LOGB_B]),
+   .fifo_underflow(fifo_underflow_ch[LOGB_B])
 );
 assign o_rt_loge_valid[LOGE_B] = outS.bvalid && outS.bready;
 
@@ -457,7 +477,9 @@ axichannel_replayer #(
    .rt_loge_valid(i_rt_loge_valid),
    .out_valid(outS.rvalid),
    .out_ready(outS.rready),
-   .out_data(axil_rr_R_t'{outS.rdata, outS.rresp})
+   .out_data(axil_rr_R_t'{outS.rdata, outS.rresp}),
+   .fifo_overflow(fifo_overflow_ch[LOGB_R]),
+   .fifo_underflow(fifo_underflow_ch[LOGB_R])
 );
 assign o_rt_loge_valid[LOGE_R] = outS.rvalid && outS.rready;
 endmodule

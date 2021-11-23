@@ -3,7 +3,7 @@
 #define CL_FPGARR_CSR_BASE 0x100000
 #include <stdint.h>
 
-#define RR_CSR_VERSION_INT 20211122
+#define RR_CSR_VERSION_INT 20211123
 typedef enum {
   BUF_ADDR_HI = 0,           // 0
   BUF_ADDR_LO,               // 1
@@ -14,7 +14,7 @@ typedef enum {
   RECORD_FORCE_FINISH,       // 6
   REPLAY_START,              // 7, currently not used
   RR_MODE,                   // 8
-  RR_RSVD_1,                 // 9
+  RR_STATE,                  // 9
   RECORD_BITS_HI,            // 10
   RECORD_BITS_LO,            // 11
   REPLAY_BITS_HI,            // 12

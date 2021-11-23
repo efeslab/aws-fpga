@@ -249,7 +249,7 @@ endfunction
 // !!!!!!!!!!!!!!!!!!!!!!!! ATTENTION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // ALWAYS update (increase) this RR_CSR_VERSION_INT after making changes to CSR
 // address allocation
-parameter int RR_CSR_VERSION_INT = 20211122;
+parameter int RR_CSR_VERSION_INT = 20211123;
 ////////////////////////////////////////////////////////////////////////////////
 parameter int RR_CSR_CNT = 32;
 parameter int RR_CSR_ADDR_WIDTH = $clog2(RR_CSR_CNT);
@@ -272,7 +272,7 @@ typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
   RECORD_FORCE_FINISH,      // 6
   REPLAY_START,             // 7, currently not used
   RR_MODE,                  // 8
-  RR_RSVD_1,                // 9, 4 bytes reserved to align RECORD_BITS
+  RR_STATE,                 // 9, 4 bytes reserved to align RECORD_BITS
   // *_BITS are used to tell how many bits is recorded or needs to be replayed.
   // Software need to write this before replay, and read it back after record.
   RECORD_BITS_HI,           // 10

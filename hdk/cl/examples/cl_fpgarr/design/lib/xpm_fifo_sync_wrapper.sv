@@ -14,14 +14,15 @@ module xpm_fifo_sync_wrapper #(
     output logic dout_valid,
     output logic full,
     output logic almful,
-    output logic empty
+    output logic empty,
+    output logic overflow,
+    output logic underflow
 );
 // xpm_fifo_sync has one-cycle delay when dealing with prog_full/empty
 // according to ug974
 localparam XPM_FIFO_SYNC_PROG_FULL = ALMFUL_THRESHOLD - 1;
 localparam RD_DATA_COUNT_WIDTH = $clog2(DEPTH);
 localparam WR_DATA_COUNT_WIDTH = $clog2(DEPTH);
-logic fifo_overflow, fifo_underflow;
 logic [RD_DATA_COUNT_WIDTH-1:0] rd_data_count;
 logic [WR_DATA_COUNT_WIDTH-1:0] wr_data_count;
 logic prog_full, prog_empty;
@@ -366,7 +367,7 @@ localparam int SIM_ASSERT_CHECK = 1;
                                      // initiating a write when the FIFO is full is not destructive to the
                                      // contents of the FIFO.
 
-      .overflow(fifo_overflow),      // 1-bit output: Overflow: This signal indicates that a write request
+      .overflow(overflow),           // 1-bit output: Overflow: This signal indicates that a write request
                                      // (wren) during the prior clock cycle was rejected, because the FIFO is
                                      // full. Overflowing the FIFO is not destructive to the contents of the
                                      // FIFO.
@@ -390,7 +391,7 @@ localparam int SIM_ASSERT_CHECK = 1;
       .sbiterr(),                    // 1-bit output: Single Bit Error: Indicates that the ECC decoder detected
                                      // and fixed a single-bit error.
 
-      .underflow(fifo_underflow),    // 1-bit output: Underflow: Indicates that the read request (rd_en) during
+      .underflow(underflow),         // 1-bit output: Underflow: Indicates that the read request (rd_en) during
                                      // the previous clock cycle was rejected because the FIFO is empty. Under
                                      // flowing the FIFO is not destructive to the FIFO.
 

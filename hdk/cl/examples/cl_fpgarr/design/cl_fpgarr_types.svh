@@ -250,6 +250,27 @@ typedef struct packed {
   logic replayEn;             // bit 1
   logic outputValidateEn;     // bit 2
 } rr_mode_csr_t;
+
+typedef struct packed {
+  struct packed {
+    logic wb_record_inst;    // bit 0
+    logic pcim_replayer;     // bit 1
+    logic pcis_replayer;     // bit 2
+    logic sda_replayer;      // bit 3
+    logic ocl_replayer;      // bit 4
+    logic bar1_replayer;     // bit 5
+    logic wb_validate_inst;  // bit 6
+  } xpm_overflow;
+  struct packed {
+    logic wb_record_inst;    // bit 7
+    logic pcim_replayer;     // bit 8
+    logic pcis_replayer;     // bit 9
+    logic sda_replayer;      // bit 10
+    logic ocl_replayer;      // bit 11
+    logic bar1_replayer;     // bit 12
+    logic wb_validate_inst;  // bit 13
+  } xpm_underflow;
+} rr_state_csr_t;
 `endif
 // template
 ////////////////////////////////////////////////////////////////////////////////

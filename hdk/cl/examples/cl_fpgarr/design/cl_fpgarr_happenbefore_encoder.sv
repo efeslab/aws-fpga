@@ -51,7 +51,9 @@ module rr_packed2writeback_bus #(
    input wire clk,
    input wire rstn,
    rr_packed_logging_bus_t.C in,
-   rr_stream_bus_t.P out
+   rr_stream_bus_t.P out,
+   output logic fifo_overflow,
+   output logic fifo_underflow
 );
 // RR_LOGB_FIFO_ALMFUL_THRESHOLD:
 // 8 is random value chosen to overprovision some resource and avoid
@@ -190,7 +192,9 @@ xpm_fifo_sync_wrapper #(
    .full(fifo_full),
    .almful(in.logb_almful),
    .dout_valid(out.valid),
-   .empty(fifo_empty)
+   .empty(fifo_empty),
+   .overflow(fifo_overflow),
+   .underflow(fifo_underflow)
 );
 // end of test xpm_fifo_sync
 `endif

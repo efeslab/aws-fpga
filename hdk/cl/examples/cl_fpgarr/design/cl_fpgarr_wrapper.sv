@@ -95,15 +95,24 @@ rr_axi_bus_t cl_pcim_bus();
 // The higher 1MB of the bar1 bus is reserved for rr_cfg_bus
 rr_axi_lite_bus_t cl_bar1_bus();
 
-// Forward declared CSRs
-// These CSRs are parsed directly from the rr_cfg_bus, you have to take care of
-// the staging yourself if want to propogate them to somewhere else.
+////////////////////////////////////////////////////////////////////////////////
+// CSRs of this fpgarr wrapper
+////////////////////////////////////////////////////////////////////////////////
 // storage_axi_csr is used to configure the storage backend
 storage_axi_csr_t storage_axi_csr;
 // storage_axi_counter_csr is used to obtain statistics from the storage backend
 storage_axi_counter_csr_t storage_axi_counter_csr;
 // rr_mode_csr is used to control the record/replay behaviour
 rr_mode_csr_t rr_mode_csr;
+// rr_state_csr is used to expose internal fifo errors
+// rr_state_csr_next is connected to fifo signals and accumulated (bit or) to
+// rr_state_csr at each cycle
+rr_state_csr_t rr_state_csr, rr_state_csr_next;
+always_ff @(posedge clk)
+  if (!rstn)
+    rr_state_csr <= 0;
+  else
+    rr_state_csr <= rr_state_csr | rr_state_csr_next;
 
 ////////////////////////////////////////////////////////////////////////////////
 // LOG AXI bus
@@ -241,7 +250,9 @@ rr_logging_bus_unpack2pack #(
 rr_packed2writeback_bus #(
   .MERGE_TREE_HEIGHT(record_pkg::MERGE_TREE_HEIGHT)
 ) wb_record_inst(
-  .clk(clk), .rstn(rstn), .in(packed_logging_bus), .out(record_bus));
+  .clk(clk), .rstn(rstn), .in(packed_logging_bus), .out(record_bus),
+  .fifo_overflow(rr_state_csr_next.xpm_overflow.wb_record_inst),
+  .fifo_underflow(rr_state_csr_next.xpm_underflow.wb_record_inst));
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pack the CL2SH logging bus (for output validation)
@@ -283,7 +294,9 @@ rr_logging_bus_unpack2pack #(
 rr_packed2writeback_bus #(
   .MERGE_TREE_HEIGHT(validate_pkg::MERGE_TREE_HEIGHT)
 ) wb_validate_inst(
-  .clk(clk), .rstn(rstn), .in(packed_validate_bus), .out(validate_bus));
+  .clk(clk), .rstn(rstn), .in(packed_validate_bus), .out(validate_bus),
+  .fifo_overflow(rr_state_csr_next.xpm_overflow.wb_validate_inst),
+  .fifo_underflow(rr_state_csr_next.xpm_underflow.wb_validate_inst));
 
 ////////////////////////////////////////////////////////////////////////////////
 // Unpack the replay bus
@@ -339,7 +352,9 @@ axi_slv_replayer #(AWSF1_NUM_INTERFACES) pcim_bus_replayer (
   .rbus(rr_pcim_replay_bus),
   .outS(pcim_replay_axi_bus),
   .o_rt_loge_valid(rt_loge_valid_agg[PCIM]),
-  .i_rt_loge_valid(rt_loge_valid_dist[PCIM])
+  .i_rt_loge_valid(rt_loge_valid_dist[PCIM]),
+  .fifo_overflow(rr_state_csr_next.xpm_overflow.pcim_replayer),
+  .fifo_underflow(rr_state_csr_next.xpm_underflow.pcim_replayer)
 );
 // PCIS bus
 rr_axi_bus_t pcis_replay_axi_bus();
@@ -348,7 +363,9 @@ axi_mstr_replayer #(AWSF1_NUM_INTERFACES) pcis_bus_replayer (
   .rbus(rr_dma_pcis_replay_bus),
   .outM(pcis_replay_axi_bus),
   .o_rt_loge_valid(rt_loge_valid_agg[PCIS]),
-  .i_rt_loge_valid(rt_loge_valid_dist[PCIS])
+  .i_rt_loge_valid(rt_loge_valid_dist[PCIS]),
+  .fifo_overflow(rr_state_csr_next.xpm_overflow.pcis_replayer),
+  .fifo_underflow(rr_state_csr_next.xpm_underflow.pcis_replayer)
 );
 // SDA bus
 rr_axi_lite_bus_t sda_replay_axil_bus();
@@ -357,7 +374,9 @@ axil_mstr_replayer #(AWSF1_NUM_INTERFACES) sda_bus_replayer (
   .rbus(rr_sda_replay_bus),
   .outM(sda_replay_axil_bus),
   .o_rt_loge_valid(rt_loge_valid_agg[SDA]),
-  .i_rt_loge_valid(rt_loge_valid_dist[SDA])
+  .i_rt_loge_valid(rt_loge_valid_dist[SDA]),
+  .fifo_overflow(rr_state_csr_next.xpm_overflow.sda_replayer),
+  .fifo_underflow(rr_state_csr_next.xpm_underflow.sda_replayer)
 );
 // OCL bus
 rr_axi_lite_bus_t ocl_replay_axil_bus();
@@ -366,7 +385,9 @@ axil_mstr_replayer #(AWSF1_NUM_INTERFACES) ocl_bus_replayer (
   .rbus(rr_ocl_replay_bus),
   .outM(ocl_replay_axil_bus),
   .o_rt_loge_valid(rt_loge_valid_agg[OCL]),
-  .i_rt_loge_valid(rt_loge_valid_dist[OCL])
+  .i_rt_loge_valid(rt_loge_valid_dist[OCL]),
+  .fifo_overflow(rr_state_csr_next.xpm_overflow.ocl_replayer),
+  .fifo_underflow(rr_state_csr_next.xpm_underflow.ocl_replayer)
 );
 // BAR1 bus
 rr_axi_lite_bus_t bar1_replay_axil_bus();
@@ -375,7 +396,9 @@ axil_mstr_replayer #(AWSF1_NUM_INTERFACES) bar1_bus_replayer (
   .rbus(rr_bar1_replay_bus),
   .outM(bar1_replay_axil_bus),
   .o_rt_loge_valid(rt_loge_valid_agg[BAR1]),
-  .i_rt_loge_valid(rt_loge_valid_dist[BAR1])
+  .i_rt_loge_valid(rt_loge_valid_dist[BAR1]),
+  .fifo_overflow(rr_state_csr_next.xpm_overflow.bar1_replayer),
+  .fifo_underflow(rr_state_csr_next.xpm_underflow.bar1_replayer)
 );
 // the distribution crossbar
 rr_rt_loge_crossbar #(
@@ -399,7 +422,8 @@ rr_csrs #(
     .rr_cfg_bus(rr_cfg_bus),
     .storage_axi_csr(storage_axi_csr),
     .storage_axi_counter_csr(storage_axi_counter_csr),
-    .rr_mode_csr(rr_mode_csr)
+    .rr_mode_csr(rr_mode_csr),
+    .rr_state_csr(rr_state_csr)
 );
 
 rr_axi_bus_t rr_storage_bus();

@@ -19,7 +19,9 @@ module axichannel_replayer #(
   input wire [LOGE_CHANNEL_CNT-1:0] rt_loge_valid,
   output wire out_valid,
   input wire out_ready,
-  output wire [DATA_WIDTH-1:0] out_data
+  output wire [DATA_WIDTH-1:0] out_data,
+  output logic fifo_overflow,
+  output logic fifo_underflow
 );
 
 // Illustration
@@ -68,7 +70,9 @@ xpm_fifo_sync_wrapper #(
   .full(),
   .almful(in_almful_p),
   .dout_valid(in_valid_f),
-  .empty()
+  .empty(),
+  .overflow(fifo_overflow),
+  .underflow(fifo_underflow)
 );
 
 twowayhandshake_replayer #(

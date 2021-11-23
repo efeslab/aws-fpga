@@ -7,8 +7,13 @@ module rr_csrs #(
     rr_axi_lite_bus_t.master rr_cfg_bus,
     output storage_axi_csr_t storage_axi_csr,
     output rr_mode_csr_t rr_mode_csr,
-    input storage_axi_counter_csr_t storage_axi_counter_csr
+    input storage_axi_counter_csr_t storage_axi_counter_csr,
+    input rr_state_csr_t rr_state_csr
 );
+
+    // parameter check
+    if ($bits(rr_state_csr_t) > 32)
+        $error("rr_state_csr_t no longer fits inside one CSR");
 
     logic [31:0] csrs [RR_CSR_CNT-1:0];
 
@@ -112,6 +117,7 @@ module rr_csrs #(
             csrs[VALIDATE_BITS_LO] <= storage_axi_counter_csr_i.validate_bits[0 +: 32];
             csrs[RT_REPLAY_BITS_HI] <= storage_axi_counter_csr_i.rt_replay_bits[32 +: 32];
             csrs[RT_REPLAY_BITS_LO] <= storage_axi_counter_csr_i.rt_replay_bits[0 +: 32];
+            csrs[RR_STATE] <= {{(64-$bits(rr_state_csr)){1'b0}}, rr_state_csr};
             csrs[RR_CSR_VERSION] <= RR_CSR_VERSION_INT;
         end
     end
