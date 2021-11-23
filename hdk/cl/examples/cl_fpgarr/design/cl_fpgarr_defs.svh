@@ -286,7 +286,8 @@ typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
   // The real-time number of bits has been replayed
   RT_REPLAY_BITS_HI,        // 18
   RT_REPLAY_BITS_LO,        // 19
-  RR_CSR_VERSION,           // 20
+  RR_TRACE_FIFO_ASSERT,     // 20
+  RR_CSR_VERSION,           // 21
   RR_CSR_LAST_DONT_USE = RR_CSR_CNT - 1
 } rr_csr_enum;
 `define RR_CSR_ADDR(idx) (idx << 2)

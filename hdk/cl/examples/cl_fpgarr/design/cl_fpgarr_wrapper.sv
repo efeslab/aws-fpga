@@ -98,10 +98,10 @@ rr_axi_lite_bus_t cl_bar1_bus();
 ////////////////////////////////////////////////////////////////////////////////
 // CSRs of this fpgarr wrapper
 ////////////////////////////////////////////////////////////////////////////////
-// storage_axi_csr is used to configure the storage backend
-storage_axi_csr_t storage_axi_csr;
-// storage_axi_counter_csr is used to obtain statistics from the storage backend
-storage_axi_counter_csr_t storage_axi_counter_csr;
+// storage_axi_write_csr is used to configure the storage backend
+storage_axi_write_csr_t storage_axi_write_csr;
+// storage_axi_read_csr is used to obtain statistics from the storage backend
+storage_axi_read_csr_t storage_axi_read_csr;
 // rr_mode_csr is used to control the record/replay behaviour
 rr_mode_csr_t rr_mode_csr;
 // rr_state_csr is used to expose internal fifo errors
@@ -420,8 +420,8 @@ rr_csrs #(
     .clk(clk),
     .rstn(rstn),
     .rr_cfg_bus(rr_cfg_bus),
-    .storage_axi_csr(storage_axi_csr),
-    .storage_axi_counter_csr(storage_axi_counter_csr),
+    .storage_axi_write_csr(storage_axi_write_csr),
+    .storage_axi_read_csr(storage_axi_read_csr),
     .rr_mode_csr(rr_mode_csr),
     .rr_state_csr(rr_state_csr)
 );
@@ -478,6 +478,13 @@ rr_axil_mstr_sel bar1_sel (
 // It expects RW addresses in 0x100000~0x1FFFFF.
 rr_stream_bus_t #(.FULL_WIDTH(record_bus.FULL_WIDTH)) packed_replay_bus();
 
+logic [15:0] cl_irq_req, cl_irq_ack;
+logic storage_backend_irq_req, storage_backend_irq_ack;
+assign cl_sh_apppf_irq_req = {storage_backend_irq_req, cl_irq_req[14:0]};
+assign cl_irq_ack[14:0] = sh_cl_apppf_irq_ack[14:0];
+assign cl_irq_ack[15] = 0;
+assign storage_backend_irq_ack = sh_cl_apppf_irq_ack[15];
+
 rr_storage_backend_axi #(
   .LOGB_CHANNEL_CNT(unpacked_record_bus.LOGB_CHANNEL_CNT),
   .CHANNEL_WIDTHS(unpacked_record_bus.CHANNEL_WIDTHS),
@@ -489,8 +496,10 @@ rr_storage_backend_axi #(
   .record_bus(record_bus),
   .replay_bus(packed_replay_bus),
   .validate_bus(validate_bus),
-  .csr(storage_axi_csr),
-  .counter(storage_axi_counter_csr)
+  .csr(storage_axi_write_csr),
+  .counter(storage_axi_read_csr),
+  .storage_backend_irq_ack,
+  .storage_backend_irq_req
 );
 
 rr_tracedecoder #(
@@ -550,6 +559,8 @@ rr_cfg_bar1_interconnect bar1_interconnect (
   `AXIL_CONNECT_BUS2WIRE(rr_sda_bus, sda, cl, _),
   `AXIL_CONNECT_BUS2WIRE(rr_ocl_bus, sh, ocl, _),
   `AXIL_CONNECT_BUS2WIRE(rr_bar1_bus, sh, bar1, _),
+  .cl_sh_apppf_irq_req(cl_irq_req),
+  .sh_cl_apppf_irq_ack(cl_irq_ack),
   .*
 );
 endmodule

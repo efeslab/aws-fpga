@@ -28,7 +28,9 @@ module rr_trace_writeonly #(
     output logic write_interrupt,
 
     // The number of recorded bits, will used by the software
-    output logic [63:0] record_bits
+    output logic [63:0] record_bits,
+    output logic [1:0] overflowed,
+    output logic [1:0] underflowed
 );
 
     localparam NSTAGES = (WIDTH - 1) / AXI_WIDTH + 1;
@@ -199,7 +201,10 @@ module rr_trace_writeonly #(
             end else if (axi_w_working) begin
                 axi_out.awvalid <= 0;
             end else begin
-                axi_out.awvalid <= ~record_out_fifo_empty;
+                if (write_buf_write_en)
+                    axi_out.awvalid <= ~record_out_fifo_empty && write_buf_curr + AXI_WIDTH/8 < write_buf_end;
+                else
+                    axi_out.awvalid <= ~record_out_fifo_empty && write_buf_curr < write_buf_end;
             end
 
             if (axi_w_working) begin
@@ -207,7 +212,7 @@ module rr_trace_writeonly #(
             end else if (axi_aw_working) begin
                 axi_out.wvalid <= 0;
             end else begin
-                axi_out.wvalid <= ~record_out_fifo_empty;
+                axi_out.wvalid <= ~record_out_fifo_empty && write_buf_curr < write_buf_end;
             end
         end
     end
@@ -287,5 +292,41 @@ module rr_trace_writeonly #(
                 GET_LEN(record_in_fifo_out[0 +: LOGB_CHANNEL_CNT]), record_in_fifo_out);
     end
 `endif
+
+    logic record_in_fifo_overflowed, record_out_fifo_overflowed;
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            record_in_fifo_overflowed <= 0;
+            record_out_fifo_overflowed <= 0;
+        end else begin
+            if (record_in_fifo_full && record_din_valid && record_din_ready) begin
+                record_in_fifo_overflowed <= 1;
+                assert(0);
+            end
+            if (record_out_fifo_full && record_out_fifo_wr_en_qq) begin
+                record_out_fifo_overflowed <= 1;
+                assert(0);
+            end
+        end
+    end
+    assign overflowed = {record_in_fifo_overflowed, record_out_fifo_overflowed};
+
+    logic record_in_fifo_underflowed, record_out_fifo_underflowed;
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            record_in_fifo_underflowed <= 0;
+            record_out_fifo_underflowed <= 0;
+        end else begin
+            if (record_in_fifo_empty && record_in_fifo_rd_en) begin
+                record_in_fifo_underflowed <= 1;
+                assert(0);
+            end
+            if (record_out_fifo_empty && record_out_fifo_rd_en) begin
+                record_out_fifo_underflowed <= 1;
+                assert(0);
+            end
+        end
+    end
+    assign underflowed = {record_in_fifo_underflowed, record_out_fifo_underflowed};
 
 endmodule

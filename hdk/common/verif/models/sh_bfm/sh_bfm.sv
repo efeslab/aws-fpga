@@ -2152,6 +2152,18 @@ module sh_bfm #(
 
    //=================================================
    //
+   // get_pend_bit
+   //
+   //   Description: used to get an interrupt
+   //   Outputs: A bit indicating where there's a pending interrupt
+   //
+   //=================================================
+   function bit get_pend_bit(input int int_num);
+       return int_pend[int_num];
+   endfunction
+
+   //=================================================
+   //
    // poke
    //
    //   Description: used to write a single beat of data at addr into one of the four CL AXI ports specified by intf.

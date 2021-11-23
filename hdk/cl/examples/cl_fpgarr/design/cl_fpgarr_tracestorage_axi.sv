@@ -20,8 +20,10 @@ module rr_storage_backend_axi #(
   rr_stream_bus_t.C record_bus,
   rr_stream_bus_t.P replay_bus,
   rr_stream_bus_t.C validate_bus,
-  input storage_axi_csr_t csr,
-  output storage_axi_counter_csr_t counter
+  input storage_axi_write_csr_t csr,
+  output storage_axi_read_csr_t counter,
+  output storage_backend_irq_req,
+  input storage_backend_irq_ack
 );
 
 function automatic bit [LOGB_CHANNEL_CNT-1:0]
@@ -56,6 +58,9 @@ generate
       FULL_WIDTH, replay_bus.FULL_WIDTH);
 endgenerate
 
+logic rw_read_interrupt, rw_write_interrupt, validate_interrupt;
+logic [3:0] trace_fifo_overflowed, trace_fifo_underflowed;
+
 rr_trace_rw #(
   .WIDTH(FULL_WIDTH),
   .AXI_WIDTH(512),
@@ -86,13 +91,17 @@ rr_trace_rw #(
   .read_buf_update(csr.read_buf_update),
   .record_bits(counter.record_bits),
   .replay_bits(csr.replay_bits),
+  .write_interrupt(rw_write_interrupt),
+  .read_interrupt(rw_read_interrupt),
   .rt_replay_bits(counter.rt_replay_bits),
-  .write_interrupt(),
-  .read_interrupt()
+  .overflowed(trace_fifo_overflowed),
+  .underflowed(trace_fifo_underflowed)
 );
 
 localparam VALIDATE_BUS_WIDTH = validate_bus.FULL_WIDTH;
 localparam VALIDATE_BUS_OFFSET_WIDTH = $clog2(VALIDATE_BUS_WIDTH+1);
+
+logic [1:0] validate_fifo_overflowed, validate_fifo_underflowed;
 
 rr_trace_writeonly #(
   .WIDTH(VALIDATE_BUS_WIDTH),
@@ -115,7 +124,29 @@ rr_trace_writeonly #(
   .write_buf_size(csr.buf_size),
   .write_buf_update(csr.validate_buf_update),
   .record_bits(counter.validate_bits),
-  .write_interrupt()
+  .write_interrupt(validate_interrupt),
+  .overflowed(validate_fifo_overflowed),
+  .underflowed(validate_fifo_underflowed)
 );
+
+logic has_interrupt, int_wait;
+logic [2:0] int_reason;
+// these interrupt lines are all guarenteed to last for only one cycle
+assign has_interrupt = rw_read_interrupt | rw_write_interrupt | validate_interrupt;
+assign int_reason = {rw_read_interrupt, rw_write_interrupt, validate_interrupt};
+
+assign counter.trace_fifo_assert = 32'({trace_fifo_overflowed, trace_fifo_underflowed, validate_fifo_overflowed, validate_fifo_underflowed});
+
+always_ff @(posedge clk) begin
+    if (!rstn) begin
+        int_wait <= 0;
+    end else begin
+        if (storage_backend_irq_req) begin
+            int_wait <= 1;
+        end else if (storage_backend_irq_ack) begin
+            int_wait <= 0;
+        end
+    end
+end
 
 endmodule

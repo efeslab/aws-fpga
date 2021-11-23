@@ -5,9 +5,9 @@ module rr_csrs #(
     input wire clk,
     input wire rstn,
     rr_axi_lite_bus_t.master rr_cfg_bus,
-    output storage_axi_csr_t storage_axi_csr,
+    output storage_axi_write_csr_t storage_axi_write_csr,
     output rr_mode_csr_t rr_mode_csr,
-    input storage_axi_counter_csr_t storage_axi_counter_csr,
+    input storage_axi_read_csr_t storage_axi_read_csr,
     input rr_state_csr_t rr_state_csr
 );
 
@@ -78,15 +78,15 @@ module rr_csrs #(
         end
     end
 
-    storage_axi_counter_csr_t storage_axi_counter_csr_i;
+    storage_axi_read_csr_t storage_axi_read_csr_i;
     lib_pipe #(
-        .WIDTH($bits(storage_axi_counter_csr_t)),
+        .WIDTH($bits(storage_axi_read_csr_t)),
         .STAGES(REG_STAGES))
-    pipe_storage_axi_counter_csr(
+    pipe_storage_axi_read_csr(
         .clk(clk),
         .rst_n(rstn),
-        .in_bus(storage_axi_counter_csr),
-        .out_bus(storage_axi_counter_csr_i)
+        .in_bus(storage_axi_read_csr),
+        .out_bus(storage_axi_read_csr_i)
     );
 
     // Write register update
@@ -111,14 +111,15 @@ module rr_csrs #(
 
             // RECORD_BITS_HI and RECORD_BITS_LO should not be written.
             // They are the statistics from the tracestorage module.
-            csrs[RECORD_BITS_HI] <= storage_axi_counter_csr_i.record_bits[32 +: 32];
-            csrs[RECORD_BITS_LO] <= storage_axi_counter_csr_i.record_bits[0 +: 32];
-            csrs[VALIDATE_BITS_HI] <= storage_axi_counter_csr_i.validate_bits[32 +: 32];
-            csrs[VALIDATE_BITS_LO] <= storage_axi_counter_csr_i.validate_bits[0 +: 32];
-            csrs[RT_REPLAY_BITS_HI] <= storage_axi_counter_csr_i.rt_replay_bits[32 +: 32];
-            csrs[RT_REPLAY_BITS_LO] <= storage_axi_counter_csr_i.rt_replay_bits[0 +: 32];
+            csrs[RECORD_BITS_HI] <= storage_axi_read_csr_i.record_bits[32 +: 32];
+            csrs[RECORD_BITS_LO] <= storage_axi_read_csr_i.record_bits[0 +: 32];
+            csrs[VALIDATE_BITS_HI] <= storage_axi_read_csr_i.validate_bits[32 +: 32];
+            csrs[VALIDATE_BITS_LO] <= storage_axi_read_csr_i.validate_bits[0 +: 32];
+            csrs[RT_REPLAY_BITS_HI] <= storage_axi_read_csr_i.rt_replay_bits[32 +: 32];
+            csrs[RT_REPLAY_BITS_LO] <= storage_axi_read_csr_i.rt_replay_bits[0 +: 32];
             csrs[RR_STATE] <= {{(64-$bits(rr_state_csr)){1'b0}}, rr_state_csr};
             csrs[RR_CSR_VERSION] <= RR_CSR_VERSION_INT;
+            csrs[RR_TRACE_FIFO_ASSERT] <= storage_axi_read_csr_i.trace_fifo_assert[0 +: 32];
         end
     end
 
@@ -166,8 +167,8 @@ module rr_csrs #(
         end
     end
 
-    storage_axi_csr_t storage_axi_csr_o;
-    assign storage_axi_csr_o = '{
+    storage_axi_write_csr_t storage_axi_write_csr_o;
+    assign storage_axi_write_csr_o = '{
         buf_addr: {csrs[BUF_ADDR_HI], csrs[BUF_ADDR_LO]},
         buf_size: {csrs[BUF_SIZE_HI], csrs[BUF_SIZE_LO]},
         write_buf_update: al_write_transmitted_q && (al_addr == RECORD_BUF_UPDATE),
@@ -178,13 +179,13 @@ module rr_csrs #(
         validate_buf_update: al_write_transmitted_q && (al_addr == VALIDATE_BUF_UPDATE)
     };
     lib_pipe #(
-        .WIDTH($bits(storage_axi_csr_t)),
+        .WIDTH($bits(storage_axi_write_csr_t)),
         .STAGES(REG_STAGES))
-    pipe_storage_axi_csr(
+    pipe_storage_axi_write_csr(
         .clk(clk),
         .rst_n(rstn),
-        .in_bus(storage_axi_csr_o),
-        .out_bus(storage_axi_csr)
+        .in_bus(storage_axi_write_csr_o),
+        .out_bus(storage_axi_write_csr)
     );
 
     rr_mode_csr_t rr_mode_csr_o;

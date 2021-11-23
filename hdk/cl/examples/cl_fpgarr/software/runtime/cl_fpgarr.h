@@ -25,7 +25,8 @@ typedef enum {
   VALIDATE_BITS_LO,          // 17
   RT_REPLAY_BITS_HI,         // 18
   RT_REPLAY_BITS_LO,         // 19
-  RR_CSR_VERSION,            // 20
+  RR_TRACE_FIFO_ASSERT,      // 20
+  RR_CSR_VERSION,            // 21
 } rr_csr_enum;
 
 #define RR_CSR_ADDR(idx) (CL_FPGARR_CSR_BASE + 0x4 * idx)

@@ -49,7 +49,9 @@ module rr_trace_rw #(
     // The number of bits expected to replay, will be setup by the software
     input logic [63:0] replay_bits,
     // The number of bits that has been replayed in the hardware
-    output logic [63:0] rt_replay_bits
+    output logic [63:0] rt_replay_bits,
+    output logic [3:0] overflowed,
+    output logic [3:0] underflowed
 );
 
 `ifdef TEST_REPLAY
@@ -226,7 +228,10 @@ module rr_trace_rw #(
             end else if (axi_w_working) begin
                 axi_out.awvalid <= 0;
             end else begin
-                axi_out.awvalid <= ~record_out_fifo_empty;
+                if (write_buf_write_en)
+                    axi_out.awvalid <= ~record_out_fifo_empty && write_buf_curr + AXI_WIDTH/8 < write_buf_end;
+                else
+                    axi_out.awvalid <= ~record_out_fifo_empty && write_buf_curr < write_buf_end;
             end
 
             if (axi_w_working) begin
@@ -234,7 +239,7 @@ module rr_trace_rw #(
             end else if (axi_aw_working) begin
                 axi_out.wvalid <= 0;
             end else begin
-                axi_out.wvalid <= ~record_out_fifo_empty;
+                axi_out.wvalid <= ~record_out_fifo_empty && write_buf_curr < write_buf_end;
             end
         end
     end
@@ -514,5 +519,61 @@ always_ff @(posedge clk) begin
             GET_LEN(replay_dout[0 +: LOGB_CHANNEL_CNT]), replay_dout);
 end
 `endif
+
+    logic record_in_fifo_overflowed, record_out_fifo_overflowed, replay_in_fifo_overflowed, replay_out_fifo_overflowed;
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            record_in_fifo_overflowed <= 0;
+            record_out_fifo_overflowed <= 0;
+            replay_in_fifo_overflowed <= 0;
+            replay_out_fifo_overflowed <= 0;
+        end else begin
+            if (record_in_fifo_full && record_din_valid && record_din_ready) begin
+                record_in_fifo_overflowed <= 1;
+                assert(0);
+            end
+            if (record_out_fifo_full && record_out_fifo_wr_en_qq) begin
+                record_out_fifo_overflowed <= 1;
+                assert(0);
+            end
+            if (replay_in_fifo_full && replay_in_fifo_wr_en) begin
+                replay_in_fifo_overflowed <= 1;
+                assert(0);
+            end
+            if (replay_out_fifo_full && replay_out_fifo_wr_en) begin
+                replay_out_fifo_overflowed <= 1;
+                assert(0);
+            end
+        end
+    end
+    assign overflowed = {record_in_fifo_overflowed, record_out_fifo_overflowed, replay_in_fifo_overflowed, replay_out_fifo_overflowed};
+
+    logic record_in_fifo_underflowed, record_out_fifo_underflowed, replay_in_fifo_underflowed, replay_out_fifo_underflowed;
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            record_in_fifo_underflowed <= 0;
+            record_out_fifo_underflowed <= 0;
+            replay_in_fifo_underflowed <= 0;
+            replay_out_fifo_underflowed <= 0;
+        end else begin
+            if (record_in_fifo_empty && record_in_fifo_rd_en) begin
+                record_in_fifo_underflowed <= 1;
+                assert(0);
+            end
+            if (record_out_fifo_empty && record_out_fifo_rd_en) begin
+                record_out_fifo_underflowed <= 1;
+                assert(0);
+            end
+            if (replay_in_fifo_empty && replay_in_fifo_rd_en) begin
+                replay_in_fifo_underflowed <= 1;
+                assert(0);
+            end
+            if (replay_out_fifo_empty && replay_out_fifo_rd_en) begin
+                replay_out_fifo_underflowed <= 1;
+                assert(0);
+            end
+        end
+    end
+    assign underflowed = {record_in_fifo_underflowed, record_out_fifo_underflowed, replay_in_fifo_underflowed, replay_out_fifo_underflowed};
 
 endmodule
