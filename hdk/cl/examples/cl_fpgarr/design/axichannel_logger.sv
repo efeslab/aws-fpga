@@ -26,6 +26,7 @@ module axichannel_logger #(
 // The storage-backend-side of the register pipeline are wired to the output
 // ports
 wire logb_valid_p;
+wire logb_ready_p;
 wire [DATA_WIDTH-1:0] logb_data_p;
 wire loge_valid_p;
 wire logb_almful_p;
@@ -42,7 +43,7 @@ twowayhandshake_logger #(.DATA_WIDTH(DATA_WIDTH)) logger (
   .in_data(in_data),
   // logging traffic goes into the register pipeline
   .logb_valid(logb_valid_p),
-  .logb_ready(!logb_almful_p),
+  .logb_ready(logb_ready_p),
   .logb_data(logb_data_p),
   .loge_valid(loge_valid_p),
   // loge is not guarded by logb_almful
@@ -66,11 +67,12 @@ twowayhandshake_logger #(.DATA_WIDTH(DATA_WIDTH)) logger (
 //     (1) generate asynchronous reset
 //     (2) whether to do reset or not isn't configurable. sometimes I may only
 //     want to reset the valid but not the data
+assign logb_ready_p = !logb_almful_p;
 lib_pipe #(
   .WIDTH(1), .STAGES(PIPE_DEPTH)
 ) logb_valid_pipe (
   .clk(clk), .rst_n(rstn),
-  .in_bus(logb_valid_p),
+  .in_bus(logb_valid_p && logb_ready_p),  // valid && ready -> fifo conversion
   .out_bus(logb_valid)
 );
 
