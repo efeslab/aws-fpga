@@ -240,7 +240,7 @@ module rr_trace_writeonly #(
         end
     end
 
-    logic [15:0] tid;
+    logic [PCIM_INTERCONNECT_AXI_ID_WIDTH-1:0] tid;
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
             tid <= 0;

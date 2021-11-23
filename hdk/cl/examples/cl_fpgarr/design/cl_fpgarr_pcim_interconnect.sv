@@ -1,3 +1,4 @@
+`include "cl_fpgarr_defs.svh"
 ////////////////////////////////////////////////////////////////////////////
 // axi interconnect for sharing single shell pcim bus across the logging
 // writeback module and the user pcim bus
@@ -11,12 +12,11 @@ module rr_storage_pcim_axi_interconnect (
    rr_axi_bus_t.slave sh_pcim_bus
 );
 
-localparam int AXI_SLV_ID_WIDTH = 14;
 localparam int AXI_ID_WIDTH = 16;
 localparam int NUM_SLV = 3;
-if (AXI_SLV_ID_WIDTH + $clog2(NUM_SLV) > AXI_ID_WIDTH)
-   $error("ID allocation is invalid: NUM_SLV %d, AXI_SLV_ID_WIDTH %d",
-      NUM_SLV, AXI_SLV_ID_WIDTH);
+if (PCIM_INTERCONNECT_AXI_ID_WIDTH + $clog2(NUM_SLV) > AXI_ID_WIDTH)
+   $error("ID allocation is invalid: NUM_SLV %d, PCIM_INTERCONNECT_AXI_ID_WIDTH %d",
+      NUM_SLV, PCIM_INTERCONNECT_AXI_ID_WIDTH);
 // TODO: is this dont_touch necessary?
 // NOTE: S00 is READ WRITE
 //       S01 is WRITE ONLY
@@ -68,7 +68,7 @@ if (AXI_SLV_ID_WIDTH + $clog2(NUM_SLV) > AXI_ID_WIDTH)
    .S00_AXI_araddr(logging_wb_bus.araddr),
    .S00_AXI_arburst(2'b1), // INCR
    .S00_AXI_arcache(4'b00),
-   .S00_AXI_arid(logging_wb_bus.arid[AXI_SLV_ID_WIDTH-1:0]),
+   .S00_AXI_arid(logging_wb_bus.arid[PCIM_INTERCONNECT_AXI_ID_WIDTH-1:0]),
    .S00_AXI_arlen(logging_wb_bus.arlen),
    .S00_AXI_arlock(1'b0),
    .S00_AXI_arprot(3'b00),
@@ -80,7 +80,7 @@ if (AXI_SLV_ID_WIDTH + $clog2(NUM_SLV) > AXI_ID_WIDTH)
    .S00_AXI_awaddr(logging_wb_bus.awaddr),
    .S00_AXI_awburst(2'b1),
    .S00_AXI_awcache(4'b00),
-   .S00_AXI_awid(logging_wb_bus.awid[AXI_SLV_ID_WIDTH-1:0]),
+   .S00_AXI_awid(logging_wb_bus.awid[PCIM_INTERCONNECT_AXI_ID_WIDTH-1:0]),
    .S00_AXI_awlen(logging_wb_bus.awlen),
    .S00_AXI_awlock(1'b0),
    .S00_AXI_awprot(3'b00),
@@ -89,12 +89,12 @@ if (AXI_SLV_ID_WIDTH + $clog2(NUM_SLV) > AXI_ID_WIDTH)
    .S00_AXI_awregion(4'b0),
    .S00_AXI_awsize(logging_wb_bus.awsize),
    .S00_AXI_awvalid(logging_wb_bus.awvalid),
-   .S00_AXI_bid(logging_wb_bus.bid[AXI_SLV_ID_WIDTH-1:0]),
+   .S00_AXI_bid(logging_wb_bus.bid[PCIM_INTERCONNECT_AXI_ID_WIDTH-1:0]),
    .S00_AXI_bready(logging_wb_bus.bready),
    .S00_AXI_bresp(logging_wb_bus.bresp),
    .S00_AXI_bvalid(logging_wb_bus.bvalid),
    .S00_AXI_rdata(logging_wb_bus.rdata),
-   .S00_AXI_rid(logging_wb_bus.rid[AXI_SLV_ID_WIDTH-1:0]),
+   .S00_AXI_rid(logging_wb_bus.rid[PCIM_INTERCONNECT_AXI_ID_WIDTH-1:0]),
    .S00_AXI_rlast(logging_wb_bus.rlast),
    .S00_AXI_rready(logging_wb_bus.rready),
    .S00_AXI_rresp(logging_wb_bus.rresp),
@@ -108,7 +108,7 @@ if (AXI_SLV_ID_WIDTH + $clog2(NUM_SLV) > AXI_ID_WIDTH)
    .S01_AXI_awaddr(validation_wb_bus.awaddr),
    .S01_AXI_awburst(2'b1),
    .S01_AXI_awcache(4'b00),
-   .S01_AXI_awid(validation_wb_bus.awid[AXI_SLV_ID_WIDTH-1:0]),
+   .S01_AXI_awid(validation_wb_bus.awid[PCIM_INTERCONNECT_AXI_ID_WIDTH-1:0]),
    .S01_AXI_awlen(validation_wb_bus.awlen),
    .S01_AXI_awlock(1'b0),
    .S01_AXI_awprot(3'b00),
@@ -117,7 +117,7 @@ if (AXI_SLV_ID_WIDTH + $clog2(NUM_SLV) > AXI_ID_WIDTH)
    .S01_AXI_awregion(4'b0),
    .S01_AXI_awsize(validation_wb_bus.awsize),
    .S01_AXI_awvalid(validation_wb_bus.awvalid),
-   .S01_AXI_bid(validation_wb_bus.bid[AXI_SLV_ID_WIDTH-1:0]),
+   .S01_AXI_bid(validation_wb_bus.bid[PCIM_INTERCONNECT_AXI_ID_WIDTH-1:0]),
    .S01_AXI_bready(validation_wb_bus.bready),
    .S01_AXI_bresp(validation_wb_bus.bresp),
    .S01_AXI_bvalid(validation_wb_bus.bvalid),
@@ -130,7 +130,7 @@ if (AXI_SLV_ID_WIDTH + $clog2(NUM_SLV) > AXI_ID_WIDTH)
    .S02_AXI_araddr(cl_pcim_bus.araddr),
    .S02_AXI_arburst(2'b1), // INCR
    .S02_AXI_arcache(4'b00),
-   .S02_AXI_arid(cl_pcim_bus.arid[AXI_SLV_ID_WIDTH-1:0]),
+   .S02_AXI_arid(cl_pcim_bus.arid[PCIM_INTERCONNECT_AXI_ID_WIDTH-1:0]),
    .S02_AXI_arlen(cl_pcim_bus.arlen),
    .S02_AXI_arlock(1'b0),
    .S02_AXI_arprot(3'b00),
@@ -142,7 +142,7 @@ if (AXI_SLV_ID_WIDTH + $clog2(NUM_SLV) > AXI_ID_WIDTH)
    .S02_AXI_awaddr(cl_pcim_bus.awaddr),
    .S02_AXI_awburst(2'b1),
    .S02_AXI_awcache(4'b00),
-   .S02_AXI_awid(cl_pcim_bus.awid[AXI_SLV_ID_WIDTH-1:0]),
+   .S02_AXI_awid(cl_pcim_bus.awid[PCIM_INTERCONNECT_AXI_ID_WIDTH-1:0]),
    .S02_AXI_awlen(cl_pcim_bus.awlen),
    .S02_AXI_awlock(1'b0),
    .S02_AXI_awprot(3'b00),
@@ -151,12 +151,12 @@ if (AXI_SLV_ID_WIDTH + $clog2(NUM_SLV) > AXI_ID_WIDTH)
    .S02_AXI_awregion(4'b0),
    .S02_AXI_awsize(cl_pcim_bus.awsize),
    .S02_AXI_awvalid(cl_pcim_bus.awvalid),
-   .S02_AXI_bid(cl_pcim_bus.bid[AXI_SLV_ID_WIDTH-1:0]),
+   .S02_AXI_bid(cl_pcim_bus.bid[PCIM_INTERCONNECT_AXI_ID_WIDTH-1:0]),
    .S02_AXI_bready(cl_pcim_bus.bready),
    .S02_AXI_bresp(cl_pcim_bus.bresp),
    .S02_AXI_bvalid(cl_pcim_bus.bvalid),
    .S02_AXI_rdata(cl_pcim_bus.rdata),
-   .S02_AXI_rid(cl_pcim_bus.rid[AXI_SLV_ID_WIDTH-1:0]),
+   .S02_AXI_rid(cl_pcim_bus.rid[PCIM_INTERCONNECT_AXI_ID_WIDTH-1:0]),
    .S02_AXI_rlast(cl_pcim_bus.rlast),
    .S02_AXI_rready(cl_pcim_bus.rready),
    .S02_AXI_rresp(cl_pcim_bus.rresp),
