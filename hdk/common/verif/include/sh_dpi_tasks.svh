@@ -286,7 +286,7 @@ end
 `ifdef QUESTA_SIM
       automatic bit debug = 0;
 `else
-      bit debug = 1;
+      bit debug = 0;
 `endif
 
       host_memory_ptr = wr_buffer_addr;
