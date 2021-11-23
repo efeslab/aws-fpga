@@ -61,6 +61,10 @@ endgenerate
 logic rw_read_interrupt, rw_write_interrupt, validate_interrupt;
 logic [3:0] trace_fifo_overflowed, trace_fifo_underflowed;
 
+// register the rstn for timing
+logic rstn_q = 0;
+always_ff @(posedge clk) rstn_q <= rstn;
+
 rr_trace_rw #(
   .WIDTH(FULL_WIDTH),
   .AXI_WIDTH(512),
@@ -71,7 +75,7 @@ rr_trace_rw #(
   .SHUFFLED_CHANNEL_WIDTHS(SHUFFLED_CHANNEL_WIDTHS)
 ) trace_rw (
   .clk(clk),
-  .sync_rst_n(rstn),
+  .sync_rst_n(rstn_q),
   .cfg_max_payload(2'b0),
   .record_din_valid(record_bus.valid),
   .record_din_ready(record_bus.ready),
@@ -113,7 +117,7 @@ rr_trace_writeonly #(
   .SHUFFLED_CHANNEL_WIDTHS(SHUFFLED_CHANNEL_WIDTHS)
 ) validate_writeback (
   .clk(clk),
-  .sync_rst_n(rstn),
+  .sync_rst_n(rstn_q),
   .record_din_valid(validate_bus.valid),
   .record_din_ready(validate_bus.ready),
   .record_finish(csr.record_force_finish),
