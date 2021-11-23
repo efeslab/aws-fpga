@@ -221,6 +221,7 @@ static void dump_trace(const char *msg, const char *filename, uint8_t *p,
     int size_bytes = (size_bits + 7) / 8;
     // print trace to stdout
     printf("%s: size %ld bits (%d B)\n", msg, size_bits, size_bytes);
+#ifdef DUMP_TRACE_TXT
     printf("%s: Trace Dump:\n", msg);
     for (int i = 0; i < size_bytes; ++i) {
         // put 1-byte a time
@@ -234,6 +235,7 @@ static void dump_trace(const char *msg, const char *filename, uint8_t *p,
         }
     }
     putchar('\n');
+#endif
     // save trace to file
     int fd = open(filename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     write(fd, &size_bits, TRACE_LEN_BYTES);

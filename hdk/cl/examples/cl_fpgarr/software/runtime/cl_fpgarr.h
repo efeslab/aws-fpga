@@ -35,9 +35,16 @@ typedef enum {
 #define UINT64_FROM32(hi, lo) ((((uint64_t) hi) << 32) | ((uint64_t) lo))
 
 // 64 MB
-#define DEFAULT_BUFFER_SIZE (0x4000000)
+#ifdef SV_TEST
+#define DEFAULT_BUFFER_SIZE (0x8000000)
+#else
+#define DEFAULT_BUFFER_SIZE (1ULL << 30)
+#endif
 #define BUFFER_ALIGNMENT 4096
 #define TRACE_LEN_BYTES 8
+
+// MACRO configuration
+#undef DUMP_TRACE_TXT
 
 extern int init_rr(int slot_id);
 extern void do_pre_rr();
