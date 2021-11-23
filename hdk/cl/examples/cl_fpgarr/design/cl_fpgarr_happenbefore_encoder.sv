@@ -199,13 +199,13 @@ xpm_fifo_sync_wrapper #(
 // end of test xpm_fifo_sync
 `endif
 
-`ifdef TEST_RECORD_FIFO_ALMFUL
-logic [1:0] cnt;
-always_ff @(posedge clk)
-   if (!rstn)
-      cnt <= 0;
-   else
-      cnt <= cnt + 1;
-assign in.logb_almful = cnt[1];
+`ifdef SIMULATION_AVOID_X
+   logic [2*out.FULL_WIDTH-1:0] check_data;
+   always_ff @(posedge clk)
+      if (rstn && fifo_pop) begin
+         check_data[0 +: out.FULL_WIDTH] = out.data;
+         check_data[out.len +: out.FULL_WIDTH] = 0;
+         nox: assert(!$isunknown(check_data[0 +: out.FULL_WIDTH]));
+      end
 `endif
 endmodule

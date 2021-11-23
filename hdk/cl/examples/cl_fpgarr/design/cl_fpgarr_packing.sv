@@ -90,11 +90,40 @@ always_comb begin
    valid_len_A = inA_q.any_valid? inA_q.len: 0;
    valid_len_B = inB_q.any_valid? inB_q.len: 0;
    out.len = out.OFFSET_WIDTH'(valid_len_A) + out.OFFSET_WIDTH'(valid_len_B);
-   // do not use "if" to avoid latches
    out.data = 'bx;
+   // do not use "if" to avoid latches
+`ifdef SIMULATION_AVOID_X
+   out.data[0 +: inA.FULL_WIDTH] = inA_q.any_valid ? inA_q.data : 0;
+   out.data[valid_len_A +: inB.FULL_WIDTH] = inB_q.any_valid ? inB_q.data : 0;
+   out.data[valid_len_A + valid_len_B +: PACKET_ALIGNMENT] = 0;
+`else
    out.data[0 +: inA.FULL_WIDTH] = inA_q.data;
    out.data[valid_len_A +: inB.FULL_WIDTH] = inB_q.data;
+`endif
 end
+`ifdef SIMULATION_AVOID_X
+  logic [2*FULL_WIDTH_A-1:0] check_A;
+  logic [2*FULL_WIDTH_B-1:0] check_B;
+  logic [2*out.FULL_WIDTH-1:0] check_O;
+  always_ff @(posedge clk)
+    if (rstn) begin
+      if (inA_q.any_valid) begin
+        check_A[0 +: FULL_WIDTH_A] = inA_q.data;
+        check_A[inA_q.len +: FULL_WIDTH_A] = 0;
+        noxA: assert(!$isunknown(check_A[0 +: FULL_WIDTH_A]));
+      end
+      if (inB_q.any_valid) begin
+        check_B[0 +: FULL_WIDTH_B] = inB_q.data;
+        check_B[inB_q.len +: FULL_WIDTH_B] = 0;
+        noxB: assert(!$isunknown(check_B[0 +: FULL_WIDTH_B]));
+      end
+      if (out.any_valid) begin
+        check_O[0 +: out.FULL_WIDTH] = out.data;
+        check_O[out.len +: out.FULL_WIDTH] = 0;
+        noxO: assert(!$isunknown(check_O[0 +: out.FULL_WIDTH]));
+      end
+    end
+`endif
 endmodule
 
 module rr_logging_bus_unpack2pack #(

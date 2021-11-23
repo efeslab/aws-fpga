@@ -171,4 +171,11 @@ if (PCIM_INTERCONNECT_AXI_ID_WIDTH + $clog2(NUM_SLV) > AXI_ID_WIDTH)
 // mask the read interface of the validation_wb_bus (since it is write-only)
 assign validation_wb_bus.arready = 1;
 assign validation_wb_bus.rvalid = 0;
+// clear the higher reserved id for all slaves
+`define CLEAR_PCIM_AXI_ID(bus) \
+   assign bus.bid[AXI_ID_WIDTH-1:PCIM_INTERCONNECT_AXI_ID_WIDTH] = 0; \
+   assign bus.rid[AXI_ID_WIDTH-1:PCIM_INTERCONNECT_AXI_ID_WIDTH] = 0
+`CLEAR_PCIM_AXI_ID(logging_wb_bus);
+`CLEAR_PCIM_AXI_ID(validation_wb_bus);
+`CLEAR_PCIM_AXI_ID(cl_pcim_bus);
 endmodule

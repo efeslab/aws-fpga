@@ -563,6 +563,7 @@ rr_cfg_bar1_interconnect bar1_interconnect (
   .sh_cl_apppf_irq_ack(cl_irq_ack),
   .*
 );
+assign rr_pcim_bus.wid = 0;
 endmodule
 
 `undef CL_NAME

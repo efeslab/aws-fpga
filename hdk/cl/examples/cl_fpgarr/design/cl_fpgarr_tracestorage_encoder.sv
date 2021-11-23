@@ -72,13 +72,16 @@ module rr_trace_merge #(
 
     assign record_in_fifo_rd_en = ~record_in_fifo_empty && ~record_out_fifo_almfull && record_unhandled_size <= AXI_WIDTH;
     always_comb begin
-        record_leftover_next = {'hx, record_leftover};
+            record_leftover_next = {AXI_WIDTH'('hx), record_leftover};
         for (int i = 0; i < AXI_WIDTH/PACKET_ALIGNMENT; i++) begin
             record_leftover_next[`GET_FORCE_ALIGNED_FRAME(record_leftover_size) + i]
                                             = current_record_unhandled[i * PACKET_ALIGNMENT +: PACKET_ALIGNMENT];
         end
     end
 
+    `ifdef SIMULATION_AVOID_X
+        logic [2*AXI_WIDTH-1:0] forcezero;
+    `endif
     always_ff @(posedge clk) begin
         if (~sync_rst_n) begin
             record_unhandled_size <= 0;
@@ -127,7 +130,13 @@ module rr_trace_merge #(
             end else if (do_record_finish && record_in_fifo_empty && ~record_din_valid) begin
                 if (record_leftover_size > 0) begin
                     record_out_fifo_wr_en <= 1;
+                    `ifdef SIMULATION_AVOID_X
+                    forcezero[0 +: AXI_WIDTH] = record_leftover;
+                    forcezero[record_leftover_size +: AXI_WIDTH] = 0;
+                    record_out_fifo_in <= forcezero[0 +: AXI_WIDTH];
+                    `else
                     record_out_fifo_in <= record_leftover;
+                    `endif
                     record_out_fifo_in_size <= record_leftover_size;
                     do_record_finish <= 0;
                     record_leftover_size <= 0;
@@ -142,5 +151,15 @@ module rr_trace_merge #(
     always_ff @(posedge clk)
         if (sync_rst_n)
             assert(record_curr < NSTAGES);
+
+`ifdef SIMULATION_AVOID_X
+    logic [2*WIDTH-1:0] check_in;
+    always_ff @(posedge clk)
+        if (sync_rst_n && record_in_fifo_rd_en) begin
+            check_in[0 +: WIDTH] = record_in_fifo_out;
+            check_in[record_in_fifo_out_width +: WIDTH] = 0;
+            nox: assert(!$isunknown(check_in[0 +: WIDTH]));
+        end
+`endif
 endmodule
 
