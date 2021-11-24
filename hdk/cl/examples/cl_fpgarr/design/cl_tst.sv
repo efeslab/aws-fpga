@@ -662,7 +662,7 @@ always @(posedge clk)
    else if ((wr_state==WR_ADDR) && (wr_state_nxt!=WR_ADDR))
    begin
 //      wr_cyc_count <= wr_cyc_count + 1;
-      if (wr_inst_addr==cfg_wr_num_inst)
+      if ((wr_inst_addr + 1)==cfg_wr_num_inst)
          wr_loop_count <= wr_loop_count + 1;
    end
 
@@ -1035,7 +1035,7 @@ always @(posedge clk)
    else if (rd_tag_pop)
    begin
       rd_cyc_count <= rd_cyc_count + 1;
-      if (rd_inst_addr==cfg_rd_num_inst)
+      if ((rd_inst_addr+1)==cfg_rd_num_inst)
          rd_loop_count <= rd_loop_count + 1;
    end
 
