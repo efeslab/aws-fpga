@@ -263,3 +263,125 @@ initial begin
    $finish;
 end
 endmodule
+
+module pcim_dbg_cnt(
+   input clk,
+   input rstn,
+   rr_axi_bus_t bus
+);
+logic [63:0] aw_cnt;
+logic [63:0] w_cnt;
+logic [63:0] w_last_cnt;
+logic [63:0] b_cnt;
+always_ff @(posedge clk)
+   if (!rstn) begin
+      aw_cnt <= 0;
+      w_cnt <= 0;
+      w_last_cnt <= 0;
+      b_cnt <= 0;
+   end
+   else begin
+      if (bus.awvalid && bus.awready)
+         aw_cnt <= aw_cnt + 1;
+      if (bus.wvalid && bus.wready) begin
+         w_cnt <= w_cnt + 1;
+         w_last_cnt <= w_last_cnt + bus.wlast;
+      end
+      if (bus.bvalid && bus.bready)
+         b_cnt <= b_cnt + 1;
+   end
+endmodule
+
+// rr_pcim_protocol_checker is currently not used.
+// The integrated protocol checker from Vivado IP Integrator is used instead.
+module rr_pcim_protocol_checker (
+   input clk,
+   input rstn,
+   rr_axi_bus_t bus,
+   output logic [97-1:0] pc_status,
+   output logic pc_asserted
+);
+`define MAXWAITS 100000
+  axi_protocol_checker_v1_1_12_top #(
+    .C_AXI_PROTOCOL(0),
+    .C_AXI_ID_WIDTH(6),
+    .C_AXI_DATA_WIDTH(512),
+    .C_AXI_ADDR_WIDTH(64),
+    .C_AXI_AWUSER_WIDTH(1),
+    .C_AXI_ARUSER_WIDTH(1),
+    .C_AXI_WUSER_WIDTH(1),
+    .C_AXI_RUSER_WIDTH(1),
+    .C_AXI_BUSER_WIDTH(1),
+    .C_PC_MAXRBURSTS(32),
+    .C_PC_MAXWBURSTS(32),
+    .C_PC_EXMON_WIDTH(0),
+
+    .C_PC_AW_MAXWAITS(`MAXWAITS),
+    .C_PC_AR_MAXWAITS(`MAXWAITS),
+    .C_PC_W_MAXWAITS(`MAXWAITS),
+    .C_PC_R_MAXWAITS(`MAXWAITS),
+    .C_PC_B_MAXWAITS(`MAXWAITS),
+
+    .C_PC_MESSAGE_LEVEL(0),
+    .C_PC_SUPPORTS_NARROW_BURST(1),
+    .C_PC_MAX_BURST_LENGTH(256),
+    .C_PC_HAS_SYSTEM_RESET(1),
+    .C_PC_STATUS_WIDTH(97)
+  ) axi_pc_mstr_inst_pcim (
+    .pc_status           (pc_status),
+    .pc_asserted         (pc_asserted),
+    .system_resetn       (rstn),
+    .aclk                (clk),
+    .aresetn             (rstn),
+
+    .pc_axi_awid         (bus.awid),
+    .pc_axi_awaddr       (bus.awaddr),
+    .pc_axi_awlen        (bus.awlen),
+    .pc_axi_awsize       (bus.awsize),
+    .pc_axi_awburst      (2'b01),
+    .pc_axi_awlock       (1'b0),
+    .pc_axi_awcache      (4'b0000),
+    .pc_axi_awprot       (3'b000),
+    .pc_axi_awqos        (4'b0000),
+    .pc_axi_awregion     (4'b0000),
+    .pc_axi_awuser       (1'H0),
+    .pc_axi_awvalid      (bus.awvalid),
+    .pc_axi_awready      (bus.awready),
+
+    .pc_axi_wid          (6'H00), // AXI3 only
+    .pc_axi_wlast        (bus.wlast),
+    .pc_axi_wdata        (bus.wdata),
+    .pc_axi_wstrb        (bus.wstrb),
+    .pc_axi_wuser        (1'H0),
+    .pc_axi_wvalid       (bus.wvalid),
+    .pc_axi_wready       (bus.wready),
+
+    .pc_axi_bid          (bus.bid),
+    .pc_axi_bresp        (bus.bresp),
+    .pc_axi_buser        (1'H0),
+    .pc_axi_bvalid       (bus.bvalid),
+    .pc_axi_bready       (bus.bready),
+
+    .pc_axi_arid         (bus.arid),
+    .pc_axi_araddr       (bus.araddr),
+    .pc_axi_arlen        (bus.arlen),
+    .pc_axi_arsize       (bus.arsize),
+    .pc_axi_arburst      (2'b01),
+    .pc_axi_arlock       (1'b0),
+    .pc_axi_arcache      (4'b0000),
+    .pc_axi_arprot       (3'b000),
+    .pc_axi_arqos        (4'b0000),
+    .pc_axi_arregion     (4'b0000),
+    .pc_axi_aruser       (1'H0),
+    .pc_axi_arvalid      (bus.arvalid),
+    .pc_axi_arready      (bus.arready),
+
+    .pc_axi_rid          (bus.rid),
+    .pc_axi_rlast        (bus.rlast),
+    .pc_axi_rdata        (bus.rdata),
+    .pc_axi_rresp        (bus.rresp),
+    .pc_axi_ruser        (1'H0),
+    .pc_axi_rvalid       (bus.rvalid),
+    .pc_axi_rready       (bus.rready)
+  );
+endmodule

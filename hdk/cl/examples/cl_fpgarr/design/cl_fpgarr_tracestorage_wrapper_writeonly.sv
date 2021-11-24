@@ -328,5 +328,10 @@ module rr_trace_writeonly #(
         end
     end
     assign underflowed = {record_in_fifo_underflowed, record_out_fifo_underflowed};
-
+`ifdef DEBUG_INTERCONNECT
+pcim_dbg_cnt dbg_cnt (
+    .clk(clk), .rstn(sync_rst_n),
+    .bus(axi_out)
+);
+`endif
 endmodule
