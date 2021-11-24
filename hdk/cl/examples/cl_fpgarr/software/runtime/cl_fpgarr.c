@@ -202,6 +202,20 @@ static void rr_wait(uint32_t unit) {
 #endif
 }
 
+// return the stable counter
+// polling a 64-bit CSR counter until it is stable, then force it to finish,
+// then wait the counter to be stable again
+static uint64_t rr_wait_counter_stable(uint64_t lo_csr_idx, uint64_t hi_csr_idx) {
+    uint64_t newcnt, oldcnt;
+    rr_cfg_peek64(lo_csr_idx, hi_csr_idx, &newcnt);
+    do {
+        oldcnt = newcnt;
+        rr_wait(POLLING_INTERVAL);
+        rr_cfg_peek64(lo_csr_idx, hi_csr_idx, &newcnt);
+    } while (newcnt != oldcnt);
+    return newcnt;
+}
+
 void do_record_start() {
     // always set RR_MODE first to avoid silently dropping traffic
     rr_cfg_poke(RR_MODE, rr_mode.val);
@@ -245,18 +259,16 @@ static void dump_trace(const char *msg, const char *filename, uint8_t *p,
 }
 
 void do_record_stop() {
-    rr_wait(1);
+    rr_wait_counter_stable(RECORD_BITS_LO, RECORD_BITS_HI);
     rr_cfg_poke(RECORD_FORCE_FINISH, 1);
-    rr_wait(1);
-
-    uint64_t record_bits;
-    rr_cfg_peek64(RECORD_BITS_LO, RECORD_BITS_HI, &record_bits);
+    uint64_t record_bits =
+        rr_wait_counter_stable(RECORD_BITS_LO, RECORD_BITS_HI);
     dump_trace("Record Buffer", "record.dump", record_buffer, record_bits);
     rr_dealloc_buffer(record_buffer);
 
     if (is_validate()) {
-        uint64_t validate_bits;
-        rr_cfg_peek64(VALIDATE_BITS_LO, VALIDATE_BITS_HI, &validate_bits);
+        uint64_t validate_bits =
+            rr_wait_counter_stable(VALIDATE_BITS_LO, VALIDATE_BITS_HI);
         dump_trace("Validate Buffer", "validate_record.dump", validate_buffer,
                    validate_bits);
         rr_dealloc_buffer(validate_buffer);
@@ -294,14 +306,16 @@ void do_replay_start() {
 #endif
 }
 void do_replay_stop() {
-    rr_wait(5);
+    uint64_t rt_replay_bits =
+        rr_wait_counter_stable(RT_REPLAY_BITS_LO, RT_REPLAY_BITS_HI);
+    // TODO: use rt_replay_bits == replay_bits as the criterion of stop replay
     rr_dealloc_buffer(replay_buffer);
 
     if (is_validate()) {
+        rr_wait_counter_stable(VALIDATE_BITS_LO, VALIDATE_BITS_HI);
         rr_cfg_poke(RECORD_FORCE_FINISH, 1);
-        rr_wait(1);
-        uint64_t validate_bits;
-        rr_cfg_peek64(VALIDATE_BITS_LO, VALIDATE_BITS_HI, &validate_bits);
+        uint64_t validate_bits =
+            rr_wait_counter_stable(VALIDATE_BITS_LO, VALIDATE_BITS_HI);
         dump_trace("Validate Buffer", "validate_replay.dump", validate_buffer,
                    validate_bits);
         rr_dealloc_buffer(validate_buffer);

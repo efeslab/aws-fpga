@@ -34,11 +34,13 @@ typedef enum {
 #define UINT64_LO32(x) ( ((uint64_t) x) & 0xffffffff)
 #define UINT64_FROM32(hi, lo) ((((uint64_t) hi) << 32) | ((uint64_t) lo))
 
-// 64 MB
 #ifdef SV_TEST
+// 128 MB
 #define DEFAULT_BUFFER_SIZE (0x8000000)
+#define POLLING_INTERVAL 1
 #else
 #define DEFAULT_BUFFER_SIZE (1ULL << 30)
+#define POLLING_INTERVAL 5
 #endif
 #define BUFFER_ALIGNMENT 4096
 #define TRACE_LEN_BYTES 8
