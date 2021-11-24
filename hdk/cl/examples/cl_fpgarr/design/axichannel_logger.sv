@@ -18,7 +18,10 @@ module axichannel_logger #(
   output wire logb_valid,
   output wire [DATA_WIDTH-1:0] logb_data,
   output wire loge_valid,
-  input wire logb_almful
+  input wire logb_almful,
+  // logb_almful_imme is directly connected to the end channel, there is no
+  // additional pipeline registers to help/delay its propagation
+  input wire logb_almful_imme
 );
 
 // The xxx_p version are the signals on the logger-side of the register
@@ -67,7 +70,7 @@ twowayhandshake_logger #(.DATA_WIDTH(DATA_WIDTH)) logger (
 //     (1) generate asynchronous reset
 //     (2) whether to do reset or not isn't configurable. sometimes I may only
 //     want to reset the valid but not the data
-assign logb_ready_p = !logb_almful_p;
+assign logb_ready_p = !logb_almful_p && !logb_almful_imme;
 lib_pipe #(
   .WIDTH(1), .STAGES(PIPE_DEPTH)
 ) logb_valid_pipe (

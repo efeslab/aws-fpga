@@ -72,7 +72,8 @@ axichannel_logger #(
       M2S_GET_OFFSET(LOGB_AW) +: M2S_CHANNEL_WIDTHS[LOGB_AW]
    ]),
    .loge_valid(loge_valid[LOGE_AW]),
-   .logb_almful(logb_almful)
+   .logb_almful(logb_almful),
+   .logb_almful_imme(1'b0)
 );
 // W  Channel, M2S
 axichannel_logger #(
@@ -92,7 +93,8 @@ axichannel_logger #(
       M2S_GET_OFFSET(LOGB_W) +: M2S_CHANNEL_WIDTHS[LOGB_W]
    ]),
    .loge_valid(loge_valid[LOGE_W]),
-   .logb_almful(logb_almful)
+   .logb_almful(logb_almful),
+   .logb_almful_imme(1'b0)
 );
 // AR Channel, M2S
 axichannel_logger #(
@@ -112,7 +114,8 @@ axichannel_logger #(
       M2S_GET_OFFSET(LOGB_AR) +: M2S_CHANNEL_WIDTHS[LOGB_AR]
    ]),
    .loge_valid(loge_valid[LOGE_AR]),
-   .logb_almful(logb_almful)
+   .logb_almful(logb_almful),
+   .logb_almful_imme(1'b0)
 );
 // B  Channel, S2M
 axichannel_logger #(
@@ -132,7 +135,8 @@ axichannel_logger #(
       S2M_GET_OFFSET(LOGB_B) +: S2M_CHANNEL_WIDTHS[LOGB_B]
    ]),
    .loge_valid(loge_valid[LOGE_B]),
-   .logb_almful(logb_almful)
+   .logb_almful(logb_almful),
+   .logb_almful_imme(1'b0)
 );
 // R  Channel, S2M
 axichannel_logger #(
@@ -152,7 +156,8 @@ axichannel_logger #(
       S2M_GET_OFFSET(LOGB_R) +: S2M_CHANNEL_WIDTHS[LOGB_R]
    ]),
    .loge_valid(loge_valid[LOGE_R]),
-   .logb_almful(logb_almful)
+   .logb_almful(logb_almful),
+   .logb_almful_imme(1'b0)
 );
 endmodule
 
