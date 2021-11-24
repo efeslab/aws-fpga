@@ -174,7 +174,7 @@ module rr_cfg_bar1_interconnect (
 // M00 is to_cl_bar1_bus (low 1MB)
 // M01 is rr_cfg_bus (high 1MB)
 // S00 is from_sh_bar1_bus (2MB in total)
-(* dont_touch = "true" *) rr_cfg_axil_interconnect bar1_interconnect_inst (
+rr_cfg_axil_interconnect bar1_interconnect_inst (
    .ACLK(clk),
    .ARESETN(rstn),
    /* the bar1 output pass through to cl */

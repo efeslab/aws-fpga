@@ -17,14 +17,13 @@ localparam int NUM_SLV = 3;
 if (PCIM_INTERCONNECT_AXI_ID_WIDTH + $clog2(NUM_SLV) > AXI_ID_WIDTH)
    $error("ID allocation is invalid: NUM_SLV %d, PCIM_INTERCONNECT_AXI_ID_WIDTH %d",
       NUM_SLV, PCIM_INTERCONNECT_AXI_ID_WIDTH);
-// TODO: is this dont_touch necessary?
 // NOTE: S00 is READ WRITE
 //       S01 is WRITE ONLY
 //       S02 is READ WRITE
 `ifdef DEBUG_INTERCONNECT
-(* dont_touch = "true" *) rr_pcim_pchk_interconnect pcim_interconnect_inst (
+rr_pcim_pchk_interconnect pcim_interconnect_inst (
 `else
-(* dont_touch = "true" *) rr_pcim_axi_interconnect pcim_interconnect_inst (
+rr_pcim_axi_interconnect pcim_interconnect_inst (
 `endif
    .ACLK(clk),
    .ARESETN(rstn),
