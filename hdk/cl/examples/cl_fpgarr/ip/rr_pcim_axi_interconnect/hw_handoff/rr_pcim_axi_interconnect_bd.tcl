@@ -221,7 +221,7 @@ proc create_root_design { parentCell } {
    CONFIG.NUM_WRITE_OUTSTANDING {32} \
    CONFIG.NUM_WRITE_THREADS {16} \
    CONFIG.PROTOCOL {AXI4} \
-   CONFIG.READ_WRITE_MODE {WRITE_ONLY} \
+   CONFIG.READ_WRITE_MODE {READ_WRITE} \
    CONFIG.RUSER_BITS_PER_BYTE {0} \
    CONFIG.RUSER_WIDTH {0} \
    CONFIG.SUPPORTS_NARROW_BURST {1} \
@@ -274,18 +274,20 @@ proc create_root_design { parentCell } {
   set rr_pcim_axi_interconnect [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 rr_pcim_axi_interconnect ]
   set_property -dict [ list \
    CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
+   CONFIG.ENABLE_PROTOCOL_CHECKERS {0} \
    CONFIG.M00_HAS_REGSLICE {4} \
    CONFIG.M01_HAS_REGSLICE {4} \
    CONFIG.M02_HAS_REGSLICE {4} \
    CONFIG.M03_HAS_REGSLICE {4} \
    CONFIG.NUM_MI {1} \
    CONFIG.NUM_SI {3} \
-   CONFIG.S00_ARB_PRIORITY {0} \
+   CONFIG.PCHK_MAX_RD_BURSTS {32} \
+   CONFIG.PCHK_MAX_WR_BURSTS {32} \
+   CONFIG.S00_ARB_PRIORITY {1} \
    CONFIG.S00_HAS_REGSLICE {4} \
+   CONFIG.S01_ARB_PRIORITY {1} \
    CONFIG.S01_HAS_REGSLICE {4} \
    CONFIG.S02_HAS_REGSLICE {4} \
-   CONFIG.SYNCHRONIZATION_STAGES {2} \
-   CONFIG.XBAR_DATA_WIDTH {512} \
  ] $rr_pcim_axi_interconnect
 
   # Create interface connections
