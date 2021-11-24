@@ -60,7 +60,7 @@ $info("Replayer FIFO config: in total %d entries, threshold is %d entries left\n
 xpm_fifo_sync_wrapper #(
   .WIDTH(1 + LOGE_CHANNEL_CNT + DATA_WIDTH),
   .DEPTH(REPLAY_FIFO_DEPTH),
-  .ALMFUL_THRESHOLD(REPLAY_FIFO_DEPTH - REPLAYER_FIFO_ALMFUL_THRESHOLD)
+  .ALMFUL_HI_THRESHOLD(REPLAY_FIFO_DEPTH - REPLAYER_FIFO_ALMFUL_THRESHOLD)
 ) xpm_fifo_inst (
   .clk(clk), .rst(!rstn),
   .din({logb_data_p, loge_valid_p, logb_valid_p}),
@@ -68,7 +68,8 @@ xpm_fifo_sync_wrapper #(
   .dout({logb_data_f, loge_valid_f, logb_valid_f}),
   .rd_en(in_valid_f && in_ready_f),
   .full(),
-  .almful(in_almful_p),
+  .almful_hi(in_almful_p),
+  .almful_lo(/*not used*/),
   .dout_valid(in_valid_f),
   .empty(),
   .overflow(fifo_overflow),

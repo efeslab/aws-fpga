@@ -189,5 +189,6 @@ generate
     assign out.loge_valid[i] = en? in.loge_valid[i] : 0;
 endgenerate
 assign out.logb_data = en? in.logb_data : 0;
-assign in.logb_almful = en? out.logb_almful : 0;
+assign in.logb_almful_hi = en? out.logb_almful_hi : 0;
+assign in.logb_almful_lo = en? out.logb_almful_lo : 0;
 endmodule

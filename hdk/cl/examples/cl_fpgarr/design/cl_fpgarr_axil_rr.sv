@@ -49,7 +49,7 @@ if (S2M_LOGE_CHANNEL_CNT != 5)
 
 // common signals for both log_M2S and log_S2M
 logic logb_almful;
-assign logb_almful = log_M2S.logb_almful || log_S2M.logb_almful;
+assign logb_almful = log_M2S.logb_almful_lo || log_S2M.logb_almful_lo;
 logic loge_valid [M2S_LOGE_CHANNEL_CNT-1:0];
 assign log_M2S.loge_valid = loge_valid;
 assign log_S2M.loge_valid = loge_valid;

@@ -115,11 +115,15 @@
    // even though multiple channels share a single logb_almful, the
    // axichannel_logger will register and propogate logb_almful to individual
    // channels from the merge tree.
-   logic logb_almful;
+   //
+   // logb_almful_hi is for pcimW
+   // logb_almful_lo is for all channels except pcimW
+   logic logb_almful_hi;
+   logic logb_almful_lo;
    modport P (output logb_valid, output logb_data,
-              output loge_valid, input logb_almful);
+              output loge_valid, input logb_almful_hi, input logb_almful_lo);
    modport C (input logb_valid, input logb_data,
-              input loge_valid, output logb_almful);
+              input loge_valid, output logb_almful_hi, output logb_almful_lo);
    endinterface
 
    interface rr_packed_logging_bus_t #(
@@ -146,11 +150,12 @@
    logic [LOGB_CHANNEL_CNT-1:0] logb_valid;
    packed_data_t plogb; // packed logb
    logic [LOGE_CHANNEL_CNT-1:0] loge_valid;
-   logic logb_almful;
+   logic logb_almful_hi;
+   logic logb_almful_lo;
    modport P (output logb_valid, plogb, loge_valid,
-              input logb_almful);
+              input logb_almful_hi, input logb_almful_lo);
    modport C (input logb_valid, plogb, loge_valid,
-              output logb_almful);
+              output logb_almful_hi, output logb_almful_lo);
    endinterface
 
    // This is supposed to be the interface between mjc and I

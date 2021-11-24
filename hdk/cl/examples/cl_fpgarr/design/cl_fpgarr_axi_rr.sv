@@ -13,8 +13,14 @@
 // Note that there is no need to add additional buffer to R, since cl pcim read
 // does not compete with the logging writeback (i.e. one uses sh pcim read
 // channel, the other uses sh pcim write channel).
+//
+// parameter IS_CL_PCIM:
+//     if is 0, then all channels will use logb_almful_lo
+//     if is 1, special mechanism will be applied to the PCIM-M channel, which
+//         will use logb_almful_hi while others still use logb_almful_lo
 module axi_recorder #(
-   parameter bit ENABLE_B_BUFFER = 0
+   parameter bit ENABLE_B_BUFFER = 0,
+   parameter bit IS_CL_PCIM = 0
 ) (
    input clk,
    input sync_rst_n,
@@ -60,8 +66,17 @@ if (S2M_LOGE_CHANNEL_CNT != 5)
    $error("Wrong S2M_LOGE_CHANNEL_CNT %d\n", S2M_LOGE_CHANNEL_CNT);
 
 // common signals for both log_M2S and log_S2M
-logic logb_almful;
-assign logb_almful = log_M2S.logb_almful || log_S2M.logb_almful;
+// logb_almful is shared across both M2S logging and S2M logging because the
+// loge_valid is shared (single source, which is from all channels)
+logic nonW_logb_almful;
+assign nonW_logb_almful = log_M2S.logb_almful_lo || log_S2M.logb_almful_lo;
+
+logic W_logb_almful;
+if (IS_CL_PCIM)
+   assign W_logb_almful = log_M2S.logb_almful_hi || log_S2M.logb_almful_hi;
+else
+   assign W_logb_almful = nonW_logb_almful;
+
 logic loge_valid [M2S_LOGE_CHANNEL_CNT-1:0];
 assign log_M2S.loge_valid = loge_valid;
 assign log_S2M.loge_valid = loge_valid;
@@ -86,7 +101,7 @@ axichannel_logger #(
       M2S_GET_OFFSET(LOGB_AW) +: M2S_CHANNEL_WIDTHS[LOGB_AW]
    ]),
    .loge_valid(loge_valid[LOGE_AW]),
-   .logb_almful(logb_almful),
+   .logb_almful(nonW_logb_almful),
    .logb_almful_imme(B_buf_almful)
 );
 // W  Channel, M2S
@@ -107,7 +122,7 @@ axichannel_logger #(
       M2S_GET_OFFSET(LOGB_W) +: M2S_CHANNEL_WIDTHS[LOGB_W]
    ]),
    .loge_valid(loge_valid[LOGE_W]),
-   .logb_almful(logb_almful),
+   .logb_almful(W_logb_almful),
    .logb_almful_imme(B_buf_almful)
 );
 // AR Channel, M2S
@@ -128,7 +143,7 @@ axichannel_logger #(
       M2S_GET_OFFSET(LOGB_AR) +: M2S_CHANNEL_WIDTHS[LOGB_AR]
    ]),
    .loge_valid(loge_valid[LOGE_AR]),
-   .logb_almful(logb_almful),
+   .logb_almful(nonW_logb_almful),
    .logb_almful_imme(B_buf_almful)
 );
 
@@ -187,7 +202,7 @@ axichannel_logger #(
       S2M_GET_OFFSET(LOGB_B) +: S2M_CHANNEL_WIDTHS[LOGB_B]
    ]),
    .loge_valid(loge_valid[LOGE_B]),
-   .logb_almful(logb_almful),
+   .logb_almful(nonW_logb_almful),
    .logb_almful_imme(1'b0)
 );
 // R  Channel, S2M
@@ -208,7 +223,7 @@ axichannel_logger #(
       S2M_GET_OFFSET(LOGB_R) +: S2M_CHANNEL_WIDTHS[LOGB_R]
    ]),
    .loge_valid(loge_valid[LOGE_R]),
-   .logb_almful(logb_almful),
+   .logb_almful(nonW_logb_almful),
    .logb_almful_imme(1'b0)
 );
 endmodule

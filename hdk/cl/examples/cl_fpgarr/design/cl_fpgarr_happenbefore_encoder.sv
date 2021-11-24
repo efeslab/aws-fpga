@@ -56,6 +56,11 @@ module rr_packed2writeback_bus #(
    output logic fifo_underflow
 );
 // RR_LOGB_FIFO_ALMFUL_THRESHOLD:
+// The almful_hi should be asserted if the remaining capacity in the fifo is
+// lower than RR_LOGB_FIFO_ALMFUL_THRESHOLD
+// This is the hard limit, which applies to PCIM W, and transparently applies to
+// all other channels with the help of almful_lo (see below).
+//
 // 8 is random value chosen to overprovision some resource and avoid
 // calculating the accurate almful threshold
 localparam int RR_LOGB_FIFO_ALMFUL_THRESHOLD =
@@ -64,6 +69,23 @@ localparam int RR_LOGB_FIFO_ALMFUL_THRESHOLD =
    in.LOGE_CHANNEL_CNT +
    8;
 
+// RR_NON_PCIM_W_FIFO_ALMFUL_THRESHOLD:
+// The almful_lo should be asserted if the remaining capacity in the fifo is
+// lower than RR_NON_PCIM_W_FIFO_ALMFUL_THRESHOLD
+// This is the hard limit to all channels except PCIM W. For PCIM W, I should
+// worry than blocking a on-going CL PCIM W transaction could cause a deadlock
+// among CL, PCIM interconnect and writeback modules.
+//
+// 8 is the max number of W can be sent given an AW has been transmitted.
+// Reference: https://github.com/aws/aws-fpga/blob/master/hdk/docs/AWS_Shell_Interface_Specification.md#pcim_interface
+// Note that sh_cl_cfg_max_payload[1:0] is at most 512 Bytes and each W is 512
+// bits, so at most 8 W can be transmitted following each AW.
+// This is to reserve some space in the FIFO to consume all upcoming W without
+// being blocked by logging writeback.
+//
+// 2 is a random number chosen for peace of mind.
+localparam int RR_NON_PCIM_W_FIFO_ALMFUL_THRESHOLD
+   = RR_LOGB_FIFO_ALMFUL_THRESHOLD + 8 + 2;
 // parameter check
 generate
    if (in.LOGB_CHANNEL_CNT + in.LOGE_CHANNEL_CNT + in.LOGB_DATA_WIDTH
@@ -74,8 +96,9 @@ generate
    if (RR_LOGB_FIFO_ALMFUL_THRESHOLD >= RECORD_FIFO_DEPTH)
       $error("Invalid RR_LOGB_FIFO config: ALMFUL_THRESHOLD %d, RECORD_FIFO_DEPTH %d\n",
          RR_LOGB_FIFO_ALMFUL_THRESHOLD, RECORD_FIFO_DEPTH);
-   $info("LOGB FIFO config: in total %d entries, threshold is %d entries left\n",
-      RECORD_FIFO_DEPTH, RR_LOGB_FIFO_ALMFUL_THRESHOLD);
+   $info("LOGB FIFO config: in total %d entries, threshold for almful_hi is %d entries left, threshold for almful_lo is %d entries left\n",
+      RECORD_FIFO_DEPTH, RR_LOGB_FIFO_ALMFUL_THRESHOLD,
+      RR_NON_PCIM_W_FIFO_ALMFUL_THRESHOLD);
 endgenerate
 // forward declare logb_fifo control signals
 logic fifo_push;
@@ -145,37 +168,12 @@ assign fifo_push =
    in.plogb.any_valid || // generate new packet for logb
    new_pkt_for_loge;     // generate new packet for loge
 assign fifo_pop = out.valid && out.ready;
-`define USE_XPM_FIFO_SYNC
-`ifndef USE_XPM_FIFO_SYNC
-// merged_fifo (xilinx fifo_generator)
-merged_fifo #(
-   .WIDTH(out.FULL_WIDTH + out.OFFSET_WIDTH),
-   .ALMFULL_THRESHOLD(RR_LOGB_FIFO_ALMFUL_THRESHOLD)
-) logb_fifo (
-   .clk(clk),
-   .rst(!rstn),
-   .din({
-      in.plogb.data,      // -
-      loge_valid_out,     //  |-> These become out.data
-      in.logb_valid,      // -
-      out.OFFSET_WIDTH'(
-         in.plogb.len + in.LOGB_CHANNEL_CNT + in.LOGE_CHANNEL_CNT
-      ) // this is the out.len
-   }),
-   .wr_en(fifo_push),
-   .dout({out.data, out.len}),
-   .rd_en(fifo_pop),
-   .full(fifo_full),
-   .almfull(in.logb_almful),
-   .empty(fifo_empty)
-);
-assign out.valid = !fifo_empty;
-`else
-// test xpm_fifo_sync
+
 xpm_fifo_sync_wrapper #(
    .WIDTH(out.FULL_WIDTH + out.OFFSET_WIDTH),
    .DEPTH(RECORD_FIFO_DEPTH),
-   .ALMFUL_THRESHOLD(RECORD_FIFO_DEPTH - RR_LOGB_FIFO_ALMFUL_THRESHOLD)
+   .ALMFUL_HI_THRESHOLD(RECORD_FIFO_DEPTH - RR_LOGB_FIFO_ALMFUL_THRESHOLD),
+   .ALMFUL_LO_THRESHOLD(RECORD_FIFO_DEPTH - RR_NON_PCIM_W_FIFO_ALMFUL_THRESHOLD)
 ) xpm_inst (
    .clk(clk), .rst(!rstn),
    .din({
@@ -190,14 +188,13 @@ xpm_fifo_sync_wrapper #(
    .dout({out.data, out.len}),
    .rd_en(fifo_pop),
    .full(fifo_full),
-   .almful(in.logb_almful),
+   .almful_hi(in.logb_almful_hi),
+   .almful_lo(in.logb_almful_lo),
    .dout_valid(out.valid),
    .empty(fifo_empty),
    .overflow(fifo_overflow),
    .underflow(fifo_underflow)
 );
-// end of test xpm_fifo_sync
-`endif
 
 `ifdef SIMULATION_AVOID_X
    logic [2*out.FULL_WIDTH-1:0] check_data;

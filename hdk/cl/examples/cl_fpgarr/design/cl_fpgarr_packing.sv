@@ -345,9 +345,12 @@ endgenerate
 
 // As a result, I ignore almful of all pipeline stages in the merge tree and chose to maintain
 // the logb_almful signal of input unpacked logger buses myself.
-// TODO: is dont_touch needed?
-lib_pipe #(.WIDTH(1), .STAGES(QUEUE_NSTAGES)) in_logb_almful_pipe (
+lib_pipe #(.WIDTH(1), .STAGES(QUEUE_NSTAGES)) in_logb_almful_hi_pipe (
    .clk(clk), .rst_n(rstn),
-   .in_bus(out.logb_almful),
-   .out_bus(in.logb_almful));
+   .in_bus(out.logb_almful_hi),
+   .out_bus(in.logb_almful_hi));
+lib_pipe #(.WIDTH(1), .STAGES(QUEUE_NSTAGES)) in_logb_almful_lo_pipe (
+   .clk(clk), .rst_n(rstn),
+   .in_bus(out.logb_almful_lo),
+   .out_bus(in.logb_almful_lo));
 endmodule

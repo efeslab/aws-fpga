@@ -3,7 +3,8 @@ module xpm_fifo_sync_wrapper #(
     parameter int WIDTH,
     parameter int DEPTH,
     // almful if number of entries in fifo >= ALMFUL_THRESHOLD
-    parameter int ALMFUL_THRESHOLD
+    parameter int ALMFUL_HI_THRESHOLD,
+    parameter int ALMFUL_LO_THRESHOLD = 10
 ) (
     input clk,
     input rst,
@@ -13,14 +14,16 @@ module xpm_fifo_sync_wrapper #(
     input logic rd_en,
     output logic dout_valid,
     output logic full,
-    output logic almful,
+    output logic almful_hi,
+    output logic almful_lo,
     output logic empty,
     output logic overflow,
     output logic underflow
 );
 // xpm_fifo_sync has one-cycle delay when dealing with prog_full/empty
 // according to ug974
-localparam XPM_FIFO_SYNC_PROG_FULL = ALMFUL_THRESHOLD - 1;
+localparam XPM_FIFO_SYNC_PROG_FULL = ALMFUL_HI_THRESHOLD - 1;
+localparam XPM_FIFO_SYNC_PROG_EMPTY = ALMFUL_LO_THRESHOLD - 2;
 localparam RD_DATA_COUNT_WIDTH = $clog2(DEPTH);
 localparam WR_DATA_COUNT_WIDTH = $clog2(DEPTH);
 logic [RD_DATA_COUNT_WIDTH-1:0] rd_data_count;
@@ -31,9 +34,12 @@ if (2**$clog2(DEPTH) != DEPTH)
     $error("DEPTH: %d has to be power of 2", DEPTH);
 if (DEPTH < 16 || DEPTH > 4194304)
     $error("DEPTH %d, has to be 16 - 4194304");
-if (ALMFUL_THRESHOLD >= DEPTH - 3 - 2)
-    $error("ALMFUL too large : threshold %d, DEPTH: %d",
-        ALMFUL_THRESHOLD, DEPTH);
+if (XPM_FIFO_SYNC_PROG_FULL > DEPTH - 3 - 2 || XPM_FIFO_SYNC_PROG_FULL < 3 + 2)
+    $error("ALMFUL_HI out of range : threshold %d, DEPTH: %d",
+        ALMFUL_HI_THRESHOLD, DEPTH);
+if (XPM_FIFO_SYNC_PROG_EMPTY > DEPTH - 3 - 2 || XPM_FIFO_SYNC_PROG_EMPTY < 3 + 2)
+    $error("ALMFUL_LO_THRESHOLD out of range : threshold %d, DEPTH: %d",
+        ALMFUL_LO_THRESHOLD, DEPTH);
 // ATTENTION: You need to apply the patch "xpm_fifo_sync_wrapper.sim.patch to
 // the vivado installation before enable the following simulation assertion
 // check.
@@ -331,7 +337,7 @@ localparam int SIM_ASSERT_CHECK = 1;
       .FIFO_READ_LATENCY(0),     // DECIMAL
       .FIFO_WRITE_DEPTH(DEPTH),   // DECIMAL
       .FULL_RESET_VALUE(0),      // DECIMAL
-      .PROG_EMPTY_THRESH(10),    // DECIMAL
+      .PROG_EMPTY_THRESH(XPM_FIFO_SYNC_PROG_EMPTY),   // DECIMAL
       .PROG_FULL_THRESH(XPM_FIFO_SYNC_PROG_FULL),     // DECIMAL
       .RD_DATA_COUNT_WIDTH(RD_DATA_COUNT_WIDTH),   // DECIMAL
       .READ_DATA_WIDTH(WIDTH),      // DECIMAL
@@ -432,6 +438,7 @@ localparam int SIM_ASSERT_CHECK = 1;
                                      // active-low when rst or wr_rst_busy or rd_rst_busy is active high
 
    );
-assign almful = prog_full;
+assign almful_hi = prog_full;
+assign almful_lo = !prog_empty;
    // End of xpm_fifo_sync_inst instantiation
 endmodule

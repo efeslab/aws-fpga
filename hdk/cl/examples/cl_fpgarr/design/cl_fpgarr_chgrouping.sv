@@ -55,8 +55,10 @@ initial begin
    assert(check_CHANNEL_WIDTHS());
 end
 // end of parameter check
-assign inA.logb_almful = out.logb_almful;
-assign inB.logb_almful = out.logb_almful;
+assign inA.logb_almful_hi = out.logb_almful_hi;
+assign inB.logb_almful_hi = out.logb_almful_hi;
+assign inA.logb_almful_lo = out.logb_almful_lo;
+assign inB.logb_almful_lo = out.logb_almful_lo;
 assign out.logb_valid[0 +: inA.LOGB_CHANNEL_CNT] = inA.logb_valid;
 assign out.logb_valid[inA.LOGB_CHANNEL_CNT +: inB.LOGB_CHANNEL_CNT] = inB.logb_valid;
 assign out.logb_data[0 +: inA.LOGB_DATA_WIDTH] = inA.logb_data;

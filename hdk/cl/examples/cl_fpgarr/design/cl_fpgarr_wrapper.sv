@@ -138,7 +138,10 @@ rr_axi_bus_t rr_pcim_record_bus();
 rr_axi_bus_t rr_pcim_bus();
 `AXI_SLV_LOGGING_BUS(rr_pcim_SH2CL_logging_bus, "pcim");
 `AXI_MSTR_LOGGING_BUS(rr_pcim_CL2SH_logging_bus, "pcim");
-axi_recorder pcim_bus_recorder (
+axi_recorder #(
+  .ENABLE_B_BUFFER(1),
+  .IS_CL_PCIM(1)
+) pcim_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
   .S(rr_pcim_record_bus),
