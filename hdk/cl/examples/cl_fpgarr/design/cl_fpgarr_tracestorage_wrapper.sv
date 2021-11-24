@@ -281,7 +281,7 @@ module rr_trace_rw #(
             tid <= 0;
         end else begin
             if (axi_write_transmitted) begin
-                tid <= tid + 1;
+                tid <= MAX_AWID_WIDTH'(tid + 1);
             end
         end
     end

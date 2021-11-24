@@ -722,14 +722,12 @@ wire[ADJ_DW_WIDTH-1:0] wr_first_adj = (inst_wr_rdata[63:0] >> 2);
 always_ff @( posedge clk)
    if (!sync_rst_n)
    begin
-      awid <= 0;
       awaddr <=0 ;
       awlen <= 0;
       awuser <= 0;
    end
    else if (wr_state==WR_ADDR)
    begin
-      awid <= 0;
       awaddr <= inst_wr_rdata[63:0] | wr_loop_addr_adj;
       $display("from cl_tst awaddr: 0x%x\n", inst_wr_rdata[63:0] | wr_loop_addr_adj);
       awlen <= inst_wr_rdata[103:96];
@@ -737,11 +735,18 @@ always_ff @( posedge clk)
    end
    else
    begin
-      awid <= 0;
       awaddr <=0 ;
       awlen <= 0;
       awuser <= 0;
    end
+// awid incremental
+localparam MAX_WR_BURSTS = 8;
+localparam MAX_AWID_WIDTH = $clog2(MAX_WR_BURSTS);
+always_ff @(posedge clk)
+   if (!sync_rst_n)
+      awid <= 0;
+   else if (awvalid && awready)
+      awid <= MAX_AWID_WIDTH'(awid + 1);
 
 //Latch last length
 always @(posedge clk)
