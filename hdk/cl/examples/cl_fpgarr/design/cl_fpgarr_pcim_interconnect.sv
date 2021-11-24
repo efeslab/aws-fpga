@@ -21,7 +21,11 @@ if (PCIM_INTERCONNECT_AXI_ID_WIDTH + $clog2(NUM_SLV) > AXI_ID_WIDTH)
 // NOTE: S00 is READ WRITE
 //       S01 is WRITE ONLY
 //       S02 is READ WRITE
+`ifdef DEBUG_INTERCONNECT
+(* dont_touch = "true" *) rr_pcim_pchk_interconnect pcim_interconnect_inst (
+`else
 (* dont_touch = "true" *) rr_pcim_axi_interconnect pcim_interconnect_inst (
+`endif
    .ACLK(clk),
    .ARESETN(rstn),
    /* the single output master bus connecting to the shell*/

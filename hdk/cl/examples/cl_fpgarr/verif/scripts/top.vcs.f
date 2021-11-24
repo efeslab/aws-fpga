@@ -114,6 +114,17 @@ ${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_s00_regslice_
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_s01_regslice_0/sim/rr_pcim_axi_interconnect_s01_regslice_0.v
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_s02_regslice_0/sim/rr_pcim_axi_interconnect_s02_regslice_0.v
 ${CL_ROOT}/ip/rr_pcim_axi_interconnect/ip/rr_pcim_axi_interconnect_m00_regslice_0/sim/rr_pcim_axi_interconnect_m00_regslice_0.v
+## start of rr_pcim_pchk_interconnect (only for debugging in simulation)
+${CL_ROOT}/ip/rr_pcim_pchk_interconnect/sim/rr_pcim_pchk_interconnect.v
+${CL_ROOT}/ip/rr_pcim_pchk_interconnect/ip/rr_pcim_pchk_interconnect_xbar_0/sim/rr_pcim_pchk_interconnect_xbar_0.v
+${CL_ROOT}/ip/rr_pcim_pchk_interconnect/ip/rr_pcim_pchk_interconnect_s00_regslice_0/sim/rr_pcim_pchk_interconnect_s00_regslice_0.v
+${CL_ROOT}/ip/rr_pcim_pchk_interconnect/ip/rr_pcim_pchk_interconnect_s01_regslice_0/sim/rr_pcim_pchk_interconnect_s01_regslice_0.v
+${CL_ROOT}/ip/rr_pcim_pchk_interconnect/ip/rr_pcim_pchk_interconnect_s02_regslice_0/sim/rr_pcim_pchk_interconnect_s02_regslice_0.v
+${CL_ROOT}/ip/rr_pcim_pchk_interconnect/ip/rr_pcim_pchk_interconnect_m00_regslice_0/sim/rr_pcim_pchk_interconnect_m00_regslice_0.v
+${CL_ROOT}/ip/rr_pcim_pchk_interconnect/ip/rr_pcim_pchk_interconnect_s00_pchk_0/sim/rr_pcim_pchk_interconnect_s00_pchk_0.sv
+${CL_ROOT}/ip/rr_pcim_pchk_interconnect/ip/rr_pcim_pchk_interconnect_s01_pchk_0/sim/rr_pcim_pchk_interconnect_s01_pchk_0.sv
+${CL_ROOT}/ip/rr_pcim_pchk_interconnect/ip/rr_pcim_pchk_interconnect_s02_pchk_0/sim/rr_pcim_pchk_interconnect_s02_pchk_0.sv
+${CL_ROOT}/ip/rr_pcim_pchk_interconnect/ip/rr_pcim_pchk_interconnect_m00_pchk_0/sim/rr_pcim_pchk_interconnect_m00_pchk_0.sv
 # start of rr_cfg_axil_interconnect
 ${CL_ROOT}/ip/rr_cfg_axil_interconnect/sim/rr_cfg_axil_interconnect.v
 ${CL_ROOT}/ip/rr_cfg_axil_interconnect/ip/rr_cfg_axil_interconnect_xbar_2/sim/rr_cfg_axil_interconnect_xbar_2.v
@@ -125,4 +136,5 @@ ${CL_ROOT}/design/cl_fpgarr_wrapper.sv
 -f ${HDK_COMMON_DIR}/verif/tb/filelists/tb.${SIMULATOR}.f
 ${TEST_NAME}
 
-+define+WRITEBACK_DEBUG
++define+DEBUG_INTERCONNECT
++define+SIMULATION_AVOID_X
