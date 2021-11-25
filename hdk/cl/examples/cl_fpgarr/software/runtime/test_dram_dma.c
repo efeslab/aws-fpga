@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <poll.h>
+#include <assert.h>
 
 #include "fpga_hugealloc.h"
 #include "fpga_pci.h"
@@ -383,7 +384,6 @@ int pcim_example(int slot_id, size_t buffer_size) {
 
     // {{{ setup test for pcim
     // I suppose this is to write 16 x 512 bits
-    size_t write_len = 0x10;
     log_info("PCIM example, host_mem: va %p, pa %p, buffer size %ld", va,
              (void *)(pa), sizeB);
     fail_on((buffer_size > sizeB), free_huge, "HugePageAlloc Too small");
@@ -396,6 +396,9 @@ int pcim_example(int slot_id, size_t buffer_size) {
     //     31:16 - Read Num inst - Number of read instructions
     rc = fpga_pci_poke(ocl_bar_handle, 0x010, 1);
     fail_on(rc, free_huge, "Unable to poke 0x010");
+    // Offset 0x1c: Write Index  - Write instruction Index
+    rc = fpga_pci_poke(ocl_bar_handle, 0x01c, 0);
+    fail_on(rc, free_huge, "Unable to poke 0x01c");
     // Offset 0x20: Write address low - Write instruction address
     rc = fpga_pci_poke(ocl_bar_handle, 0x020, pa & 0xffffffff);
     fail_on(rc, free_huge, "Unable to poke 0x020");
@@ -409,8 +412,42 @@ int pcim_example(int slot_id, size_t buffer_size) {
     //     7:0 - Length -- this is the number of AXI data phases.   Lower address bits define first data offset
     //     15:8 - Last data adj -- Number of DW to adj last data phase (0 means all DW are valid, 1 means all but 1DW valid, etc...)
     //     31:16 - User
-    rc = fpga_pci_poke(ocl_bar_handle, 0x02c, write_len);
+    uint32_t wr_burst = 8; // max is 8
+    uint32_t sizeB_burst = wr_burst*64;
+    uint8_t wraddr_inc_shift = 9;
+    assert((1 << wraddr_inc_shift) == sizeB_burst);
+    if (pa & ((1 << wraddr_inc_shift)-1)) {
+        printf("Warning, pa is %#lx, shift mask is %#x, overlapping.\n",
+                pa, ((1 << wraddr_inc_shift)-1));
+    }
+    uint32_t Nloop = buffer_size / sizeB_burst;
+    rc = fpga_pci_poke(ocl_bar_handle, 0x02c, wr_burst - 1);
     fail_on(rc, free_huge, "Unable to poke 0x02c");
+    // Offset 0x00, check test_dram_dma_common.h for details
+    pcim_tst_cfg_t tstcfg = {
+        .continuous = 1,
+        .incLoopData = 1,
+        .PRBS = 0,
+        .readCompEn = 0,
+        .syncEn = 0,
+        .iterMode = 1,
+        .loopHiAddrEn = 1,
+        .userIDMode = 0,
+        .wrAddrLoopShift = wraddr_inc_shift,
+        .rdAddrLoopShift = 0,
+        .rsvd = 0,
+        .incIDMode = 0,
+        .constData = 0,
+        .unused = 0
+    };
+    rc = fpga_pci_poke(ocl_bar_handle, 0x00, tstcfg.val);
+    fail_on(rc, free_huge, "Unable to poke 0x00");
+    //Offset 0xc0: Write Loop count low - In loop mode number of times loop
+    //Offset 0xc4: Write Loop count high
+    rc = fpga_pci_poke(ocl_bar_handle, 0xc0, Nloop);
+    fail_on(rc, free_huge, "Unable to poke 0xc0");
+    rc = fpga_pci_poke(ocl_bar_handle, 0xc4, 0x00);
+    fail_on(rc, free_huge, "Unable to poke 0xc4");
     //Offset 0x08:
     //     0 - Write Go (read back write in progress) - Write this bit to start executing the write instructions.  Reads back '1' while write instructions are in progress.
     //     1 - Read Go (read back write in progress) - Write this bit to start executing the read instructions.  Reads back '1' while read instructions are in progress.
@@ -418,7 +455,7 @@ int pcim_example(int slot_id, size_t buffer_size) {
     rc = fpga_pci_poke(ocl_bar_handle, 0x008, 0x1);
     fail_on(rc, free_huge, "Unable to poke 0x008");
     uint32_t *va_u32 = (uint32_t*)va;
-    for (size_t i = 0; i < write_len * 512 / 8 / sizeof(*va_u32); ++i) {
+    for (size_t i = 0; i < wr_burst * 512 / 8 / sizeof(*va_u32); ++i) {
         log_info("PCIM example addr[%ld] = %x", i, va_u32[i]);
     }
     // }}} end of set for pcim

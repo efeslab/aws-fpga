@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <malloc.h>
 #include <poll.h>
+#include <assert.h>
 
 #include <utils/sh_dpi_tasks.h>
 
@@ -70,9 +71,12 @@ int main(int argc, char **argv)
 {
     size_t buffer_size;
 #if defined(SV_TEST)
-    buffer_size = 2048;
+    buffer_size = 8192;
+// should be $clog2(buffer_size)
+#define PCIM_BUF_ALIGNMENT 8192
 #else
     buffer_size = 1ULL << 24;
+#define PCIM_BUF_ALIGNMENT (1ULL << 24)
 #endif
 
     /* The statements within SCOPE ifdef below are needed for HW/SW
@@ -143,7 +147,7 @@ void usage(const char* program_name) {
  */
 #ifdef SV_TEST
 #define TEST_PCIM
-#define TEST_PCIS
+#undef TEST_PCIS
 #endif
 int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 {
@@ -162,7 +166,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 #endif // TEST_PCIS
 
     uint8_t *host_mem;
-    posix_memalign((void*)(&host_mem), 64, buffer_size);
+    posix_memalign((void*)(&host_mem), PCIM_BUF_ALIGNMENT, buffer_size);
     memset(host_mem, 0, buffer_size);
 
     if (host_mem == NULL) {
@@ -205,6 +209,8 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         //     15:0 - Write Num Inst - Number of write instructions
         //     31:16 - Read Num inst - Number of read instructions
         cl_poke_ocl(0x010, 1);
+        // Offset 0x1c: Write Index  - Write instruction Index
+        cl_poke_ocl(0x01c, 0);
         // Offset 0x20: Write address low - Write instruction address
         cl_poke_ocl(0x020, (uint64_t)(host_mem) & 0xffffffff);
         // Offset 0x24: Write address high - Write instruction address
@@ -215,7 +221,35 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         //     7:0 - Length -- this is the number of AXI data phases.   Lower address bits define first data offset
         //     15:8 - Last data adj -- Number of DW to adj last data phase (0 means all DW are valid, 1 means all but 1DW valid, etc...)
         //     31:16 - User
-        cl_poke_ocl(0x02c,0x5);
+        //NOTE: This should not exceed the sh_cl_cfg_max_payload
+        uint32_t wr_burst = 8; // max is 8
+        uint32_t sizeB_burst = wr_burst*64;
+        uint8_t wraddr_inc_shift = 9;
+        assert((1 << wraddr_inc_shift) == sizeB_burst);
+        uint32_t Nloop = buffer_size / sizeB_burst;
+        cl_poke_ocl(0x02c, wr_burst - 1);
+        // Offset 0x00, check test_dram_dma_common.h for details
+        pcim_tst_cfg_t tstcfg = {
+            .continuous = 1,
+            .incLoopData = 1,
+            .PRBS = 0,
+            .readCompEn = 0,
+            .syncEn = 0,
+            .iterMode = 1,
+            .loopHiAddrEn = 1,
+            .userIDMode = 0,
+            .wrAddrLoopShift = wraddr_inc_shift,
+            .rdAddrLoopShift = 0,
+            .rsvd = 0,
+            .incIDMode = 0,
+            .constData = 0,
+            .unused = 0
+        };
+        cl_poke_ocl(0x00, tstcfg.val);
+        //Offset 0xc0: Write Loop count low - In loop mode number of times loop
+        //Offset 0xc4: Write Loop count high
+        cl_poke_ocl(0xc0, Nloop);
+        cl_poke_ocl(0xc4, 0x00);
         //Offset 0x08:
         //     0 - Write Go (read back write in progress) - Write this bit to start executing the write instructions.  Reads back '1' while write instructions are in progress.
         //     1 - Read Go (read back write in progress) - Write this bit to start executing the read instructions.  Reads back '1' while read instructions are in progress.
@@ -259,7 +293,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 
         // wait for pcim test to finish
 #ifdef TEST_PCIM
-        sv_pause(5);
+        sv_pause(1);
         for (uint8_t i = 0; i < 100; ++i) {
             printf("[%p]=%#x\n", host_mem+i, host_memory_getc(host_mem+i));
         }
