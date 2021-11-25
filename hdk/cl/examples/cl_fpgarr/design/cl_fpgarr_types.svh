@@ -261,16 +261,25 @@ typedef struct packed {
     logic ocl_replayer;      // bit 4
     logic bar1_replayer;     // bit 5
     logic wb_validate_inst;  // bit 6
+    logic pcimB_buf;         // bit 7
   } xpm_overflow;
   struct packed {
-    logic wb_record_inst;    // bit 7
-    logic pcim_replayer;     // bit 8
-    logic pcis_replayer;     // bit 9
-    logic sda_replayer;      // bit 10
-    logic ocl_replayer;      // bit 11
-    logic bar1_replayer;     // bit 12
-    logic wb_validate_inst;  // bit 13
+    logic wb_record_inst;    // bit 8
+    logic pcim_replayer;     // bit 9
+    logic pcis_replayer;     // bit 10
+    logic sda_replayer;      // bit 11
+    logic ocl_replayer;      // bit 12
+    logic bar1_replayer;     // bit 13
+    logic wb_validate_inst;  // bit 14
+    logic pcimB_buf;         // bit 15
   } xpm_underflow;
+  struct packed {
+    logic wb_record_hi;      // bit 16
+    logic wb_record_lo;      // bit 17
+    logic wb_validate_hi;    // bit 18
+    logic wb_validate_lo;    // bit 19
+    logic pcimB_buf;         // bit 20
+  } almful;
 } rr_state_csr_t;
 `endif
 // template

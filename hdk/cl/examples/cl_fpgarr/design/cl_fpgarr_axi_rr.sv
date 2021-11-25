@@ -19,15 +19,18 @@
 //     if is 1, special mechanism will be applied to the PCIM-M channel, which
 //         will use logb_almful_hi while others still use logb_almful_lo
 module axi_recorder #(
-   parameter bit ENABLE_B_BUFFER = 0,
-   parameter bit IS_CL_PCIM = 0
+   parameter ENABLE_B_BUFFER = 0,
+   parameter IS_CL_PCIM = 0
 ) (
    input clk,
    input sync_rst_n,
    rr_axi_bus_t.master M,      // a slave intf drived by an external master
    rr_axi_bus_t.slave S,       // a master intf drived by an external slave
    rr_logging_bus_t.P log_M2S, // AW, W, AR
-   rr_logging_bus_t.P log_S2M  // R, B
+   rr_logging_bus_t.P log_S2M, // R, B
+   output logic [ENABLE_B_BUFFER-1:0] B_fifo_almful,
+   output logic [ENABLE_B_BUFFER-1:0] B_fifo_overflow,
+   output logic [ENABLE_B_BUFFER-1:0] B_fifo_underflow
 );
 // parameter check (M2S)
 localparam int M2S_LOGB_CHANNEL_CNT = log_M2S.LOGB_CHANNEL_CNT;
@@ -171,12 +174,11 @@ if (ENABLE_B_BUFFER) begin : enable_B_buffer
       .almful_hi(B_buf_almful),
       .almful_lo(/*not used*/),
       .empty(),
-      // TODO: expose overflow and underflow
-      .overflow(),
-      .underflow()
+      .overflow(B_fifo_overflow),
+      .underflow(B_fifo_underflow)
    );
    assign S.bready = !fifo_full;
-   // TODO
+   assign B_fifo_almful = B_buf_almful;
 end
 else begin : no_B_buffer
    assign S_bvalid = S.bvalid;

@@ -147,7 +147,10 @@ axi_recorder #(
   .S(rr_pcim_record_bus),
   .M(rr_pcim_bus),
   .log_M2S(rr_pcim_CL2SH_logging_bus),
-  .log_S2M(rr_pcim_SH2CL_logging_bus)
+  .log_S2M(rr_pcim_SH2CL_logging_bus),
+  .B_fifo_almful(rr_state_csr_next.almful.pcimB_buf),
+  .B_fifo_overflow(rr_state_csr_next.xpm_overflow.pcimB_buf),
+  .B_fifo_underflow(rr_state_csr_next.xpm_underflow.pcimB_buf)
 );
 // PCIS bus
 rr_axi_bus_t rr_dma_pcis_record_bus();
@@ -255,7 +258,10 @@ rr_packed2writeback_bus #(
 ) wb_record_inst(
   .clk(clk), .rstn(rstn), .in(packed_logging_bus), .out(record_bus),
   .fifo_overflow(rr_state_csr_next.xpm_overflow.wb_record_inst),
-  .fifo_underflow(rr_state_csr_next.xpm_underflow.wb_record_inst));
+  .fifo_underflow(rr_state_csr_next.xpm_underflow.wb_record_inst),
+  .fifo_almful_hi(rr_state_csr_next.almful.wb_record_hi),
+  .fifo_almful_lo(rr_state_csr_next.almful.wb_record_lo)
+);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pack the CL2SH logging bus (for output validation)
@@ -299,7 +305,10 @@ rr_packed2writeback_bus #(
 ) wb_validate_inst(
   .clk(clk), .rstn(rstn), .in(packed_validate_bus), .out(validate_bus),
   .fifo_overflow(rr_state_csr_next.xpm_overflow.wb_validate_inst),
-  .fifo_underflow(rr_state_csr_next.xpm_underflow.wb_validate_inst));
+  .fifo_underflow(rr_state_csr_next.xpm_underflow.wb_validate_inst),
+  .fifo_almful_hi(rr_state_csr_next.almful.wb_validate_hi),
+  .fifo_almful_lo(rr_state_csr_next.almful.wb_validate_lo)
+);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Unpack the replay bus

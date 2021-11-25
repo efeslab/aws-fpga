@@ -53,7 +53,9 @@ module rr_packed2writeback_bus #(
    rr_packed_logging_bus_t.C in,
    rr_stream_bus_t.P out,
    output logic fifo_overflow,
-   output logic fifo_underflow
+   output logic fifo_underflow,
+   output logic fifo_almful_hi,
+   output logic fifo_almful_lo
 );
 // High level description of how almful thresholds are calculated:
 // Here is a spectrum representing how the fifo capacity is allocated/reserved,
@@ -211,13 +213,16 @@ xpm_fifo_sync_wrapper #(
    .dout({out.data, out.len}),
    .rd_en(fifo_pop),
    .full(fifo_full),
-   .almful_hi(in.logb_almful_hi),
-   .almful_lo(in.logb_almful_lo),
+   .almful_hi(fifo_almful_hi),
+   .almful_lo(fifo_almful_lo),
    .dout_valid(out.valid),
    .empty(fifo_empty),
    .overflow(fifo_overflow),
    .underflow(fifo_underflow)
 );
+
+assign in.logb_almful_hi = fifo_almful_hi;
+assign in.logb_almful_lo = fifo_almful_lo;
 
 `ifdef SIMULATION_AVOID_X
    logic [2*out.FULL_WIDTH-1:0] check_data;
