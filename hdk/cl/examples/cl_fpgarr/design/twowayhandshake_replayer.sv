@@ -40,11 +40,17 @@ module twowayhandshake_replayer #(
 // In this packet counter case, the max difference of rt_loge_cnt and loge_cnt
 // happens when the replay fifo is full (i.e. almful takes effect).
 // In this case, assuming the channel whose replay fifo is full is CHA, then the
-// next packet to replay in CHA will see AT MOST "fifo-size" number of packets
-// finishes (i.e. rt_loge) at another channel.
-// So the max number number of on-the-fly packets equal to the size of the
-// replay fifo
-localparam ON_THE_FLY_CNT = REPLAY_FIFO_DEPTH;
+// next packet to replay in CHA will see AT MOST "fifo-size" + "almful
+// propagation" number of packets finishes (i.e. rt_loge) at another channel.
+// So the max number number of on-the-fly packets is defined by the following
+// formula:
+// 1. size of the fifo
+// 2. almful propagation delay due to the register pipeline
+// 3. almful propagation delay due to the decoder merge tree
+localparam ON_THE_FLY_CNT =
+  REPLAY_FIFO_DEPTH +
+  REPLAYER_PIPE_DEPTH +
+  record_pkg::MERGE_TREE_HEIGHT - 1 + MERGETREE_OUT_QUEUE_NSTAGES;
 localparam PKT_CNT_WIDTH = $clog2(2 * ON_THE_FLY_CNT);
 logic [PKT_CNT_WIDTH-1:0] rt_loge_cnt [LOGE_CHANNEL_CNT-1:0];
 
