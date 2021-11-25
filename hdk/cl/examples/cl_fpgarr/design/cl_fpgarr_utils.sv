@@ -115,6 +115,7 @@ module rr_axi_register_slice (
        .m_axi_rvalid  (mstr.rvalid),
        .m_axi_rready  (mstr.rready)
    );
+   assign mstr.wid = $bits(mstr.wid)'(0);
 endmodule
 
 module rr_axi_register_slice_lite (
