@@ -741,6 +741,7 @@ module sh_bfm #(
 
    initial begin
       kernel_rst_n = 1'b0;  // kernel reset is not used for non-SDAccel simulations.
+      rst_main_n = 1'b0;
    end
 
    always_ff @(negedge rst_n or posedge clk_core)
