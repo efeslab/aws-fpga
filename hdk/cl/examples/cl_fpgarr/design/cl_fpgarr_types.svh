@@ -254,32 +254,41 @@ typedef struct packed {
 
 typedef struct packed {
   struct packed {
-    logic wb_record_inst;    // bit 0
-    logic pcim_replayer;     // bit 1
-    logic pcis_replayer;     // bit 2
-    logic sda_replayer;      // bit 3
-    logic ocl_replayer;      // bit 4
-    logic bar1_replayer;     // bit 5
-    logic wb_validate_inst;  // bit 6
-    logic pcimB_buf;         // bit 7
-  } xpm_overflow;
+    struct packed {
+      logic wb_record_inst;    // bit 0
+      logic pcim_replayer;     // bit 1
+      logic pcis_replayer;     // bit 2
+      logic sda_replayer;      // bit 3
+      logic ocl_replayer;      // bit 4
+      logic bar1_replayer;     // bit 5
+      logic wb_validate_inst;  // bit 6
+      logic pcimB_buf;         // bit 7
+    } xpm_overflow;
+    struct packed {
+      logic wb_record_inst;    // bit 8
+      logic pcim_replayer;     // bit 9
+      logic pcis_replayer;     // bit 10
+      logic sda_replayer;      // bit 11
+      logic ocl_replayer;      // bit 12
+      logic bar1_replayer;     // bit 13
+      logic wb_validate_inst;  // bit 14
+      logic pcimB_buf;         // bit 15
+    } xpm_underflow;
+  } oneoff;
   struct packed {
-    logic wb_record_inst;    // bit 8
-    logic pcim_replayer;     // bit 9
-    logic pcis_replayer;     // bit 10
-    logic sda_replayer;      // bit 11
-    logic ocl_replayer;      // bit 12
-    logic bar1_replayer;     // bit 13
-    logic wb_validate_inst;  // bit 14
-    logic pcimB_buf;         // bit 15
-  } xpm_underflow;
-  struct packed {
-    logic wb_record_hi;      // bit 16
-    logic wb_record_lo;      // bit 17
-    logic wb_validate_hi;    // bit 18
-    logic wb_validate_lo;    // bit 19
-    logic pcimB_buf;         // bit 20
-  } almful;
+    struct packed {
+      logic wb_record_hi;      // bit 16
+      logic wb_record_lo;      // bit 17
+      logic wb_validate_hi;    // bit 18
+      logic wb_validate_lo;    // bit 19
+      logic pcimB_buf;         // bit 20
+      logic pcim_replayer;     // bit 21
+      logic pcis_replayer;     // bit 22
+      logic sda_replayer;      // bit 23
+      logic ocl_replayer;      // bit 24
+      logic bar1_replayer;     // bit 25
+    } almful;
+  } rt;
 } rr_state_csr_t;
 `endif
 // template

@@ -221,7 +221,7 @@
    logic [LOGE_CHANNEL_CNT-1:0] loge_valid [LOGB_CHANNEL_CNT-1:0];
    // this logb_almful originates from individual replay channel
    // (axichannel_replayer) and aggregated in the replay decoder tree
-   logic almful [LOGB_CHANNEL_CNT-1:0];
+   logic [LOGB_CHANNEL_CNT-1:0] almful;
 
    modport P(output valid, logb_valid, logb_data, loge_valid, input almful);
    modport C(input valid, logb_valid, logb_data, loge_valid, output almful);
