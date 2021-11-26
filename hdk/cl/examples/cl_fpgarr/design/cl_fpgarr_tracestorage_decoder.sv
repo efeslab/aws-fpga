@@ -389,8 +389,7 @@ logic [AXI_CNT_WIDTH-1:0] rt_replay_axi_cnt;
 // hi_pad_last means all replay trace has been read in so we need to insert an
 // additional all-zero padding to HI to "push" all remaining valid trace out of
 // the shifting buffer
-// hi_pad_last is only valid when hi_full
-// So when the replay_bits is not set, it is still fine since we are in HI_EMPTY
+// hi_pad_last is very similar to hi_in
 logic hi_pad_last;
 /// }}}
 
@@ -574,15 +573,12 @@ always_ff @(posedge clk)
         rt_replay_axi_cnt <= 0;
     else if (hi_in || hi_pad_last)
         rt_replay_axi_cnt <= rt_replay_axi_cnt + 1;
-always_ff @(posedge clk)
-   if (!sync_rst_n)
-      hi_pad_last <= 0;
-   else
-      hi_pad_last <=
+assign hi_pad_last =
          // only insert padding when we have received non-zero things
          (rt_replay_axi_cnt != 0) &&
          // only insert padding when we have received enough things
-         (rt_replay_axi_cnt == replay_axi_total);
+         (rt_replay_axi_cnt == replay_axi_total) &&
+         (!hi_full || hi_lo_shift);
 
 // LO_FSM definition
 //                  /--\ +- header_flow
