@@ -72,8 +72,10 @@ module rr_replay_bus_ungroup2 (
   rr_replay_bus_t.P outA,
   rr_replay_bus_t.P outB
 );
+
 localparam LOGB_CHANNEL_CNT = in.LOGB_CHANNEL_CNT;
 localparam LOGE_CHANNEL_CNT = in.LOGE_CHANNEL_CNT;
+// for axi-valid replay
 localparam LOGB_LEFT_CNT = outA.LOGB_CHANNEL_CNT;
 localparam LOGB_RIGHT_CNT = outB.LOGB_CHANNEL_CNT;
 localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
@@ -82,26 +84,31 @@ localparam bit [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
 `DEF_SUM_WIDTH(GET_RIGHT_WIDTH, CHANNEL_WIDTHS, LOGB_LEFT_CNT, LOGB_CHANNEL_CNT)
 localparam LEFT_WIDTH = GET_LEFT_WIDTH();
 localparam RIGHT_WIDTH = GET_RIGHT_WIDTH();
+// for axi-ready replay
+localparam LEFT_NUM_INTF = outA.NUM_AXI_INTF;
+localparam RIGHT_NUM_INTF = outB.NUM_AXI_INTF;
 
-// parameter check
-generate
-  if (LOGB_LEFT_CNT + LOGB_RIGHT_CNT != LOGB_CHANNEL_CNT)
-    $error("LOGB_CHANNEL_CNT mismatch: LOGB_CHANNEL_CNT %d, outA %d, outB %d\n",
-      LOGB_CHANNEL_CNT, LOGB_LEFT_CNT, LOGB_RIGHT_CNT);
-  if (LEFT_WIDTH != outA.LOGB_DATA_WIDTH)
-    $error("LEFT_WIDTH mismatch: LEFT_WIDTH %d, outA %d\n",
-      LEFT_WIDTH, outA.LOGB_DATA_WIDTH);
-  if (RIGHT_WIDTH != outB.LOGB_DATA_WIDTH)
-    $error("RIGHT_WIDTH mismatch: RIGHT_WIDTH %d, outB %d\n",
-      RIGHT_WIDTH, outB.LOGB_DATA_WIDTH);
-  if ((LOGE_CHANNEL_CNT != outA.LOGE_CHANNEL_CNT) ||
-      (LOGE_CHANNEL_CNT != outB.LOGE_CHANNEL_CNT))
-    $error("LOGE_CHANNEL_CNT mismatch: in %d, outA %d, outB %d\n",
-      LOGE_CHANNEL_CNT, outA.LOGE_CHANNEL_CNT, outB.LOGE_CHANNEL_CNT);
-endgenerate
+//// parameter check
+if (LOGB_LEFT_CNT + LOGB_RIGHT_CNT != LOGB_CHANNEL_CNT)
+  $error("LOGB_CHANNEL_CNT mismatch: LOGB_CHANNEL_CNT %d, outA %d, outB %d\n",
+    LOGB_CHANNEL_CNT, LOGB_LEFT_CNT, LOGB_RIGHT_CNT);
+if (LEFT_WIDTH != outA.LOGB_DATA_WIDTH)
+  $error("LEFT_WIDTH mismatch: LEFT_WIDTH %d, outA %d\n",
+    LEFT_WIDTH, outA.LOGB_DATA_WIDTH);
+if (RIGHT_WIDTH != outB.LOGB_DATA_WIDTH)
+  $error("RIGHT_WIDTH mismatch: RIGHT_WIDTH %d, outB %d\n",
+    RIGHT_WIDTH, outB.LOGB_DATA_WIDTH);
+if ((LOGE_CHANNEL_CNT != outA.LOGE_CHANNEL_CNT) ||
+    (LOGE_CHANNEL_CNT != outB.LOGE_CHANNEL_CNT))
+  $error("LOGE_CHANNEL_CNT mismatch: in %d, outA %d, outB %d\n",
+    LOGE_CHANNEL_CNT, outA.LOGE_CHANNEL_CNT, outB.LOGE_CHANNEL_CNT);
+if (LEFT_NUM_INTF + RIGHT_NUM_INTF != in.NUM_AXI_INTF)
+  $error("NUM_AXI_INTF mismatches: left %d, right %d, in %d",
+    LEFT_NUM_INTF, RIGHT_NUM_INTF, in.NUM_AXI_INTF);
 
 genvar i;
 generate
+  // for axi-valid replay
   for (i=0; i < LOGB_LEFT_CNT; i=i+1) begin
     assign in.almful[i] = outA.almful[i];
     assign outA.valid[i] = in.valid[i];
@@ -117,6 +124,18 @@ generate
     assign outB.loge_valid[i] = in.loge_valid[IDX];
   end
   assign outB.logb_data = in.logb_data[LEFT_WIDTH +: RIGHT_WIDTH];
+  // for axi-ready replay
+  for (i=0; i < LEFT_NUM_INTF; i=i+1) begin
+    assign in.rdyrply_almful[i] = outA.rdyrply_almful[i];
+    assign outA.rdyrply_valid[i] = in.rdyrply_valid[i];
+    assign outA.rdyrply_loge_valid[i] = in.rdyrply_loge_valid[i];
+  end
+  for (i=0; i < RIGHT_NUM_INTF; i=i+1) begin
+    localparam IDX = LEFT_NUM_INTF + i;
+    assign in.rdyrply_almful[IDX] = outB.rdyrply_almful[i];
+    assign outB.rdyrply_valid[i] = in.rdyrply_valid[IDX];
+    assign outB.rdyrply_loge_valid[i] = in.rdyrply_loge_valid[IDX];
+  end
 endgenerate
 
 endmodule

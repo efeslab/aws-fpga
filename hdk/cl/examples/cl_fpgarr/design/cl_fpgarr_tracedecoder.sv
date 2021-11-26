@@ -132,9 +132,8 @@ if (LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT + LOGB_DATA_WIDTH !=
 // This generate creates the leaf nodes of the demarshaller tree.
 // Note that the loge_valid are never shuffled, so I just leave it be.
 ////////////////////////////////////////////////////////////////////////////////
-genvar i;
 generate
-  for (i=0; i < LOGB_CHANNEL_CNT; i=i+1) begin: packed_replay_gen
+  for (genvar i=0; i < LOGB_CHANNEL_CNT; i=i+1) begin: packed_replay_gen
     // connect shuffled replay bus at index i to the unshuffled replay_bus
     // at index IDX
     localparam IDX = SHUFFLE_PLAN[i][0];
@@ -172,10 +171,9 @@ endgenerate
   `PACKED_REPLAY_BUS_DUP(_out, _in); \
   rr_packed_replay_bus_pipe q(.clk(clk), .rstn(rstn), .in(_in), .out(_out))
 
-genvar h;
 generate
-for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
-  for (i=0; i < NODES_PER_LAYER[h]; i=i+1) begin: level_gen
+for (genvar h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
+  for (genvar i=0; i < NODES_PER_LAYER[h]; i=i+1) begin: level_gen
     localparam LID = MERGE_PLAN[h][i][0];
     localparam RID = MERGE_PLAN[h][i][1];
     if (LID != RID) begin: split_or_q
@@ -227,15 +225,54 @@ for (h=1; h < MERGE_TREE_HEIGHT; h=h+1) begin: tree_gen
   end
 end
 endgenerate
+`undef TREE_TOP
+`define TREE_TOP \
+  tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].split_or_q.node.prbus
+
+////////////////////////////////////////////////////////////////////////////////
+// Duplicate signals from the axi-valid replay merge tree for axi-ready replay
+////////////////////////////////////////////////////////////////////////////////
+// XXX_p version are the signals that come out of the register pipe which mimics
+// the delay of the axi-valid replay merge tree
+localparam NUM_AXI_INTF = replay_bus.NUM_AXI_INTF;
+logic rdyrply_valid_p;
+logic [LOGE_CHANNEL_CNT-1:0] rdyrply_loge_valid_p;
+logic [NUM_AXI_INTF-1:0] rdyrply_almful_p;
+lib_pipe #(
+  .WIDTH(1), .STAGES(MERGE_TREE_HEIGHT - 1)
+) rdyrply_valid_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(`TREE_TOP.valid),
+  .out_bus(rdyrply_valid_p)
+);
+lib_pipe #(
+  .WIDTH(LOGE_CHANNEL_CNT), .STAGES(MERGE_TREE_HEIGHT - 1)
+) rdyrply_loge_valid_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(`TREE_TOP.loge_valid),
+  .out_bus(rdyrply_loge_valid_p)
+);
+lib_pipe #(
+  .WIDTH(NUM_AXI_INTF), .STAGES(MERGE_TREE_HEIGHT - 1)
+) rdyrply_almful_pipe (
+  .clk(clk), .rst_n(rstn),
+  .in_bus(replay_bus.rdyrply_almful),
+  .out_bus(rdyrply_almful_p)
+);
+generate
+  for (genvar i = 0; i < NUM_AXI_INTF; i = i + 1) begin : rdyrply_gen
+    assign replay_bus.rdyrply_valid[i] = rdyrply_valid_p;
+    assign replay_bus.rdyrply_loge_valid[i] = rdyrply_loge_valid_p;
+  end
+endgenerate
+logic rdyrply_almful;
+assign rdyrply_almful = |rdyrply_almful_p;
 
 // convert input rr_stream_bus_t (packed_replay_bus) to
 // rr_packed_replay_bus_t (top of the tree)
 // rr_stream_bus_t:
 // from LSB to MSB:
 // logb_valid, loge_valid, packed_logb_data
-`undef TREE_TOP
-`define TREE_TOP \
-  tree_gen[MERGE_TREE_HEIGHT-1].level_gen[0].split_or_q.node.prbus
 
 lib_pipe #(
   .WIDTH(1), .STAGES(MERGETREE_OUT_QUEUE_NSTAGES)
@@ -272,7 +309,7 @@ lib_pipe #(
   .WIDTH(1), .STAGES(MERGETREE_OUT_QUEUE_NSTAGES)
 ) almful_pipe (
   .clk(clk), .rst_n(rstn),
-  .in_bus(`TREE_TOP.almful),
+  .in_bus(`TREE_TOP.almful || rdyrply_almful),
   .out_bus(packed_replay_bus_almful)
 );
 assign packed_replay_bus.ready = !packed_replay_bus_almful;

@@ -203,28 +203,29 @@ parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
   rr_replay_bus_t #( \
     .LOGB_CHANNEL_CNT(outA.LOGB_CHANNEL_CNT + outB.LOGB_CHANNEL_CNT), \
     .CHANNEL_WIDTHS({outB.CHANNEL_WIDTHS, outA.CHANNEL_WIDTHS}), \
-    .LOGE_CHANNEL_CNT(outA.LOGE_CHANNEL_CNT)) name()
+    .LOGE_CHANNEL_CNT(outA.LOGE_CHANNEL_CNT), \
+    .NUM_AXI_INTF(outA.NUM_AXI_INTF + outB.NUM_AXI_INTF)) name()
 `define AXI_MSTR_REPLAY_BUS(name, NLOGE) \
   rr_replay_bus_t #( \
     .LOGB_CHANNEL_CNT(3), \
     .CHANNEL_WIDTHS({{AXI_RR_AR_WIDTH}, {AXI_RR_W_WIDTH}, {AXI_RR_AW_WIDTH}}), \
-    .LOGE_CHANNEL_CNT(NLOGE)) name()
+    .LOGE_CHANNEL_CNT(NLOGE), .NUM_AXI_INTF(1)) name()
 `define AXI_SLV_REPLAY_BUS(name, NLOGE) \
   rr_replay_bus_t #( \
     .LOGB_CHANNEL_CNT(2), \
     .CHANNEL_WIDTHS({{AXI_RR_B_WIDTH}, {AXI_RR_R_WIDTH}}), \
-    .LOGE_CHANNEL_CNT(NLOGE)) name()
+    .LOGE_CHANNEL_CNT(NLOGE), .NUM_AXI_INTF(1)) name()
 `define AXIL_MSTR_REPLAY_BUS(name, NLOGE) \
   rr_replay_bus_t #( \
     .LOGB_CHANNEL_CNT(3), \
     .CHANNEL_WIDTHS({ \
       {AXIL_RR_AR_WIDTH}, {AXIL_RR_W_WIDTH}, {AXIL_RR_AW_WIDTH}}), \
-    .LOGE_CHANNEL_CNT(NLOGE)) name()
+    .LOGE_CHANNEL_CNT(NLOGE), .NUM_AXI_INTF(1)) name()
 `define AXIL_SLV_REPLAY_BUS(name, NLOGE) \
   rr_replay_bus_t #( \
     .LOGB_CHANNEL_CNT(2), \
     .CHANNEL_WIDTHS({{AXIL_RR_B_WIDTH}, {AXIL_RR_R_WIDTH}}), \
-    .LOGE_CHANNEL_CNT(NLOGE)) name()
+    .LOGE_CHANNEL_CNT(NLOGE), .NUM_AXI_INTF(1)) name()
 
 typedef struct packed {
   logic [63:0] buf_addr;

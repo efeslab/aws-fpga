@@ -316,6 +316,8 @@ rr_packed2writeback_bus #(
 ////////////////////////////////////////////////////////////////////////////////
 // Unpack the replay bus
 ////////////////////////////////////////////////////////////////////////////////
+localparam LOGE_PER_AXI = AWSF1_INTF_RRCFG::LOGE_PER_AXI;
+localparam AWSF1_NUM_INTERFACES = AWSF1_INTF_RRCFG::NUM_INTF;
 parameter int REPLAY_NLOGE = LOGE_PER_AXI * AWSF1_NUM_INTERFACES;
 // Declare the rr_replay_bus for all channels
 `AXI_SLV_REPLAY_BUS(rr_pcim_replay_bus, REPLAY_NLOGE);
@@ -346,9 +348,15 @@ rr_replay_bus_ungroup2 top_ungroup(
 ////////////////////////////////////////////////////////////////////////////////
 // Replay logic
 ////////////////////////////////////////////////////////////////////////////////
+import AWSF1_INTF_RRCFG::PCIS;
+import AWSF1_INTF_RRCFG::PCIM;
+import AWSF1_INTF_RRCFG::SDA;
+import AWSF1_INTF_RRCFG::OCL;
+import AWSF1_INTF_RRCFG::BAR1;
 // The rt_loge_valid should be ordered to comply with the previous merge trees
+// The AWSF1_INTF_ORDER is used.
 // i.e.: sda  ocl bar1 pcim pcis
-enum int { SDA=0, OCL, BAR1, PCIM, PCIS } AWSF1_INTF_ORDER;
+//
 // The aggregation of all realtime loge_valid info of all channels
 // Note that this is a logical aggregation, not a physically aggregation.
 // The loge_valid of each channel should still stay close to each interface and
@@ -362,7 +370,8 @@ logic [AWSF1_NUM_INTERFACES-1:0] [LOGE_PER_AXI-1:0]
 
 // PCIM bus
 rr_axi_bus_t pcim_replay_axi_bus();
-axi_slv_replayer #(AWSF1_NUM_INTERFACES) pcim_bus_replayer (
+axi_slv_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, PCIM)
+  pcim_bus_replayer (
   .clk(clk), .sync_rst_n(rstn),
   .rbus(rr_pcim_replay_bus),
   .outS(pcim_replay_axi_bus),
@@ -374,7 +383,8 @@ axi_slv_replayer #(AWSF1_NUM_INTERFACES) pcim_bus_replayer (
 );
 // PCIS bus
 rr_axi_bus_t pcis_replay_axi_bus();
-axi_mstr_replayer #(AWSF1_NUM_INTERFACES) pcis_bus_replayer (
+axi_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, PCIS)
+  pcis_bus_replayer (
   .clk(clk), .sync_rst_n(rstn),
   .rbus(rr_dma_pcis_replay_bus),
   .outM(pcis_replay_axi_bus),
@@ -386,7 +396,8 @@ axi_mstr_replayer #(AWSF1_NUM_INTERFACES) pcis_bus_replayer (
 );
 // SDA bus
 rr_axi_lite_bus_t sda_replay_axil_bus();
-axil_mstr_replayer #(AWSF1_NUM_INTERFACES) sda_bus_replayer (
+axil_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, SDA)
+  sda_bus_replayer (
   .clk(clk), .sync_rst_n(rstn),
   .rbus(rr_sda_replay_bus),
   .outM(sda_replay_axil_bus),
@@ -398,7 +409,8 @@ axil_mstr_replayer #(AWSF1_NUM_INTERFACES) sda_bus_replayer (
 );
 // OCL bus
 rr_axi_lite_bus_t ocl_replay_axil_bus();
-axil_mstr_replayer #(AWSF1_NUM_INTERFACES) ocl_bus_replayer (
+axil_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, OCL)
+  ocl_bus_replayer (
   .clk(clk), .sync_rst_n(rstn),
   .rbus(rr_ocl_replay_bus),
   .outM(ocl_replay_axil_bus),
@@ -410,7 +422,8 @@ axil_mstr_replayer #(AWSF1_NUM_INTERFACES) ocl_bus_replayer (
 );
 // BAR1 bus
 rr_axi_lite_bus_t bar1_replay_axil_bus();
-axil_mstr_replayer #(AWSF1_NUM_INTERFACES) bar1_bus_replayer (
+axil_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, BAR1)
+  bar1_bus_replayer (
   .clk(clk), .sync_rst_n(rstn),
   .rbus(rr_bar1_replay_bus),
   .outM(bar1_replay_axil_bus),
@@ -424,7 +437,7 @@ axil_mstr_replayer #(AWSF1_NUM_INTERFACES) bar1_bus_replayer (
 rr_rt_loge_crossbar #(
   .LOGE_PER_INTERFACE(LOGE_PER_AXI),
   .NUM_INTERFACES(AWSF1_NUM_INTERFACES),
-  .PLACEMENT_VEC(AWSF1_PLACEMENT_VEC)
+  .PLACEMENT_VEC(AWSF1_INTF_RRCFG::PLACEMENT_VEC)
 ) rt_loge_crossbar (
   .clk(clk), .rstn(rstn),
   .rt_loge_in(rt_loge_valid_agg),
@@ -585,6 +598,9 @@ rr_cfg_bar1_interconnect bar1_interconnect (
 );
 assign rr_pcim_bus.wid = 0;
 endmodule
+`ifdef TEST_REPLAY
+  $error("Should not be used with TEST_REPLAY");
+`endif
 
 `undef CL_NAME
 `define CL_NAME cl_fpgarr_wrapper

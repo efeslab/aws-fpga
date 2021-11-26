@@ -292,31 +292,34 @@ typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
 } rr_csr_enum;
 `define RR_CSR_ADDR(idx) (idx << 2)
 
-// PLACEMENT_VEC for runtime loge_valid crossbar
-// From aws-fpga doc:
-//   MID SLR:
-//       CL_SH_DDR
-//       BAR1
-//       PCIM
-//   BOTTOM SLR:
-//       PCIS
-//       OCL
-//       DDR STAT3
-//   MID/BOTTOM
-//       DDR STAT0
-//       DDR STAT1
-//       SDA
-// The order of the PLACEMENT_VEC is determined by the above tree of
-// merged_logging_bus: sda ocl bar1 pcim pcis
-parameter int LOGE_PER_AXI = 5;
-parameter int AWSF1_NUM_INTERFACES = 5;
-parameter int AWSF1_PLACEMENT_VEC[AWSF1_NUM_INTERFACES-1:0] = '{
-  5, // sda
-  3, // ocl
-  0, // bar1
-  1, // pcim
-  4  // pcis
-};
+package AWSF1_INTF_RRCFG;
+  // PLACEMENT_VEC for runtime loge_valid crossbar
+  // From aws-fpga doc:
+  //   MID SLR:
+  //       CL_SH_DDR
+  //       BAR1
+  //       PCIM
+  //   BOTTOM SLR:
+  //       PCIS
+  //       OCL
+  //       DDR STAT3
+  //   MID/BOTTOM
+  //       DDR STAT0
+  //       DDR STAT1
+  //       SDA
+  parameter int NUM_INTF = 5;
+  enum int { SDA=0, OCL, BAR1, PCIM, PCIS } INTF_ORDER;
+  parameter int LOGE_PER_AXI = 5;
+  // The order of the PLACEMENT_VEC is determined by the above INTF_ORDER
+  // which is in turn from the merged_logging_bus: sda ocl bar1 pcim pcis
+  parameter int PLACEMENT_VEC[NUM_INTF-1:0] = '{
+    1, // sda
+    1, // ocl
+    0, // bar1
+    0, // pcim
+    1  // pcis
+  };
+endpackage
 // The alignment of packets
 `ifndef OVERRIDE_PACKET_ALIGNMENT
 parameter int PACKET_ALIGNMENT = 8;

@@ -279,7 +279,9 @@ axichannel_logger #(
 endmodule
 
 module axil_mstr_replayer #(
-   parameter int NUM_INTERFACES
+   parameter int NUM_INTERFACES,
+   parameter int LOGE_PER_AXI,
+   parameter int INTF_ID
 ) (
    input clk,
    input sync_rst_n,
@@ -316,17 +318,21 @@ generate
    if (LOGE_CHANNEL_CNT != NUM_INTERFACES * LOGE_PER_AXI)
       $error("Wrong LOGE_CHANNEL_CN %d, NUM_INTERFACES %d, LOGE_PER_AXI %d\n",
          LOGE_CHANNEL_CNT, NUM_INTERFACES, LOGE_PER_AXI);
+   if (rbus.NUM_AXI_INTF != 1)
+      $error("Replay bus wrong NUM_AXI_INTF %d", rbus.NUM_AXI_INTF);
 endgenerate
 
 logic rstn;
 assign rstn = sync_rst_n;
 logic [LOGB_CHANNEL_CNT-1:0] fifo_overflow_ch;
-assign fifo_overflow = |fifo_overflow_ch;
+logic rdyrply_fifo_overflow;
+assign fifo_overflow = |fifo_overflow_ch | rdyrply_fifo_overflow;
 logic [LOGB_CHANNEL_CNT-1:0] fifo_underflow_ch;
-assign fifo_underflow = |fifo_underflow_ch;
-assign fifo_almful = |rbus.almful;
+logic rdyrply_fifo_underflow;
+assign fifo_underflow = |fifo_underflow_ch | rdyrply_fifo_underflow;
+assign fifo_almful = |rbus.almful | rbus.rdyrply_almful[0];
 // AW Channel
-axichannel_replayer #(
+axichannel_valid_replayer #(
    .DATA_WIDTH(AXIL_RR_AW_WIDTH),
    .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
    .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
@@ -347,7 +353,7 @@ axichannel_replayer #(
 assign o_rt_loge_valid[LOGE_AW] = outM.awvalid && outM.awready;
 
 // W  Channel
-axichannel_replayer #(
+axichannel_valid_replayer #(
    .DATA_WIDTH(AXIL_RR_W_WIDTH),
    .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
    .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
@@ -368,7 +374,7 @@ axichannel_replayer #(
 assign o_rt_loge_valid[LOGE_W] = outM.wvalid && outM.wready;
 
 // AR Channel
-axichannel_replayer #(
+axichannel_valid_replayer #(
    .DATA_WIDTH(AXIL_RR_AR_WIDTH),
    .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
    .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
@@ -388,17 +394,36 @@ axichannel_replayer #(
 );
 assign o_rt_loge_valid[LOGE_AR] = outM.arvalid && outM.arready;
 
-// ignore slave response during master replay
+// Ready signal replay
 // B  Channel
-assign outM.bready = 1;
-assign o_rt_loge_valid[LOGE_B] = outM.bvalid && outM.bready;
 // R  Channel
-assign outM.rready = 1;
+localparam LOGE_IDX_BASE = INTF_ID * AWSF1_INTF_RRCFG::LOGE_PER_AXI;
+axichannel_ready_replayer #(
+   .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
+   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
+   .NUM_RDYRPLY(2),
+   .LOGE_IDX({
+      LOGE_IDX_BASE + LOGE_B,
+      LOGE_IDX_BASE + LOGE_R
+   })
+) rdy_replayer (
+   .clk(clk), .rstn(rstn),
+   .in_valid(rbus.rdyrply_valid[0]),
+   .loge_valid(rbus.rdyrply_loge_valid[0]),
+   .rt_loge_valid(i_rt_loge_valid),
+   .in_almful(rbus.rdyrply_almful[0]),
+   .o_ready('{outM.bready, outM.rready}),
+   .fifo_overflow(rdyrply_fifo_overflow),
+   .fifo_underflow(rdyrply_fifo_underflow)
+);
+assign o_rt_loge_valid[LOGE_B] = outM.bvalid && outM.bready;
 assign o_rt_loge_valid[LOGE_R] = outM.rvalid && outM.rready;
 endmodule
 
 module axil_slv_replayer #(
-   parameter int NUM_INTERFACES
+   parameter int NUM_INTERFACES,
+   parameter int LOGE_PER_AXI,
+   parameter int INTF_ID
 ) (
    input clk,
    input sync_rst_n,
@@ -431,27 +456,50 @@ generate
    if (LOGE_CHANNEL_CNT != NUM_INTERFACES * LOGE_PER_AXI)
       $error("Wrong LOGE_CHANNEL_CN %d, NUM_INTERFACES %d, LOGE_PER_AXI %d\n",
          LOGE_CHANNEL_CNT, NUM_INTERFACES, LOGE_PER_AXI);
+   if (rbus.NUM_AXI_INTF != 1)
+      $error("Replay bus wrong NUM_AXI_INTF %d", rbus.NUM_AXI_INTF);
 endgenerate
 
 logic rstn;
 assign rstn = sync_rst_n;
 logic [LOGB_CHANNEL_CNT-1:0] fifo_overflow_ch;
-assign fifo_overflow = |fifo_overflow_ch;
+logic rdyrply_fifo_overflow;
+assign fifo_overflow = |fifo_overflow_ch | rdyrply_fifo_overflow;
 logic [LOGB_CHANNEL_CNT-1:0] fifo_underflow_ch;
-assign fifo_underflow = |fifo_underflow_ch;
-assign fifo_almful = |rbus.almful;
-// AW Channel
-assign outS.awready = 1;
-assign o_rt_loge_valid[LOGE_AW] = outS.awvalid && outS.awready;
+logic rdyrply_fifo_underflow;
+assign fifo_underflow = |fifo_underflow_ch | rdyrply_fifo_underflow;
+assign fifo_almful = |rbus.almful | rbus.rdyrply_almful[0];
+
+// Ready signal replay
+// AW  Channel
 // W  Channel
-assign outS.wready = 1;
+// AR  Channel
+localparam LOGE_IDX_BASE = INTF_ID * AWSF1_INTF_RRCFG::LOGE_PER_AXI;
+axichannel_ready_replayer #(
+   .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
+   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
+   .NUM_RDYRPLY(3),
+   .LOGE_IDX({
+      LOGE_IDX_BASE + LOGE_AW,
+      LOGE_IDX_BASE + LOGE_W,
+      LOGE_IDX_BASE + LOGE_AR
+   })
+) rdy_replayer (
+   .clk(clk), .rstn(rstn),
+   .in_valid(rbus.rdyrply_valid[0]),
+   .loge_valid(rbus.rdyrply_loge_valid[0]),
+   .rt_loge_valid(i_rt_loge_valid),
+   .in_almful(rbus.rdyrply_almful[0]),
+   .o_ready('{outS.awready, outS.wready, outS.arready}),
+   .fifo_overflow(rdyrply_fifo_overflow),
+   .fifo_underflow(rdyrply_fifo_underflow)
+);
+assign o_rt_loge_valid[LOGE_AW] = outS.awvalid && outS.awready;
 assign o_rt_loge_valid[LOGE_W] = outS.wvalid && outS.wready;
-// AR Channel
-assign outS.arready = 1;
 assign o_rt_loge_valid[LOGE_AR] = outS.arvalid && outS.arready;
 
 // B  Channel
-axichannel_replayer #(
+axichannel_valid_replayer #(
    .DATA_WIDTH(AXIL_RR_B_WIDTH),
    .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
    .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
@@ -472,7 +520,7 @@ axichannel_replayer #(
 assign o_rt_loge_valid[LOGE_B] = outS.bvalid && outS.bready;
 
 // R  Channel
-axichannel_replayer #(
+axichannel_valid_replayer #(
    .DATA_WIDTH(AXIL_RR_R_WIDTH),
    .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
    .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)

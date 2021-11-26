@@ -182,12 +182,12 @@
    endinterface
 
    // rr_replay_bus_t holds the unpacked logb_data
-   // Q: Why I have ready for each LOGB channel?
+   // Q: Why I have almful for each LOGB channel?
    // During record, there was only one consumer of the logb/loge data, which is
    // the aggregator/top_packer, etc.
    // During replay, there are N consumers, each consumes one channel of the
    // logb/loge data.
-   // There is no centralized ready so I need N ready for N channels.
+   // There is no centralized ready so I need N almful for N channels.
    // Q: Why I have valid for each LOGB channel?
    // During record, the logb and loge valid signals are transmitted as
    // individual valid but paired with the shared ready signal. The
@@ -205,25 +205,43 @@
    // each channel, so the parameter LOGE_CHANNEL_CNT specifies the number of
    // loge for each channel, not in total.
    // In total, there are LOGB_CHANNEL_CNT * LOGE_CHANNEL_CNT loge_valid.
+   //
+   // LOGE_IDX represents where does the start of the loge_valid in current
+   // interface locate in the whole LOGE_CHANNEL_CNT loge_valid.
    interface rr_replay_bus_t #(
      parameter int LOGB_CHANNEL_CNT,
      parameter bit [LOGB_CHANNEL_CNT-1:0]
        [RR_CHANNEL_WIDTH_BITS-1:0] CHANNEL_WIDTHS,
-     parameter int LOGE_CHANNEL_CNT
+     parameter int LOGE_CHANNEL_CNT,
+     parameter int NUM_AXI_INTF
    );
    `DEF_SUM_WIDTH(GET_LOGB_DATA_WIDTH, CHANNEL_WIDTHS, 0, LOGB_CHANNEL_CNT)
    // This LOGB_DATA_WIDTH does not include logb_valid
    parameter int LOGB_DATA_WIDTH = GET_LOGB_DATA_WIDTH();
 
-   logic valid [LOGB_CHANNEL_CNT-1:0];
+   // for axi-valid replay
+   logic valid [LOGB_CHANNEL_CNT-1:0];   // the current pipeline stage is valid
    logic logb_valid [LOGB_CHANNEL_CNT-1:0];
    logic [LOGB_DATA_WIDTH-1:0] logb_data;
    logic [LOGE_CHANNEL_CNT-1:0] loge_valid [LOGB_CHANNEL_CNT-1:0];
    // this logb_almful originates from individual replay channel
    // (axichannel_replayer) and aggregated in the replay decoder tree
+   // This is a packed array because the replayer endpoints want to do
+   // a wire-or.
    logic [LOGB_CHANNEL_CNT-1:0] almful;
 
-   modport P(output valid, logb_valid, logb_data, loge_valid, input almful);
-   modport C(input valid, logb_valid, logb_data, loge_valid, output almful);
+   // for axi-ready replay
+   logic rdyrply_valid [NUM_AXI_INTF-1:0];
+   logic [LOGE_CHANNEL_CNT-1:0] rdyrply_loge_valid [NUM_AXI_INTF-1:0];
+   logic [NUM_AXI_INTF-1:0] rdyrply_almful;
+
+   modport P(
+      output valid, logb_valid, logb_data, loge_valid, input almful,
+      output rdyrply_valid, rdyrply_loge_valid, input rdyrply_almful
+   );
+   modport C(
+      input valid, logb_valid, logb_data, loge_valid, output almful,
+      input rdyrply_valid, rdyrply_loge_valid, output rdyrply_almful
+   );
    endinterface
 `endif

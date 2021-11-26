@@ -5,31 +5,9 @@
 `endif
 `include "cl_fpgarr_defs.svh"
 `include "cl_fpgarr_packing_cfg.svh"
-module twowayhandshake_replayer #(
-  // these low numbers is to ease the proof
-  parameter DATA_WIDTH=16,
-  parameter LOGE_CHANNEL_CNT=2
-) (
-  input wire clk,
-  input wire rstn,
-  // the replay bus
-  input wire in_valid,
-  input wire logb_valid,
-  input wire [DATA_WIDTH-1:0] logb_data,
-  input wire [LOGE_CHANNEL_CNT-1:0] loge_valid,
-  output reg in_ready,
-  // the runtime loge_valid to check
-  // This does not need a ready backpressure
-  input wire [LOGE_CHANNEL_CNT-1:0] rt_loge_valid,
-  // out channel
-  output logic out_valid,
-  input logic out_ready,
-  output logic [DATA_WIDTH-1:0] out_data
-);
 
-// The packet counter to enforce happen-before
-// the number of on-the-fly packets are boudned to be fit in the replay fifo of
-// individual channel (guaranteed by the almful)
+// The packet counter to enforce happen-before, whose width depends on the
+// number of on-the-fly packets.
 //
 // More detailed explanation:
 // The counter should be wide enough to guarantee that the rt_loge_cnt can be
@@ -52,6 +30,30 @@ localparam ON_THE_FLY_CNT =
   REPLAYER_PIPE_DEPTH +
   record_pkg::MERGE_TREE_HEIGHT - 1 + MERGETREE_OUT_QUEUE_NSTAGES;
 localparam PKT_CNT_WIDTH = $clog2(2 * ON_THE_FLY_CNT);
+
+
+// this replayer is to replay the valid signal
+module twowayhandshake_replayer #(
+  // these low numbers is to ease the proof
+  parameter DATA_WIDTH=16,
+  parameter LOGE_CHANNEL_CNT=2
+) (
+  input wire clk,
+  input wire rstn,
+  // the replay bus
+  input wire in_valid,
+  input wire logb_valid,
+  input wire [DATA_WIDTH-1:0] logb_data,
+  input wire [LOGE_CHANNEL_CNT-1:0] loge_valid,
+  output reg in_ready,
+  // the runtime loge_valid to check
+  // This does not need a ready backpressure
+  input wire [LOGE_CHANNEL_CNT-1:0] rt_loge_valid,
+  // out channel
+  output logic out_valid,
+  input logic out_ready,
+  output logic [DATA_WIDTH-1:0] out_data
+);
 
 ////////////////////////////////////////////////////////////////////////////////
 // state machine
@@ -435,4 +437,88 @@ else
     out_valid == old_out_valid
   );
 `endif
+endmodule
+
+module twowayhandshake_ready_replayer #(
+  // the total number of loge_valid from all channels
+  parameter LOGE_CHANNEL_CNT = 5,
+  parameter NUM_RDYRPLY = 1,
+  parameter int LOGE_IDX [NUM_RDYRPLY-1:0] = {0}
+) (
+  input wire clk,
+  input wire rstn,
+  // parsed from the replay trace
+  input wire in_valid,
+  input wire [LOGE_CHANNEL_CNT-1:0] in_loge_valid,
+  output wire in_ready,
+  // from all replayers at runtime
+  input wire [LOGE_CHANNEL_CNT-1:0] rt_loge_valid,
+  // the generated ready signal
+  output logic o_ready [NUM_RDYRPLY-1:0]
+);
+
+// parameter check
+generate
+if (NUM_RDYRPLY <= 0)
+  $error("Invalid NUM_RDYRPLY %d", NUM_RDYRPLY);
+for (genvar i=0; i < NUM_RDYRPLY; i=i+1)
+  if (LOGE_IDX[i] < 0 || LOGE_IDX[i] >= LOGE_CHANNEL_CNT)
+    $error("Invalid LOGE_IDX[%d] %d given LOGE_CHANNEL_CNT %d",
+      i, LOGE_IDX[i], LOGE_CHANNEL_CNT);
+endgenerate
+// IDEA:
+// 1. ok to replay a ready if "runtime packet counter >= replay packet counter"
+// holds for ALL channels (including the LOGE_IDX channel that I need to
+// generate ready)
+// 2. I can assert the ready for the LOGE_IDX channel if
+// "runtime packet counter < replay packet counter" holds for the LOGE_IDX
+// channel
+logic [PKT_CNT_WIDTH-1:0] rt_sub_loge_cnt [LOGE_CHANNEL_CNT-1:0];
+logic [PKT_CNT_WIDTH-1:0] rt_sub_loge_cnt_next [LOGE_CHANNEL_CNT-1:0];
+// the sign
+logic [LOGE_CHANNEL_CNT-1:0] rt_sub_loge_cnt_sign;
+
+logic ok_to_replay_ready;
+
+generate
+for (genvar i = 0; i < LOGE_CHANNEL_CNT; i=i+1) begin
+  always_comb
+    if (in_valid && in_ready)
+      rt_sub_loge_cnt_next[i] = rt_sub_loge_cnt[i] + rt_loge_valid[i] - in_loge_valid[i];
+    else
+      rt_sub_loge_cnt_next[i] = rt_sub_loge_cnt[i] + rt_loge_valid[i];
+  always_ff @(posedge clk)
+    if (!rstn)
+      rt_sub_loge_cnt[i] <= 0;
+    else
+      rt_sub_loge_cnt[i] <= rt_sub_loge_cnt_next[i];
+
+  // sign is 0 --> runtime cnt - replay cnt is positive or zero,
+  // runtime cnt >= replay cnt, thus OK to replay
+  // else, should wait for the happen-before to be enforced
+  // sign is 1 --> runtime cnt - replay cnt is negative
+  // runtime cnt < replay cnt, thus OK to assert ready
+  assign rt_sub_loge_cnt_sign[i] = rt_sub_loge_cnt_next[i][PKT_CNT_WIDTH-1];
+end
+endgenerate
+
+assign in_ready = ok_to_replay_ready;
+
+always_ff @(posedge clk)
+  if (!rstn) begin
+    ok_to_replay_ready <= 1;
+  end
+  else begin
+    ok_to_replay_ready <= !(|rt_sub_loge_cnt_sign);
+  end
+
+generate
+for (genvar i=0; i < NUM_RDYRPLY; i=i+1)
+  always_ff @(posedge clk)
+    if (!rstn)
+      o_ready[i] <= 0;
+    else
+      o_ready[i] <= rt_sub_loge_cnt_sign[LOGE_IDX[i]];
+endgenerate
+
 endmodule
