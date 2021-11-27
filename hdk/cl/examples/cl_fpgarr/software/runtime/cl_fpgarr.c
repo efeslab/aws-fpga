@@ -137,6 +137,7 @@ static uint64_t validate_buffer_size = 0;
 
 static uint8_t *replay_buffer = NULL;
 static uint64_t replay_buffer_size;
+uint64_t replay_bits;
 
 // pa is not used in software simulation
 static uint8_t *rr_alloc_buffer(uint64_t size, uint64_t *pa) {
@@ -250,12 +251,15 @@ static void dump_trace(const char *msg, const char *filename, uint8_t *p,
     }
     putchar('\n');
 #endif
-    // save trace to file
-    int fd = open(filename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    write(fd, &size_bits, TRACE_LEN_BYTES);
-    write(fd, p, size_bytes);
-    fsync(fd);
-    close(fd);
+    if (size_bytes) {
+        // save trace to file
+        int fd = open(filename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+        write(fd, &size_bits, TRACE_LEN_BYTES);
+        write(fd, p, size_bytes);
+        fsync(fd);
+        close(fd);
+    } else
+        log_warning("Empty trace %s, will not save to file", filename);
 }
 
 void do_record_stop() {
@@ -283,7 +287,6 @@ void do_replay_start() {
             rr_alloc_setup_buffer(validate_buffer_size, VALIDATE_BUF_UPDATE);
     }
     int fd = open("record.dump", O_RDONLY);
-    uint64_t replay_bits;
     read(fd, &replay_bits, TRACE_LEN_BYTES);
 
     uint32_t replay_bits_hi = UINT64_HI32(replay_bits);
@@ -308,7 +311,10 @@ void do_replay_start() {
 void do_replay_stop() {
     uint64_t rt_replay_bits =
         rr_wait_counter_stable(RT_REPLAY_BITS_LO, RT_REPLAY_BITS_HI);
-    // TODO: use rt_replay_bits == replay_bits as the criterion of stop replay
+    if (rt_replay_bits != replay_bits) {
+        log_error("runtime replay bits (%ld) != replay bits in the trace (%ld)",
+                rt_replay_bits, replay_bits);
+    }
     rr_dealloc_buffer(replay_buffer);
 
     if (is_validate()) {
