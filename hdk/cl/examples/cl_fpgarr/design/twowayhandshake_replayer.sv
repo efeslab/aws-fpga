@@ -467,26 +467,32 @@ for (genvar i=0; i < NUM_RDYRPLY; i=i+1)
       i, LOGE_IDX[i], LOGE_CHANNEL_CNT);
 endgenerate
 // IDEA:
-// 1. ok to replay a ready if "runtime packet counter >= replay packet counter"
-// holds for ALL channels (including the LOGE_IDX channel that I need to
-// generate ready)
-// 2. I can assert the ready for the LOGE_IDX channel if
-// "runtime packet counter < replay packet counter" holds for the LOGE_IDX
-// channel
+// 1. ok to take in the loge_valid of a logging unit if
+//   "runtime packet counter >= replay packet counter" holds for ALL channels
+//   (including the LOGE_IDX channel that I need to generate ready)
+//   This is maintained by the `ok_to_replay_ready_sub`, which tells whether
+//   "rt_loge_cnt - loge_cnt >= 0", rt_loge_cnt includes the current cycle
+//   rt_loge_valid
 logic [PKT_CNT_WIDTH-1:0] rt_sub_loge_cnt [LOGE_CHANNEL_CNT-1:0];
+logic [PKT_CNT_WIDTH-1:0] ok_to_replay_ready_sub [LOGE_CHANNEL_CNT-1:0];
+logic [LOGE_CHANNEL_CNT-1:0] ok_to_replay_ready;
+// 2. I can assert the ready for the LOGE_IDX channel if
+//   "runtime packet counter < replay packet counter" holds for the LOGE_IDX
+//   channel
+//   This is maintained by the `rt_sub_loge_cnt`, which tells whether
+//   "rt_loge_cnt - loge_cnt >= 0", rt_loge_cnt and loge_cnt both exclude
+//   current cycle rt_loge_valid and loge_valid, thus the ready can be
+//   registered (i.e. loge_valid is taken at cyc 1, ready is asserted at cyc 2).
 logic [PKT_CNT_WIDTH-1:0] rt_sub_loge_cnt_next [LOGE_CHANNEL_CNT-1:0];
-// the sign
 logic [LOGE_CHANNEL_CNT-1:0] rt_sub_loge_cnt_sign;
-
-logic ok_to_replay_ready;
 
 generate
 for (genvar i = 0; i < LOGE_CHANNEL_CNT; i=i+1) begin
   always_comb
     if (in_valid && in_ready)
-      rt_sub_loge_cnt_next[i] = rt_sub_loge_cnt[i] + rt_loge_valid[i] - in_loge_valid[i];
+      rt_sub_loge_cnt_next[i] = ok_to_replay_ready_sub[i] - in_loge_valid[i];
     else
-      rt_sub_loge_cnt_next[i] = rt_sub_loge_cnt[i] + rt_loge_valid[i];
+      rt_sub_loge_cnt_next[i] = ok_to_replay_ready_sub[i];
   always_ff @(posedge clk)
     if (!rstn)
       rt_sub_loge_cnt[i] <= 0;
@@ -499,18 +505,12 @@ for (genvar i = 0; i < LOGE_CHANNEL_CNT; i=i+1) begin
   // sign is 1 --> runtime cnt - replay cnt is negative
   // runtime cnt < replay cnt, thus OK to assert ready
   assign rt_sub_loge_cnt_sign[i] = rt_sub_loge_cnt_next[i][PKT_CNT_WIDTH-1];
+  assign ok_to_replay_ready_sub[i] = rt_sub_loge_cnt[i] + rt_loge_valid[i];
+  assign ok_to_replay_ready[i] = ok_to_replay_ready_sub[i][PKT_CNT_WIDTH-1];
 end
 endgenerate
 
-assign in_ready = ok_to_replay_ready;
-
-always_ff @(posedge clk)
-  if (!rstn) begin
-    ok_to_replay_ready <= 1;
-  end
-  else begin
-    ok_to_replay_ready <= !(|rt_sub_loge_cnt_sign);
-  end
+assign in_ready = !(|ok_to_replay_ready);
 
 generate
 for (genvar i=0; i < NUM_RDYRPLY; i=i+1)
