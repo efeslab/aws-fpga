@@ -50,7 +50,7 @@ int pcim_example(int slot_id, size_t buffer_size);
 
 // 1ULL << 26 // 64MB
 // 1ULL << 24 // 16MB
-const size_t buffer_size = 1ULL << 26; // 64MB
+const size_t buffer_size = 1ULL << 27; // 64MB
 
 int main(int argc, char **argv) {
     int rc;

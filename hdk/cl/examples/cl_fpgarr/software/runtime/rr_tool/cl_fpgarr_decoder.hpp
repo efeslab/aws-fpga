@@ -360,6 +360,8 @@ class Decoder {
       fprintf(fp, "%" NAME_MAX_LEN "d ", loge_cnt[i]);
     }
     fputc('\n', fp);
+    if (loge_cnt[15] * 8 < loge_cnt[16])
+      fprintf(fp, "BUGGY pcim AW * 2 < W?\n");
   }
 
   void print_header_loge_names(FILE *fp) {
