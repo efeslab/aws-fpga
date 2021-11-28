@@ -31,9 +31,10 @@
 #include "utils/lcd.h"
 
 #include "test_dram_dma_common.h"
+#include "cl_fpgarr.h"
 
 #define	MEM_16G              (1ULL << 34)
-#define USER_INTERRUPTS_MAX  (16)
+#define USER_INTERRUPTS_MAX  (15)
 
 /* use the standard out logger */
 static const struct logger *logger = &logger_stdout;
@@ -81,7 +82,10 @@ int main(int argc, char **argv) {
     rc = check_slot_config(slot_id);
     fail_on(rc, out, "slot config is not correct");
 #endif
-
+    
+    rc = init_rr(slot_id);
+    do_pre_rr();
+    fail_on(!is_record(), out, "Skip application code, replaying");
     /* run the dma test example */
     rc = dma_example(slot_id, buffer_size);
     fail_on(rc, out, "DMA example failed");
@@ -102,6 +106,7 @@ int main(int argc, char **argv) {
 
 out:
     log_info("TEST %s", (rc == 0) ? "PASSED" : "FAILED");
+    do_post_rr();
     return rc;
 }
 

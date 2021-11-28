@@ -147,7 +147,7 @@ void usage(const char* program_name) {
  */
 #ifdef SV_TEST
 #define TEST_PCIM
-#undef TEST_PCIS
+#define TEST_PCIS
 #endif
 int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 {

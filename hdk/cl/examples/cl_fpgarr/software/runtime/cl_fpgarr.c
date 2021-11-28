@@ -7,6 +7,7 @@
 #include <string.h>
 #include <assert.h>
 
+#include <utils/log.h>
 #ifdef SV_TEST
 #include <fpga_pci_sv.h>
 #include <utils/sh_dpi_tasks.h>
@@ -103,15 +104,17 @@ int init_rr(int slot_id) {
     printf("RR Buffer Size: %ldB\n", buffer_size);
     printf("SW RR_CSR_VERSION %d\n", RR_CSR_VERSION_INT);
 
+    int rc;
 #ifndef SV_TEST
     // init pci_bar1
-    int rc = fpga_pci_attach(slot_id, /* pf_id */ 0, /* bar_id */ 1,
+    rc = fpga_pci_attach(slot_id, /* pf_id */ 0, /* bar_id */ 1,
                              /* flags */ 0, &pci_bar1_handle);
     assert(rc == 0);
 #endif
 
     uint32_t hw_rr_csr_version;
-    rr_cfg_peek(RR_CSR_VERSION, &hw_rr_csr_version);
+    rc = rr_cfg_peek(RR_CSR_VERSION, &hw_rr_csr_version);
+    fail_on(rc, err_out, "Fail to peek HW_RR_CSR_VERSION");
     if (hw_rr_csr_version != RR_CSR_VERSION_INT) {
         printf("HW RR_CSR_VERSION %d\n", hw_rr_csr_version);
         printf("WARNING: RR_CSR_VERSION mismatches!!!!!\n");
@@ -121,9 +124,11 @@ int init_rr(int slot_id) {
         printf(
             "Newer software is allowed to run with out-dated hardware, but not "
             "vice versa.\n");
-        return -1;
+        goto err_out;
     }
     return 0;
+err_out:
+    return -1;
 }
 
 /*
@@ -151,6 +156,9 @@ static uint8_t *rr_alloc_buffer(uint64_t size, uint64_t *pa) {
     uint64_t sizeB;
     assert(fpga_hugealloc_get(&va, pa, &sizeB) == 0);
     assert(size <= sizeB);
+    memset(va, 0, sizeB);
+    log_info("rr_alloc_buffer, va %p, pa %p, size %ld\n", va, (void *)(*pa),
+             sizeB);
     return (uint8_t *)(va);
 #endif
 }
@@ -253,7 +261,8 @@ static void dump_trace(const char *msg, const char *filename, uint8_t *p,
 #endif
     if (size_bytes) {
         // save trace to file
-        int fd = open(filename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+        int fd = open(filename, O_RDWR | O_CREAT,
+                      S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
         write(fd, &size_bits, TRACE_LEN_BYTES);
         write(fd, p, size_bytes);
         fsync(fd);
