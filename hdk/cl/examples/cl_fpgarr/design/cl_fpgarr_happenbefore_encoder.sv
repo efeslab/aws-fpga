@@ -1,4 +1,5 @@
 `include "cl_fpgarr_defs.svh"
+`include "cl_fpgarr_types.svh"
 `include "cl_fpgarr_packing_cfg.svh"
 // This module encodes the happen-before information from a packed logging bus
 // in a even more compact format.
@@ -55,7 +56,8 @@ module rr_packed2writeback_bus #(
    output logic fifo_overflow,
    output logic fifo_underflow,
    output logic fifo_almful_hi,
-   output logic fifo_almful_lo
+   output logic fifo_almful_lo,
+   output rr_packed2wb_dbg_csr_t dbg_csr
 );
 // High level description of how almful thresholds are calculated:
 // Here is a spectrum representing how the fifo capacity is allocated/reserved,
@@ -233,4 +235,45 @@ assign in.logb_almful_lo = fifo_almful_lo;
          nox: assert(!$isunknown(check_data[0 +: out.FULL_WIDTH]));
       end
 `endif
+
+// for debugging packet loss for wb_record_inst
+if (in.LOGB_CHANNEL_CNT == 14) begin
+   logic [63:0] bits_non_aligned;
+   logic [31:0] fifo_wr_cnt;
+   always_ff @(posedge clk)
+      if (!rstn) begin
+         bits_non_aligned <= 0;
+         fifo_wr_cnt <= 0;
+      end
+      else if (fifo_push) begin
+         bits_non_aligned <= bits_non_aligned +
+            out.OFFSET_WIDTH'(in.plogb.len + in.LOGB_CHANNEL_CNT + in.LOGE_CHANNEL_CNT);
+         fifo_wr_cnt <= fifo_wr_cnt + 1;
+      end
+   logic [31:0] chpkt_cnt [in.LOGB_CHANNEL_CNT-1:0];
+   for (genvar i = 0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin
+      always_ff @(posedge clk)
+         if (!rstn)
+            chpkt_cnt[i] <= 0;
+         else if (fifo_push) begin
+            chpkt_cnt[i] <= chpkt_cnt[i] + in.logb_valid[i];
+         end
+   end
+   assign dbg_csr.fifo_wr_dbg.bits_non_aligned = bits_non_aligned;
+   assign dbg_csr.fifo_wr_dbg.fifo_wr_cnt = fifo_wr_cnt;
+   assign dbg_csr.chpkt_cnt.pcim_R = chpkt_cnt[0];
+   assign dbg_csr.chpkt_cnt.sda_AW = chpkt_cnt[1];
+   assign dbg_csr.chpkt_cnt.bar1_W = chpkt_cnt[2];
+   assign dbg_csr.chpkt_cnt.ocl_AR = chpkt_cnt[3];
+   assign dbg_csr.chpkt_cnt.pcis_AW = chpkt_cnt[4];
+   assign dbg_csr.chpkt_cnt.ocl_AW = chpkt_cnt[5];
+   assign dbg_csr.chpkt_cnt.ocl_W = chpkt_cnt[6];
+   assign dbg_csr.chpkt_cnt.bar1_AW = chpkt_cnt[7];
+   assign dbg_csr.chpkt_cnt.pcis_W = chpkt_cnt[8];
+   assign dbg_csr.chpkt_cnt.pcis_B = chpkt_cnt[9];
+   assign dbg_csr.chpkt_cnt.pcis_AR = chpkt_cnt[10];
+   assign dbg_csr.chpkt_cnt.sda_AR = chpkt_cnt[11];
+   assign dbg_csr.chpkt_cnt.sda_W = chpkt_cnt[12];
+   assign dbg_csr.chpkt_cnt.bar1_AR = chpkt_cnt[13];
+end
 endmodule

@@ -8,7 +8,8 @@ module rr_csrs #(
     output storage_axi_write_csr_t storage_axi_write_csr,
     output rr_mode_csr_t rr_mode_csr,
     input storage_axi_read_csr_t storage_axi_read_csr,
-    input rr_state_csr_t rr_state_csr
+    input rr_state_csr_t rr_state_csr,
+    input rr_packed2wb_dbg_csr_t wb_record_dbg_csr
 );
 
     // parameter check
@@ -77,7 +78,8 @@ module rr_csrs #(
             end
         end
     end
-
+    
+    // lib_pipe for RO CSR
     storage_axi_read_csr_t storage_axi_read_csr_i;
     lib_pipe #(
         .WIDTH($bits(storage_axi_read_csr_t)),
@@ -87,6 +89,16 @@ module rr_csrs #(
         .rst_n(rstn),
         .in_bus(storage_axi_read_csr),
         .out_bus(storage_axi_read_csr_i)
+    );
+    rr_packed2wb_dbg_csr_t wb_record_dbg_csr_i;
+    lib_pipe #(
+        .WIDTH($bits(wb_record_dbg_csr)),
+        .STAGES(REG_STAGES))
+    pipe_wb_record_dbg_csr(
+        .clk(clk),
+        .rst_n(rstn),
+        .in_bus(wb_record_dbg_csr),
+        .out_bus(wb_record_dbg_csr_i)
     );
 
     // Write register update
@@ -117,9 +129,44 @@ module rr_csrs #(
             csrs[VALIDATE_BITS_LO] <= storage_axi_read_csr_i.validate_bits[0 +: 32];
             csrs[RT_REPLAY_BITS_HI] <= storage_axi_read_csr_i.rt_replay_bits[32 +: 32];
             csrs[RT_REPLAY_BITS_LO] <= storage_axi_read_csr_i.rt_replay_bits[0 +: 32];
-            csrs[RR_STATE] <= {{(64-$bits(rr_state_csr)){1'b0}}, rr_state_csr};
+            csrs[RR_STATE] <= {{(32-$bits(rr_state_csr)){1'b0}}, rr_state_csr};
             csrs[RR_CSR_VERSION] <= RR_CSR_VERSION_INT;
             csrs[RR_TRACE_FIFO_ASSERT] <= storage_axi_read_csr_i.trace_fifo_assert[0 +: 32];
+            // wb_record_dbg_csr
+            csrs[RR_WB_RECORD_DBG_BITS_NON_ALIGNED_HI] <=
+                wb_record_dbg_csr_i.fifo_wr_dbg.bits_non_aligned[32 +: 32];
+            csrs[RR_WB_RECORD_DBG_BITS_NON_ALIGNED_LO] <=
+                wb_record_dbg_csr_i.fifo_wr_dbg.bits_non_aligned[0 +: 32];
+            csrs[RR_WB_RECORD_DBG_BITS_FIFO_WR_CNT] <=
+                wb_record_dbg_csr_i.fifo_wr_dbg.fifo_wr_cnt;
+            csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcim_R] <=
+                wb_record_dbg_csr_i.chpkt_cnt.pcim_R;
+            csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_sda_AW] <=
+                wb_record_dbg_csr_i.chpkt_cnt.sda_AW;
+            csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_bar1_W] <=
+                wb_record_dbg_csr_i.chpkt_cnt.bar1_W;
+            csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_ocl_AR] <=
+                wb_record_dbg_csr_i.chpkt_cnt.ocl_AR;
+            csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcis_AW] <=
+                wb_record_dbg_csr_i.chpkt_cnt.pcis_AW;
+            csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_ocl_AW] <=
+                wb_record_dbg_csr_i.chpkt_cnt.ocl_AW;
+            csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_ocl_W] <=
+                wb_record_dbg_csr_i.chpkt_cnt.ocl_W;
+            csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_bar1_AW] <=
+                wb_record_dbg_csr_i.chpkt_cnt.bar1_AW;
+            csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcis_W] <=
+                wb_record_dbg_csr_i.chpkt_cnt.pcis_W;
+            csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcis_B] <=
+                wb_record_dbg_csr_i.chpkt_cnt.pcis_B;
+            csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcis_AR] <=
+                wb_record_dbg_csr_i.chpkt_cnt.pcis_AR;
+            csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_sda_AR] <=
+                wb_record_dbg_csr_i.chpkt_cnt.sda_AR;
+            csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_sda_W] <=
+                wb_record_dbg_csr_i.chpkt_cnt.sda_W;
+            csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_bar1_AR] <=
+                wb_record_dbg_csr_i.chpkt_cnt.bar1_AR;
         end
     end
 

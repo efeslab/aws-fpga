@@ -291,6 +291,29 @@ typedef struct packed {
     } almful;
   } rt;
 } rr_state_csr_t;
+
+typedef struct packed {
+  struct packed {
+    logic [63:0] bits_non_aligned;
+    logic [31:0] fifo_wr_cnt;
+  } fifo_wr_dbg;
+  struct packed {
+    logic [31:0] pcim_R;
+    logic [31:0] sda_AW;
+    logic [31:0] bar1_W;
+    logic [31:0] ocl_AR;
+    logic [31:0] pcis_AW;
+    logic [31:0] ocl_AW;
+    logic [31:0] ocl_W;
+    logic [31:0] bar1_AW;
+    logic [31:0] pcis_W;
+    logic [31:0] pcis_B;
+    logic [31:0] pcis_AR;
+    logic [31:0] sda_AR;
+    logic [31:0] sda_W;
+    logic [31:0] bar1_AR;
+  } chpkt_cnt;
+} rr_packed2wb_dbg_csr_t;
 `endif
 // template
 ////////////////////////////////////////////////////////////////////////////////

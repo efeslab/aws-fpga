@@ -249,9 +249,9 @@ endfunction
 // !!!!!!!!!!!!!!!!!!!!!!!! ATTENTION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // ALWAYS update (increase) this RR_CSR_VERSION_INT after making changes to CSR
 // address allocation
-parameter int RR_CSR_VERSION_INT = 20211123;
+parameter int RR_CSR_VERSION_INT = 20211128;
 ////////////////////////////////////////////////////////////////////////////////
-parameter int RR_CSR_CNT = 32;
+parameter int RR_CSR_CNT = 64;
 parameter int RR_CSR_ADDR_WIDTH = $clog2(RR_CSR_CNT);
 typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
   // BUF_ADDR and BUF_SIZE are the address and size of a buffer in CPU-side
@@ -288,6 +288,23 @@ typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
   RT_REPLAY_BITS_LO,        // 19
   RR_TRACE_FIFO_ASSERT,     // 20
   RR_CSR_VERSION,           // 21
+  RR_WB_RECORD_DBG_BITS_NON_ALIGNED_HI,
+  RR_WB_RECORD_DBG_BITS_NON_ALIGNED_LO,
+  RR_WB_RECORD_DBG_BITS_FIFO_WR_CNT,
+  RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcim_R,
+  RR_WB_RECORD_DBG_BITS_CHPKT_CNT_sda_AW,
+  RR_WB_RECORD_DBG_BITS_CHPKT_CNT_bar1_W,
+  RR_WB_RECORD_DBG_BITS_CHPKT_CNT_ocl_AR,
+  RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcis_AW,
+  RR_WB_RECORD_DBG_BITS_CHPKT_CNT_ocl_AW,
+  RR_WB_RECORD_DBG_BITS_CHPKT_CNT_ocl_W,
+  RR_WB_RECORD_DBG_BITS_CHPKT_CNT_bar1_AW,
+  RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcis_W,
+  RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcis_B,
+  RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcis_AR,
+  RR_WB_RECORD_DBG_BITS_CHPKT_CNT_sda_AR,
+  RR_WB_RECORD_DBG_BITS_CHPKT_CNT_sda_W,
+  RR_WB_RECORD_DBG_BITS_CHPKT_CNT_bar1_AR,
   RR_CSR_LAST_DONT_USE = RR_CSR_CNT - 1
 } rr_csr_enum;
 `define RR_CSR_ADDR(idx) (idx << 2)

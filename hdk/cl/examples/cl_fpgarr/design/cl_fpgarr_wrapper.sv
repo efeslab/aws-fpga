@@ -116,7 +116,7 @@ always_ff @(posedge clk)
     rr_state_csr.oneoff <= rr_state_csr.oneoff | rr_state_csr_next.oneoff;
     rr_state_csr.rt <= rr_state_csr_next.rt;
   end
-
+rr_packed2wb_dbg_csr_t wb_record_dbg_csr;
 ////////////////////////////////////////////////////////////////////////////////
 // LOG AXI bus
 // The rr_XXX_record_bus are the axi(l) bus going into each logging module
@@ -263,7 +263,8 @@ rr_packed2writeback_bus #(
   .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.wb_record_inst),
   .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.wb_record_inst),
   .fifo_almful_hi(rr_state_csr_next.rt.almful.wb_record_hi),
-  .fifo_almful_lo(rr_state_csr_next.rt.almful.wb_record_lo)
+  .fifo_almful_lo(rr_state_csr_next.rt.almful.wb_record_lo),
+  .dbg_csr(wb_record_dbg_csr)
 );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -310,7 +311,8 @@ rr_packed2writeback_bus #(
   .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.wb_validate_inst),
   .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.wb_validate_inst),
   .fifo_almful_hi(rr_state_csr_next.rt.almful.wb_validate_hi),
-  .fifo_almful_lo(rr_state_csr_next.rt.almful.wb_validate_lo)
+  .fifo_almful_lo(rr_state_csr_next.rt.almful.wb_validate_lo),
+  .dbg_csr()
 );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -456,7 +458,8 @@ rr_csrs #(
     .storage_axi_write_csr(storage_axi_write_csr),
     .storage_axi_read_csr(storage_axi_read_csr),
     .rr_mode_csr(rr_mode_csr),
-    .rr_state_csr(rr_state_csr)
+    .rr_state_csr(rr_state_csr),
+    .wb_record_dbg_csr(wb_record_dbg_csr)
 );
 
 rr_axi_bus_t rr_storage_bus();

@@ -15,7 +15,7 @@
 #include <fpga_pci.h>
 #include <fpga_hugealloc.h>
 #endif
-
+void debug_check();
 /*
  * Parse RR_MODE register configuration
  */
@@ -349,6 +349,7 @@ void do_post_rr() {
     } else if (is_replay()) {
         do_replay_stop();
     }
+    debug_check();
 #ifndef SV_TEST
     if (pci_bar1_handle != PCI_BAR_HANDLE_INIT)
         assert(fpga_pci_detach(pci_bar1_handle) == 0);
@@ -363,3 +364,35 @@ uint8_t is_record() { return rr_mode.recordEn == 1; }
 uint8_t is_replay() { return rr_mode.replayEn == 1; }
 
 uint8_t is_validate() { return rr_mode.outputValidateEn == 1; }
+
+/*
+ * DBG related
+ */
+#define LOG_INFO_DBG_CSR_U32(csr_idx) \
+    uint32_t csr_idx##_val; \
+    rr_cfg_peek(csr_idx, &(csr_idx##_val)); \
+    log_info("DBG: " #csr_idx " = %d", csr_idx##_val)
+#define LOG_INFO_DBG_CSR_U64(csr_idx_pfx) \
+    uint64_t csr_idx_pfx##_val; \
+    rr_cfg_peek64(csr_idx_pfx##_LO, csr_idx_pfx##_HI, &(csr_idx_pfx##_val)); \
+    log_info("DBG: " #csr_idx_pfx " = %ld", csr_idx_pfx##_val)
+void debug_check() {
+    // gefei dbg_csr
+    LOG_INFO_DBG_CSR_U64(RR_WB_RECORD_DBG_BITS_NON_ALIGNED);
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_FIFO_WR_CNT);
+
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcim_R);
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_CHPKT_CNT_sda_AW);
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_CHPKT_CNT_bar1_W);
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_CHPKT_CNT_ocl_AR);
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcis_AW);
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_CHPKT_CNT_ocl_AW);
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_CHPKT_CNT_ocl_W);
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_CHPKT_CNT_bar1_AW);
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcis_W);
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcis_B);
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_CHPKT_CNT_pcis_AR);
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_CHPKT_CNT_sda_AR);
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_CHPKT_CNT_sda_W);
+    LOG_INFO_DBG_CSR_U32(RR_WB_RECORD_DBG_BITS_CHPKT_CNT_bar1_AR);
+}
