@@ -306,11 +306,10 @@ typedef struct packed {
       logic wb_validate_hi;    // bit 18
       logic wb_validate_lo;    // bit 19
       logic pcimB_buf;         // bit 20
-      logic pcim_replayer;     // bit 21
-      logic pcis_replayer;     // bit 22
-      logic sda_replayer;      // bit 23
-      logic ocl_replayer;      // bit 24
-      logic bar1_replayer;     // bit 25
+      struct packed {
+        logic [13:0] almful;   // bit 21-34
+        logic [4:0] rdyrply_almful; // bit 35-40
+      } replay_bus;
     } almful;
   } rt;
 } rr_state_csr_t;

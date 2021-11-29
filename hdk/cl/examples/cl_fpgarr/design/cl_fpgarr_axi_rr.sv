@@ -242,8 +242,7 @@ module axi_mstr_replayer #(
    output logic [LOGE_PER_AXI-1:0] o_rt_loge_valid,
    input logic [NUM_INTERFACES-1:0] [LOGE_PER_AXI-1:0] i_rt_loge_valid,
    output logic fifo_overflow,
-   output logic fifo_underflow,
-   output logic fifo_almful
+   output logic fifo_underflow
 );
 localparam LOGB_CHANNEL_CNT = rbus.LOGB_CHANNEL_CNT;
 localparam [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
@@ -282,7 +281,6 @@ assign fifo_overflow = |fifo_overflow_ch | rdyrply_fifo_overflow;
 logic [LOGB_CHANNEL_CNT-1:0] fifo_underflow_ch;
 logic rdyrply_fifo_underflow;
 assign fifo_underflow = |fifo_underflow_ch | rdyrply_fifo_underflow;
-assign fifo_almful = |rbus.almful | rbus.rdyrply_almful[0];
 // AW Channel
 axichannel_valid_replayer #(
    .DATA_WIDTH(AXI_RR_AW_WIDTH),
@@ -384,8 +382,7 @@ module axi_slv_replayer #(
    output logic [LOGE_PER_AXI-1:0] o_rt_loge_valid,
    input logic [NUM_INTERFACES-1:0] [LOGE_PER_AXI-1:0] i_rt_loge_valid,
    output logic fifo_overflow,
-   output logic fifo_underflow,
-   output logic fifo_almful
+   output logic fifo_underflow
 );
 localparam LOGB_CHANNEL_CNT = rbus.LOGB_CHANNEL_CNT;
 localparam [LOGB_CHANNEL_CNT-1:0] [RR_CHANNEL_WIDTH_BITS-1:0]
@@ -419,7 +416,6 @@ assign fifo_overflow = |fifo_overflow_ch | rdyrply_fifo_overflow;
 logic [LOGB_CHANNEL_CNT-1:0] fifo_underflow_ch;
 logic rdyrply_fifo_underflow;
 assign fifo_underflow = |fifo_underflow_ch | rdyrply_fifo_underflow;
-assign fifo_almful = |rbus.almful | rbus.rdyrply_almful[0];
 
 // Ready signal replay
 // AW  Channel

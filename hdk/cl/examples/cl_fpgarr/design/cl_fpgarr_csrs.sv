@@ -13,8 +13,9 @@ module rr_csrs #(
 );
 
     // parameter check
-    if ($bits(rr_state_csr_t) > 32)
-        $error("rr_state_csr_t no longer fits inside one CSR");
+    if ($bits(rr_state_csr_t) > 64)
+        $error("rr_state_csr_t (%d bits) no longer fits inside two CSRs",
+            $bits(rr_state_csr_t));
 
     logic [31:0] csrs [RR_CSR_CNT-1:0];
 
@@ -100,6 +101,16 @@ module rr_csrs #(
         .in_bus(wb_record_dbg_csr),
         .out_bus(wb_record_dbg_csr_i)
     );
+    rr_state_csr_t rr_state_csr_i;
+    lib_pipe #(
+        .WIDTH($bits(rr_state_csr_t)),
+        .STAGES(REG_STAGES))
+    pipe_rr_state_csr(
+        .clk(clk),
+        .rst_n(rstn),
+        .in_bus(rr_state_csr),
+        .out_bus(rr_state_csr_i)
+    );
 
     // Write register update
     always_ff @(posedge clk) begin
@@ -107,7 +118,7 @@ module rr_csrs #(
             al_addr_q <= 0;
             al_write_transmitted_q <= 0;
             al_write_transmitted_qq <= 0;
-            for (int i = 0; i < 16; i++) begin
+            for (int i = 0; i < RR_CSR_CNT; i++) begin
                 csrs[i] <= 0;
             end
         end else begin
@@ -129,7 +140,8 @@ module rr_csrs #(
             csrs[VALIDATE_BITS_LO] <= storage_axi_read_csr_i.validate_bits[0 +: 32];
             csrs[RT_REPLAY_BITS_HI] <= storage_axi_read_csr_i.rt_replay_bits[32 +: 32];
             csrs[RT_REPLAY_BITS_LO] <= storage_axi_read_csr_i.rt_replay_bits[0 +: 32];
-            csrs[RR_STATE] <= {{(32-$bits(rr_state_csr)){1'b0}}, rr_state_csr};
+            csrs[RR_STATE_HI] <= rr_state_csr_i[32 +: $bits(rr_state_csr_t)-32];
+            csrs[RR_STATE_LO] <= rr_state_csr_i[0 +: 32];
             csrs[RR_CSR_VERSION] <= RR_CSR_VERSION_INT;
             csrs[RR_TRACE_FIFO_ASSERT] <= storage_axi_read_csr_i.trace_fifo_assert[0 +: 32];
             // wb_record_dbg_csr

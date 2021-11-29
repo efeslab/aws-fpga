@@ -14,13 +14,13 @@ typedef enum {
   RECORD_FORCE_FINISH,       // 6
   REPLAY_START,              // 7, currently not used
   RR_MODE,                   // 8
-  RR_STATE,                  // 9
+  RR_STATE_LO,               // 9
   RECORD_BITS_HI,            // 10
   RECORD_BITS_LO,            // 11
   REPLAY_BITS_HI,            // 12
   REPLAY_BITS_LO,            // 13
   VALIDATE_BUF_UPDATE,       // 14
-  RR_RSVD_2,                 // 15
+  RR_STATE_HI,               // 15
   VALIDATE_BITS_HI,          // 16
   VALIDATE_BITS_LO,          // 17
   RT_REPLAY_BITS_HI,         // 18

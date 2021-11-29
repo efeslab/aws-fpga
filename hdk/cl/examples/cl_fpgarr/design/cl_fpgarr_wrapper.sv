@@ -347,6 +347,8 @@ rr_replay_bus_ungroup2 top_ungroup(
   .in(unpacked_replay_bus),
   .outA(rp2), .outB(rr_dma_pcis_replay_bus));
 
+assign rr_state_csr_next.rt.almful.replay_bus.almful = unpacked_replay_bus.almful;
+assign rr_state_csr_next.rt.almful.replay_bus.rdyrply_almful = unpacked_replay_bus.rdyrply_almful;
 ////////////////////////////////////////////////////////////////////////////////
 // Replay logic
 ////////////////////////////////////////////////////////////////////////////////
@@ -380,8 +382,7 @@ axi_slv_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, PCIM)
   .o_rt_loge_valid(rt_loge_valid_agg[PCIM]),
   .i_rt_loge_valid(rt_loge_valid_dist[PCIM]),
   .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.pcim_replayer),
-  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.pcim_replayer),
-  .fifo_almful(rr_state_csr_next.rt.almful.pcim_replayer)
+  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.pcim_replayer)
 );
 // PCIS bus
 rr_axi_bus_t pcis_replay_axi_bus();
@@ -393,8 +394,7 @@ axi_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, PCIS)
   .o_rt_loge_valid(rt_loge_valid_agg[PCIS]),
   .i_rt_loge_valid(rt_loge_valid_dist[PCIS]),
   .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.pcis_replayer),
-  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.pcis_replayer),
-  .fifo_almful(rr_state_csr_next.rt.almful.pcis_replayer)
+  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.pcis_replayer)
 );
 // SDA bus
 rr_axi_lite_bus_t sda_replay_axil_bus();
@@ -406,8 +406,7 @@ axil_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, SDA)
   .o_rt_loge_valid(rt_loge_valid_agg[SDA]),
   .i_rt_loge_valid(rt_loge_valid_dist[SDA]),
   .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.sda_replayer),
-  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.sda_replayer),
-  .fifo_almful(rr_state_csr_next.rt.almful.sda_replayer)
+  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.sda_replayer)
 );
 // OCL bus
 rr_axi_lite_bus_t ocl_replay_axil_bus();
@@ -419,8 +418,7 @@ axil_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, OCL)
   .o_rt_loge_valid(rt_loge_valid_agg[OCL]),
   .i_rt_loge_valid(rt_loge_valid_dist[OCL]),
   .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.ocl_replayer),
-  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.ocl_replayer),
-  .fifo_almful(rr_state_csr_next.rt.almful.ocl_replayer)
+  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.ocl_replayer)
 );
 // BAR1 bus
 rr_axi_lite_bus_t bar1_replay_axil_bus();
@@ -432,8 +430,7 @@ axil_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, BAR1)
   .o_rt_loge_valid(rt_loge_valid_agg[BAR1]),
   .i_rt_loge_valid(rt_loge_valid_dist[BAR1]),
   .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.bar1_replayer),
-  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.bar1_replayer),
-  .fifo_almful(rr_state_csr_next.rt.almful.bar1_replayer)
+  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.bar1_replayer)
 );
 // the distribution crossbar
 rr_rt_loge_crossbar #(
