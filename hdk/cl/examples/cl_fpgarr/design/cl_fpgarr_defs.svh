@@ -400,4 +400,11 @@ parameter int MAX_AWID_WIDTH = $clog2(MAX_WR_BURSTS);
 // MAX_RD_BURSTS is similar to MAX_WR_BURSTS, but for read trasactions
 parameter int MAX_RD_BURSTS = 32;
 parameter int MAX_ARID_WIDTH = $clog2(MAX_RD_BURSTS);
+
+// A wrapper around lib_pipe to encapsulate a packed struct
+`define LIB_PIPE_PACKED_STRUCT(typename, varname, suffix, _clk, _rstn, NSTAGES)\
+  typename varname``suffix;                                                    \
+  lib_pipe #(.WIDTH($bits(typename)), .STAGES(NSTAGES))                        \
+    pipe``_``varname(.clk(_clk), .rst_n(_rstn),                                \
+      .in_bus(varname), .out_bus(varname``suffix))
 `endif // CL_FPGARR_DEFS

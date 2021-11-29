@@ -16,6 +16,8 @@ module rr_csrs #(
     if ($bits(rr_state_csr_t) > 64)
         $error("rr_state_csr_t (%d bits) no longer fits inside two CSRs",
             $bits(rr_state_csr_t));
+    rr_csr_enum rr_csr_nouse;
+    $info("Reserved %d csrs, used %d", RR_CSR_CNT, rr_csr_nouse.num()-1);
 
     logic [31:0] csrs [RR_CSR_CNT-1:0];
 
@@ -81,36 +83,12 @@ module rr_csrs #(
     end
     
     // lib_pipe for RO CSR
-    storage_axi_read_csr_t storage_axi_read_csr_i;
-    lib_pipe #(
-        .WIDTH($bits(storage_axi_read_csr_t)),
-        .STAGES(REG_STAGES))
-    pipe_storage_axi_read_csr(
-        .clk(clk),
-        .rst_n(rstn),
-        .in_bus(storage_axi_read_csr),
-        .out_bus(storage_axi_read_csr_i)
-    );
-    rr_packed2wb_dbg_csr_t wb_record_dbg_csr_i;
-    lib_pipe #(
-        .WIDTH($bits(wb_record_dbg_csr)),
-        .STAGES(REG_STAGES))
-    pipe_wb_record_dbg_csr(
-        .clk(clk),
-        .rst_n(rstn),
-        .in_bus(wb_record_dbg_csr),
-        .out_bus(wb_record_dbg_csr_i)
-    );
-    rr_state_csr_t rr_state_csr_i;
-    lib_pipe #(
-        .WIDTH($bits(rr_state_csr_t)),
-        .STAGES(REG_STAGES))
-    pipe_rr_state_csr(
-        .clk(clk),
-        .rst_n(rstn),
-        .in_bus(rr_state_csr),
-        .out_bus(rr_state_csr_i)
-    );
+    `LIB_PIPE_PACKED_STRUCT(storage_axi_read_csr_t, storage_axi_read_csr, _i,
+        clk, rstn, REG_STAGES);
+    `LIB_PIPE_PACKED_STRUCT(rr_packed2wb_dbg_csr_t, wb_record_dbg_csr, _i,
+        clk, rstn, REG_STAGES);
+    `LIB_PIPE_PACKED_STRUCT(rr_state_csr_t, rr_state_csr, _i,
+        clk, rstn, REG_STAGES);
 
     // Write register update
     always_ff @(posedge clk) begin
