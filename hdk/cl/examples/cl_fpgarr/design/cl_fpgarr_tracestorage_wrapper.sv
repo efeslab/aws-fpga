@@ -413,6 +413,17 @@ module rr_trace_rw #(
         end
     end
 
+    logic arvalid_prev, arready_prev;
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            arvalid_prev <= 0;
+            arready_prev <= 0;
+        end else begin
+            arvalid_prev <= axi_out.arvalid;
+            arready_prev <= axi_out.arready;
+        end
+    end
+
 `ifndef TEST_REPLAY
     // Read request
     always_comb begin
@@ -422,10 +433,10 @@ module rr_trace_rw #(
             if (read_balance <= on_the_fly_balance) begin
                 axi_out.arvalid = 1;
             end else begin
-                axi_out.arvalid = 0;
+                axi_out.arvalid = arvalid_prev & ~arready_prev;
             end
         end else begin
-            axi_out.arvalid = 0;
+            axi_out.arvalid = arvalid_prev & ~arready_prev;
         end
     end
 `else
