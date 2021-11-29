@@ -337,6 +337,18 @@ typedef struct packed {
     logic [31:0] bar1_AR;
   } chpkt_cnt;
 } rr_packed2wb_dbg_csr_t;
+
+typedef struct packed {
+  // 161 bits, each need 6 CSRs to cover
+  logic pc_asserted;
+  logic [159:0] pc_status;
+} pchk_report_t;
+typedef struct packed {
+   pchk_report_t logging_wb_pchk;
+   pchk_report_t validation_wb_pchk;
+   pchk_report_t cl_pcim_pchk;
+   pchk_report_t sh_pcim_pchk;
+} pcim_interconnect_dbg_csr_t;
 `endif
 // template
 ////////////////////////////////////////////////////////////////////////////////

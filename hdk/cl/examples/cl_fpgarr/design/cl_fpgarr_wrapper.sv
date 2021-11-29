@@ -117,6 +117,7 @@ always_ff @(posedge clk)
     rr_state_csr.rt <= rr_state_csr_next.rt;
   end
 rr_packed2wb_dbg_csr_t wb_record_dbg_csr;
+pcim_interconnect_dbg_csr_t pcim_interconnect_dbg_csr;
 ////////////////////////////////////////////////////////////////////////////////
 // LOG AXI bus
 // The rr_XXX_record_bus are the axi(l) bus going into each logging module
@@ -456,7 +457,8 @@ rr_csrs #(
     .storage_axi_read_csr(storage_axi_read_csr),
     .rr_mode_csr(rr_mode_csr),
     .rr_state_csr(rr_state_csr),
-    .wb_record_dbg_csr(wb_record_dbg_csr)
+    .wb_record_dbg_csr(wb_record_dbg_csr),
+    .pcim_interconnect_dbg_csr(pcim_interconnect_dbg_csr)
 );
 
 rr_axi_bus_t rr_storage_bus();
@@ -570,7 +572,8 @@ rr_storage_pcim_axi_interconnect pcim_interconnect (
   .logging_wb_bus(rr_storage_bus),
   .validation_wb_bus(rr_validation_bus),
   .cl_pcim_bus(cl_pcim_bus),
-  .sh_pcim_bus(sh_pcim_bus_q)
+  .sh_pcim_bus(sh_pcim_bus_q),
+  .dbg_csr(pcim_interconnect_dbg_csr)
 );
 // AXI4LITE Interconnect for splitting the bar1 bus for rr configuration
 rr_cfg_bar1_interconnect bar1_interconnect (

@@ -380,6 +380,20 @@ uint8_t is_validate() { return rr_mode.outputValidateEn == 1; }
     uint64_t csr_idx_pfx##_val; \
     rr_cfg_peek64(csr_idx_pfx##_LO, csr_idx_pfx##_HI, &(csr_idx_pfx##_val)); \
     log_info("DBG: " #csr_idx_pfx " = " fmt, csr_idx_pfx##_val)
+
+#define LOG_INFO_DBG_CSR_PCHK(pchk_csr_idx) \
+    LOG_INFO_DBG_CSR_U32("%#x", pchk_csr_idx##_P0); \
+    LOG_INFO_DBG_CSR_U32("%#x", pchk_csr_idx##_P1); \
+    LOG_INFO_DBG_CSR_U32("%#x", pchk_csr_idx##_P2); \
+    LOG_INFO_DBG_CSR_U32("%#x", pchk_csr_idx##_P3); \
+    LOG_INFO_DBG_CSR_U32("%#x", pchk_csr_idx##_P4)
+void debug_pcim_pchk() {
+    LOG_INFO_DBG_CSR_U32("%#x", RR_PCIM_PCHK_ASSERTED);
+    LOG_INFO_DBG_CSR_PCHK(RR_LOGGING_WB_PCHK);
+    LOG_INFO_DBG_CSR_PCHK(RR_VALIDATION_WB_PCHK);
+    LOG_INFO_DBG_CSR_PCHK(RR_CL_PCIM_PCHK);
+    LOG_INFO_DBG_CSR_PCHK(RR_SH_PCIM_PCHK);
+}
 void debug_check() {
     // OLD debug csr
     check_rr_state();
@@ -419,6 +433,8 @@ void debug_check() {
     LOG_INFO_DBG_CSR_U64("%ld", RT_LEFTOVER_SIZE);
     LOG_INFO_DBG_CSR_U64("%ld", RT_RECORD_CURR);
     LOG_INFO_DBG_CSR_U64("%ld", RR_AXI_STATUS);
+
+    debug_pcim_pchk();
 }
 
 void check_rr_state() {

@@ -9,7 +9,8 @@ module rr_csrs #(
     output rr_mode_csr_t rr_mode_csr,
     input storage_axi_read_csr_t storage_axi_read_csr,
     input rr_state_csr_t rr_state_csr,
-    input rr_packed2wb_dbg_csr_t wb_record_dbg_csr
+    input rr_packed2wb_dbg_csr_t wb_record_dbg_csr,
+    input pcim_interconnect_dbg_csr_t pcim_interconnect_dbg_csr
 );
 
     // parameter check
@@ -89,6 +90,8 @@ module rr_csrs #(
         clk, rstn, REG_STAGES);
     `LIB_PIPE_PACKED_STRUCT(rr_state_csr_t, rr_state_csr, _i,
         clk, rstn, REG_STAGES);
+    `LIB_PIPE_PACKED_STRUCT(pcim_interconnect_dbg_csr_t,
+        pcim_interconnect_dbg_csr, _i, clk, rstn, REG_STAGES);
 
     // Write register update
     always_ff @(posedge clk) begin
@@ -191,6 +194,28 @@ module rr_csrs #(
 
             csrs[RR_AXI_STATUS_HI] <= storage_axi_read_csr_i.trace_rw_cnts.axi_status[32 +: 32];
             csrs[RR_AXI_STATUS_LO] <= storage_axi_read_csr_i.trace_rw_cnts.axi_status[0 +: 32];
+            // pcim pchk csrs
+            csrs[RR_PCIM_PCHK_ASSERTED] <= {
+                pcim_interconnect_dbg_csr_i.logging_wb_pchk.pc_asserted,
+                pcim_interconnect_dbg_csr_i.validation_wb_pchk.pc_asserted,
+                pcim_interconnect_dbg_csr_i.cl_pcim_pchk.pc_asserted,
+                pcim_interconnect_dbg_csr_i.sh_pcim_pchk.pc_asserted
+            };
+// helper to assign pchk signals to csrs
+`define ASSIGN_PCHK_TO_CSRS(csrs, PCHK_CSR_IDX, pchk_report)                   \
+    csrs[PCHK_CSR_IDX``_P0] <= pchk_report.pc_status[0 +: 32];                 \
+    csrs[PCHK_CSR_IDX``_P1] <= pchk_report.pc_status[32 +: 32];                \
+    csrs[PCHK_CSR_IDX``_P2] <= pchk_report.pc_status[64 +: 32];                \
+    csrs[PCHK_CSR_IDX``_P3] <= pchk_report.pc_status[96 +: 32];                \
+    csrs[PCHK_CSR_IDX``_P4] <= pchk_report.pc_status[128 +: 32]
+            `ASSIGN_PCHK_TO_CSRS(csrs, RR_LOGGING_WB_PCHK,
+                pcim_interconnect_dbg_csr_i.logging_wb_pchk);
+            `ASSIGN_PCHK_TO_CSRS(csrs, RR_VALIDATION_WB_PCHK,
+                pcim_interconnect_dbg_csr_i.validation_wb_pchk);
+            `ASSIGN_PCHK_TO_CSRS(csrs, RR_CL_PCIM_PCHK,
+                pcim_interconnect_dbg_csr_i.cl_pcim_pchk);
+            `ASSIGN_PCHK_TO_CSRS(csrs, RR_SH_PCIM_PCHK,
+                pcim_interconnect_dbg_csr_i.sh_pcim_pchk);
         end
     end
 

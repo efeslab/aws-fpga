@@ -9,7 +9,8 @@ module rr_storage_pcim_axi_interconnect (
    rr_axi_bus_t.master logging_wb_bus,
    rr_axi_bus_t.master validation_wb_bus,
    rr_axi_bus_t.master cl_pcim_bus,
-   rr_axi_bus_t.slave sh_pcim_bus
+   rr_axi_bus_t.slave sh_pcim_bus,
+   output pcim_interconnect_dbg_csr_t dbg_csr
 );
 
 localparam int AXI_ID_WIDTH = 16;
@@ -18,9 +19,15 @@ if (PCIM_INTERCONNECT_AXI_ID_WIDTH + $clog2(NUM_SLV) > AXI_ID_WIDTH)
    $error("ID allocation is invalid: NUM_SLV %d, PCIM_INTERCONNECT_AXI_ID_WIDTH %d",
       NUM_SLV, PCIM_INTERCONNECT_AXI_ID_WIDTH);
 // NOTE: S00 is READ WRITE
-//       S01 is WRITE ONLY
+//       S01 is WRITE ONLY (but configured to READ WRITE to use pchk)
 //       S02 is READ WRITE
 `ifdef DEBUG_INTERCONNECT
+   `define USE_PCIM_PCHK_INTERCONNECT
+`elsif SYNTH_DEBUG_INTERCONNECT
+   `define USE_PCIM_PCHK_INTERCONNECT
+`endif
+
+`ifdef USE_PCIM_PCHK_INTERCONNECT
 rr_pcim_pchk_interconnect pcim_interconnect_inst (
 `else
 rr_pcim_axi_interconnect pcim_interconnect_inst (
@@ -187,6 +194,17 @@ rr_pcim_axi_interconnect pcim_interconnect_inst (
    .S02_AXI_wready(cl_pcim_bus.wready),
    .S02_AXI_wstrb(cl_pcim_bus.wstrb),
    .S02_AXI_wvalid(cl_pcim_bus.wvalid)
+   `ifdef USE_PCIM_PCHK_INTERCONNECT
+   ,
+   .m00_pc_asserted(dbg_csr.sh_pcim_pchk.pc_asserted),
+   .m00_pc_status(dbg_csr.sh_pcim_pchk.pc_status),
+   .s00_pc_asserted(dbg_csr.logging_wb_pchk.pc_asserted),
+   .s00_pc_status(dbg_csr.logging_wb_pchk.pc_status),
+   .s01_pc_asserted(dbg_csr.validation_wb_pchk.pc_asserted),
+   .s01_pc_status(dbg_csr.validation_wb_pchk.pc_status),
+   .s02_pc_asserted(dbg_csr.cl_pcim_pchk.pc_asserted),
+   .s02_pc_status(dbg_csr.cl_pcim_pchk.pc_status)
+   `endif
 );
 
 // mask the read interface of the validation_wb_bus (since it is write-only)
@@ -217,5 +235,10 @@ pcim_dbg_cnt dbg_sh_cnt (
    .clk(clk), .rstn(rstn),
    .bus(sh_pcim_bus)
 );
+`endif
+
+`ifndef USE_PCIM_PCHK_INTERCONNECT
+// zero out all dbg_csr
+assign dbg_csr = ($bits(dbg_csr))'(0);
 `endif
 endmodule

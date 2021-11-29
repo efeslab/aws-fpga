@@ -249,7 +249,7 @@ endfunction
 // !!!!!!!!!!!!!!!!!!!!!!!! ATTENTION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // ALWAYS update (increase) this RR_CSR_VERSION_INT after making changes to CSR
 // address allocation
-parameter int RR_CSR_VERSION_INT = 20211128;
+parameter int RR_CSR_VERSION_INT = 20211129;
 ////////////////////////////////////////////////////////////////////////////////
 parameter int RR_CSR_CNT = 128;
 parameter int RR_CSR_ADDR_WIDTH = $clog2(RR_CSR_CNT);
@@ -339,6 +339,28 @@ typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
   RR_AXI_STATUS_HI,
   RR_AXI_STATUS_LO,
   RR_ON_THE_FLY_BALANCE,
+  // pcim pchk csrs
+  RR_PCIM_PCHK_ASSERTED,
+  RR_LOGGING_WB_PCHK_P0,
+  RR_LOGGING_WB_PCHK_P1,
+  RR_LOGGING_WB_PCHK_P2,
+  RR_LOGGING_WB_PCHK_P3,
+  RR_LOGGING_WB_PCHK_P4,
+  RR_VALIDATION_WB_PCHK_P0,
+  RR_VALIDATION_WB_PCHK_P1,
+  RR_VALIDATION_WB_PCHK_P2,
+  RR_VALIDATION_WB_PCHK_P3,
+  RR_VALIDATION_WB_PCHK_P4,
+  RR_CL_PCIM_PCHK_P0,
+  RR_CL_PCIM_PCHK_P1,
+  RR_CL_PCIM_PCHK_P2,
+  RR_CL_PCIM_PCHK_P3,
+  RR_CL_PCIM_PCHK_P4,
+  RR_SH_PCIM_PCHK_P0,
+  RR_SH_PCIM_PCHK_P1,
+  RR_SH_PCIM_PCHK_P2,
+  RR_SH_PCIM_PCHK_P3,
+  RR_SH_PCIM_PCHK_P4,
   RR_CSR_LAST_DONT_USE = RR_CSR_CNT - 1
 } rr_csr_enum;
 `define RR_CSR_ADDR(idx) (idx << 2)
