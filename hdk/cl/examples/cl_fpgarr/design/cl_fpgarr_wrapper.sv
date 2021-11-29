@@ -167,7 +167,8 @@ axi_recorder dma_pcis_bus_recorder (
   .M(rr_dma_pcis_record_bus),
   .S(rr_dma_pcis_bus),
   .log_M2S(rr_dma_pcis_SH2CL_logging_bus),
-  .log_S2M(rr_dma_pcis_CL2SH_logging_bus)
+  .log_S2M(rr_dma_pcis_CL2SH_logging_bus),
+  .B_fifo_almful(), .B_fifo_overflow(), .B_fifo_underflow() // not used
 );
 ////////////////////////////////////////////////////////////////////////////////
 // LOG AXIL bus

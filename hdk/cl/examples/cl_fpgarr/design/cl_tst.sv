@@ -729,7 +729,8 @@ always_ff @( posedge clk)
    else if (wr_state==WR_ADDR)
    begin
       awaddr <= inst_wr_rdata[63:0] | wr_loop_addr_adj;
-      $display("from cl_tst awaddr: 0x%x\n", inst_wr_rdata[63:0] | wr_loop_addr_adj);
+      //if (wr_state_nxt != WR_ADDR)
+      //   $display("from cl_tst awaddr: 0x%x\n", inst_wr_rdata[63:0] | wr_loop_addr_adj);
       awlen <= inst_wr_rdata[103:96];
       awuser <= (cfg_user_mode)? inst_wr_rdata[127:112]: ((inst_wr_rdata[103:96]+1) * user_length_mult) - wr_first_adj - inst_wr_rdata[104+:ADJ_DW_WIDTH];
    end
@@ -798,7 +799,7 @@ begin
 
    if (wr_state==WR_ADDR)
    begin
-      $display("wr_fist_adj 0x%x\n", wr_first_adj);
+      // $display("wr_fist_adj 0x%x\n", wr_first_adj);
       //Only have 1 data phase (length is 0)
       if (inst_wr_rdata[103:96]==0)
          wstrb_nxt = ({(DATA_WIDTH/8){1'b1}} << (wr_first_adj*4)) & (~({(DATA_WIDTH/8){1'b1}} << (({ADJ_DW_WIDTH+2{1'b1}} + 1) - (inst_wr_rdata[111:104]*4))));
