@@ -90,7 +90,8 @@ read_ip [ list \
 read_bd [ list \
   $HDK_SHELL_DESIGN_DIR/ip/cl_axi_interconnect/cl_axi_interconnect.bd \
   $CL_DIR/ip/rr_pcim_axi_interconnect/rr_pcim_axi_interconnect.bd \
-  $CL_DIR/ip/rr_cfg_axil_interconnect/rr_cfg_axil_interconnect.bd
+  $CL_DIR/ip/rr_cfg_axil_interconnect/rr_cfg_axil_interconnect.bd \
+  $CL_DIR/ip/rr_pcim_pchk_interconnect/rr_pcim_pchk_interconnect.bd
 ]
 
 read_ip [ list \
