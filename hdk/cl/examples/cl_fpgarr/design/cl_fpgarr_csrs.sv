@@ -121,6 +121,7 @@ module rr_csrs #(
             for (int i = 0; i < RR_CSR_CNT; i++) begin
                 csrs[i] <= 0;
             end
+            csrs[RR_ON_THE_FLY_BALANCE] <= 100;
         end else begin
             al_addr_q <= al_addr;
             al_write_transmitted_q <= al_write_transmitted;
@@ -268,7 +269,8 @@ module rr_csrs #(
         record_force_finish: al_write_transmitted_q && (al_addr == RECORD_FORCE_FINISH),
         // replay_start: al_write_transmitted_q && (al_addr == REPLAY_START)
         replay_bits: {csrs[REPLAY_BITS_HI], csrs[REPLAY_BITS_LO]},
-        validate_buf_update: al_write_transmitted_q && (al_addr == VALIDATE_BUF_UPDATE)
+        validate_buf_update: al_write_transmitted_q && (al_addr == VALIDATE_BUF_UPDATE),
+        on_the_fly_balance: csrs[RR_ON_THE_FLY_BALANCE]
     };
     lib_pipe #(
         .WIDTH($bits(storage_axi_write_csr_t)),

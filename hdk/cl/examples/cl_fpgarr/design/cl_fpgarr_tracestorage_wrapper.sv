@@ -53,6 +53,7 @@ module rr_trace_rw #(
     output logic [3:0] overflowed,
     output logic [3:0] underflowed,
 
+    input [31:0] on_the_fly_balance,
     output rr_trace_rw_cnts_t rr_trace_rw_cnts,
     output rr_trace_merge_cnts_t rr_trace_merge_cnts
 );
@@ -418,7 +419,7 @@ module rr_trace_rw #(
         if (~sync_rst_n) begin
             axi_out.arvalid = 0;
         end else if (do_replay) begin
-            if (read_balance <= 120) begin
+            if (read_balance <= on_the_fly_balance) begin
                 axi_out.arvalid = 1;
             end else begin
                 axi_out.arvalid = 0;

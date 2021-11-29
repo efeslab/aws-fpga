@@ -101,7 +101,8 @@ rr_trace_rw #(
   .overflowed(trace_fifo_overflowed),
   .underflowed(trace_fifo_underflowed),
   .rr_trace_rw_cnts(counter.trace_rw_cnts),
-  .rr_trace_merge_cnts(counter.trace_merge_cnts)
+  .rr_trace_merge_cnts(counter.trace_merge_cnts),
+  .on_the_fly_balance(csr.on_the_fly_balance)
 );
 
 localparam VALIDATE_BUS_WIDTH = validate_bus.FULL_WIDTH;

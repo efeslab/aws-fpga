@@ -76,6 +76,7 @@ typedef enum {
   RT_RECORD_CURR_LO,
   RR_AXI_STATUS_HI,
   RR_AXI_STATUS_LO,
+  RR_ON_THE_FLY_BALANCE,
 } rr_csr_enum;
 
 #define RR_CSR_ADDR(idx) (CL_FPGARR_CSR_BASE + 0x4 * idx)
