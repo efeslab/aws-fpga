@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 
 #include <utils/log.h>
 #ifdef SV_TEST
@@ -203,12 +204,12 @@ static void rr_dealloc_buffer(uint8_t *buf) {
 }
 
 // in simulation, the unit is passed to sv_pause
-// on real hardware, the unit is 1000us
+// on real hardware, the unit is 100000us (100ms)
 static void rr_wait(uint32_t unit) {
 #ifdef SV_TEST
     sv_pause(unit);
 #else
-    usleep(unit*1000);
+    usleep(unit*100000);
 #endif
 }
 
@@ -261,6 +262,8 @@ static void dump_trace(const char *msg, const char *filename, uint8_t *p,
     putchar('\n');
 #endif
     if (size_bytes) {
+        unlink(filename);
+        errno = 0; // suppress log_info
         // save trace to file
         int fd = open(filename, O_RDWR | O_CREAT,
                       S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
@@ -380,7 +383,7 @@ uint8_t is_validate() { return rr_mode.outputValidateEn == 1; }
 void debug_check() {
     // OLD debug csr
     check_rr_state();
-    LOG_INFO_DBG_CSR_U32("%d", RR_TRACE_FIFO_ASSERT);
+    LOG_INFO_DBG_CSR_U32("%#x", RR_TRACE_FIFO_ASSERT);
     // gefei dbg_csr
     LOG_INFO_DBG_CSR_U64("%ld", RR_WB_RECORD_DBG_BITS_NON_ALIGNED);
     LOG_INFO_DBG_CSR_U32("%d", RR_WB_RECORD_DBG_BITS_FIFO_WR_CNT);
@@ -419,5 +422,5 @@ void debug_check() {
 }
 
 void check_rr_state() {
-    LOG_INFO_DBG_CSR_U64("%#x", RR_STATE);
+    LOG_INFO_DBG_CSR_U64("%#lx", RR_STATE);
 }
