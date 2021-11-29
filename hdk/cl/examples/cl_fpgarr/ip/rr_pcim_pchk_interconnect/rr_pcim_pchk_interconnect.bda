@@ -21,6 +21,10 @@
   <key attr.name="vert_type" attr.type="string" for="node" id="VT"/>
   <graph edgedefault="undirected" id="G" parse.edgeids="canonical" parse.nodeids="canonical" parse.order="nodesfirst">
     <node id="n0">
+      <data key="VM">rr_pcim_pchk_interconnect</data>
+      <data key="VT">BC</data>
+    </node>
+    <node id="n1">
       <data key="BA">0x0000000000000000</data>
       <data key="BP">C_BASEADDR</data>
       <data key="HA">0xFFFFFFFFFFFFFFFF</data>
@@ -28,24 +32,6 @@
       <data key="MA">S01_AXI</data>
       <data key="MX">/</data>
       <data key="MI">S01_AXI</data>
-      <data key="MS">SEG_M00_AXI_Reg</data>
-      <data key="MV">:::</data>
-      <data key="TM">both</data>
-      <data key="SX">/</data>
-      <data key="SI">M00_AXI</data>
-      <data key="SS">Reg</data>
-      <data key="SV">::rr_pcim_pchk_interconnect_imp:</data>
-      <data key="TU">register</data>
-      <data key="VT">AC</data>
-    </node>
-    <node id="n1">
-      <data key="BA">0x0000000000000000</data>
-      <data key="BP">C_BASEADDR</data>
-      <data key="HA">0xFFFFFFFFFFFFFFFF</data>
-      <data key="HP">C_HIGHADDR</data>
-      <data key="MA">S02_AXI</data>
-      <data key="MX">/</data>
-      <data key="MI">S02_AXI</data>
       <data key="MS">SEG_M00_AXI_Reg</data>
       <data key="MV">:::</data>
       <data key="TM">both</data>
@@ -80,25 +66,39 @@
       <data key="VT">AC</data>
     </node>
     <node id="n4">
-      <data key="VM">rr_pcim_pchk_interconnect</data>
-      <data key="VT">BC</data>
+      <data key="BA">0x0000000000000000</data>
+      <data key="BP">C_BASEADDR</data>
+      <data key="HA">0xFFFFFFFFFFFFFFFF</data>
+      <data key="HP">C_HIGHADDR</data>
+      <data key="MA">S02_AXI</data>
+      <data key="MX">/</data>
+      <data key="MI">S02_AXI</data>
+      <data key="MS">SEG_M00_AXI_Reg</data>
+      <data key="MV">:::</data>
+      <data key="TM">both</data>
+      <data key="SX">/</data>
+      <data key="SI">M00_AXI</data>
+      <data key="SS">Reg</data>
+      <data key="SV">::rr_pcim_pchk_interconnect_imp:</data>
+      <data key="TU">register</data>
+      <data key="VT">AC</data>
     </node>
     <node id="n5">
       <data key="TU">active</data>
       <data key="VH">2</data>
       <data key="VT">PM</data>
     </node>
-    <edge id="e0" source="n4" target="n2">
+    <edge id="e0" source="n0" target="n2">
     </edge>
     <edge id="e1" source="n2" target="n5">
     </edge>
     <edge id="e2" source="n3" target="n5">
       <data key="EH">2</data>
     </edge>
-    <edge id="e3" source="n0" target="n5">
+    <edge id="e3" source="n1" target="n5">
       <data key="EH">2</data>
     </edge>
-    <edge id="e4" source="n1" target="n5">
+    <edge id="e4" source="n4" target="n5">
       <data key="EH">2</data>
     </edge>
   </graph>

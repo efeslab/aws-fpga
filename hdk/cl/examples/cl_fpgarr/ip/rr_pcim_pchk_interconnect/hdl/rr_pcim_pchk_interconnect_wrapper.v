@@ -1,7 +1,7 @@
 //Copyright 1986-2020 Xilinx, Inc. All Rights Reserved.
 //--------------------------------------------------------------------------------
 //Tool Version: Vivado v.2020.2 (lin64) Build 3064766 Wed Nov 18 09:12:47 MST 2020
-//Date        : Wed Nov 24 15:36:57 2021
+//Date        : Mon Nov 29 14:42:19 2021
 //Host        : cilantro running 64-bit Ubuntu 20.04.3 LTS
 //Command     : generate_target rr_pcim_pchk_interconnect_wrapper.bd
 //Design      : rr_pcim_pchk_interconnect_wrapper
@@ -167,7 +167,15 @@ module rr_pcim_pchk_interconnect_wrapper
     S02_AXI_wlast,
     S02_AXI_wready,
     S02_AXI_wstrb,
-    S02_AXI_wvalid);
+    S02_AXI_wvalid,
+    m00_pc_asserted,
+    m00_pc_status,
+    s00_pc_asserted,
+    s00_pc_status,
+    s01_pc_asserted,
+    s01_pc_status,
+    s02_pc_asserted,
+    s02_pc_status);
   input ACLK;
   input ARESETN;
   output [63:0]M00_AXI_araddr;
@@ -326,6 +334,14 @@ module rr_pcim_pchk_interconnect_wrapper
   output S02_AXI_wready;
   input [63:0]S02_AXI_wstrb;
   input S02_AXI_wvalid;
+  output m00_pc_asserted;
+  output [159:0]m00_pc_status;
+  output s00_pc_asserted;
+  output [159:0]s00_pc_status;
+  output s01_pc_asserted;
+  output [159:0]s01_pc_status;
+  output s02_pc_asserted;
+  output [159:0]s02_pc_status;
 
   wire ACLK;
   wire ARESETN;
@@ -485,6 +501,14 @@ module rr_pcim_pchk_interconnect_wrapper
   wire S02_AXI_wready;
   wire [63:0]S02_AXI_wstrb;
   wire S02_AXI_wvalid;
+  wire m00_pc_asserted;
+  wire [159:0]m00_pc_status;
+  wire s00_pc_asserted;
+  wire [159:0]s00_pc_status;
+  wire s01_pc_asserted;
+  wire [159:0]s01_pc_status;
+  wire s02_pc_asserted;
+  wire [159:0]s02_pc_status;
 
   rr_pcim_pchk_interconnect rr_pcim_pchk_interconnect_i
        (.ACLK(ACLK),
@@ -644,5 +668,13 @@ module rr_pcim_pchk_interconnect_wrapper
         .S02_AXI_wlast(S02_AXI_wlast),
         .S02_AXI_wready(S02_AXI_wready),
         .S02_AXI_wstrb(S02_AXI_wstrb),
-        .S02_AXI_wvalid(S02_AXI_wvalid));
+        .S02_AXI_wvalid(S02_AXI_wvalid),
+        .m00_pc_asserted(m00_pc_asserted),
+        .m00_pc_status(m00_pc_status),
+        .s00_pc_asserted(s00_pc_asserted),
+        .s00_pc_status(s00_pc_status),
+        .s01_pc_asserted(s01_pc_asserted),
+        .s01_pc_status(s01_pc_status),
+        .s02_pc_asserted(s02_pc_asserted),
+        .s02_pc_status(s02_pc_status));
 endmodule

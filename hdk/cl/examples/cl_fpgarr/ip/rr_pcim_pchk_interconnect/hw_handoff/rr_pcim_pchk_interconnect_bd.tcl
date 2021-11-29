@@ -119,6 +119,420 @@ current_bd_design $design_name
 ##################################################################
 
 
+# Hierarchical cell: s02_couplers
+proc create_hier_cell_s02_couplers { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_s02_couplers() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2090 -severity "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2091 -severity "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M_AXI
+
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI
+
+
+  # Create pins
+  create_bd_pin -dir I -type clk M_ACLK
+  create_bd_pin -dir I -type rst M_ARESETN
+  create_bd_pin -dir I -type clk S_ACLK
+  create_bd_pin -dir I -type rst S_ARESETN
+
+  # Create instance: s02_regslice, and set properties
+  set s02_regslice [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 s02_regslice ]
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net s02_couplers_to_s02_regslice [get_bd_intf_pins S_AXI] [get_bd_intf_pins s02_regslice/S_AXI]
+  connect_bd_intf_net -intf_net s02_regslice_to_s02_couplers [get_bd_intf_pins M_AXI] [get_bd_intf_pins s02_regslice/M_AXI]
+
+  # Create port connections
+  connect_bd_net -net S_ACLK_1 [get_bd_pins S_ACLK] [get_bd_pins s02_regslice/aclk]
+  connect_bd_net -net S_ARESETN_1 [get_bd_pins S_ARESETN] [get_bd_pins s02_regslice/aresetn]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
+
+# Hierarchical cell: s01_couplers
+proc create_hier_cell_s01_couplers { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_s01_couplers() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2090 -severity "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2091 -severity "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M_AXI
+
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI
+
+
+  # Create pins
+  create_bd_pin -dir I -type clk M_ACLK
+  create_bd_pin -dir I -type rst M_ARESETN
+  create_bd_pin -dir I -type clk S_ACLK
+  create_bd_pin -dir I -type rst S_ARESETN
+
+  # Create instance: s01_regslice, and set properties
+  set s01_regslice [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 s01_regslice ]
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net s01_couplers_to_s01_regslice [get_bd_intf_pins S_AXI] [get_bd_intf_pins s01_regslice/S_AXI]
+  connect_bd_intf_net -intf_net s01_regslice_to_s01_couplers [get_bd_intf_pins M_AXI] [get_bd_intf_pins s01_regslice/M_AXI]
+
+  # Create port connections
+  connect_bd_net -net S_ACLK_1 [get_bd_pins S_ACLK] [get_bd_pins s01_regslice/aclk]
+  connect_bd_net -net S_ARESETN_1 [get_bd_pins S_ARESETN] [get_bd_pins s01_regslice/aresetn]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
+
+# Hierarchical cell: s00_couplers
+proc create_hier_cell_s00_couplers { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_s00_couplers() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2090 -severity "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2091 -severity "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M_AXI
+
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI
+
+
+  # Create pins
+  create_bd_pin -dir I -type clk M_ACLK
+  create_bd_pin -dir I -type rst M_ARESETN
+  create_bd_pin -dir I -type clk S_ACLK
+  create_bd_pin -dir I -type rst S_ARESETN
+
+  # Create instance: s00_regslice, and set properties
+  set s00_regslice [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 s00_regslice ]
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net s00_couplers_to_s00_regslice [get_bd_intf_pins S_AXI] [get_bd_intf_pins s00_regslice/S_AXI]
+  connect_bd_intf_net -intf_net s00_regslice_to_s00_couplers [get_bd_intf_pins M_AXI] [get_bd_intf_pins s00_regslice/M_AXI]
+
+  # Create port connections
+  connect_bd_net -net S_ACLK_1 [get_bd_pins S_ACLK] [get_bd_pins s00_regslice/aclk]
+  connect_bd_net -net S_ARESETN_1 [get_bd_pins S_ARESETN] [get_bd_pins s00_regslice/aresetn]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
+
+# Hierarchical cell: m00_couplers
+proc create_hier_cell_m00_couplers { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_m00_couplers() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2090 -severity "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2091 -severity "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M_AXI
+
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI
+
+
+  # Create pins
+  create_bd_pin -dir I -type clk M_ACLK
+  create_bd_pin -dir I -type rst M_ARESETN
+  create_bd_pin -dir I -type clk S_ACLK
+  create_bd_pin -dir I -type rst S_ARESETN
+
+  # Create instance: m00_regslice, and set properties
+  set m00_regslice [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 m00_regslice ]
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net m00_couplers_to_m00_regslice [get_bd_intf_pins S_AXI] [get_bd_intf_pins m00_regslice/S_AXI]
+  connect_bd_intf_net -intf_net m00_regslice_to_m00_couplers [get_bd_intf_pins M_AXI] [get_bd_intf_pins m00_regslice/M_AXI]
+
+  # Create port connections
+  connect_bd_net -net M_ACLK_1 [get_bd_pins M_ACLK] [get_bd_pins m00_regslice/aclk]
+  connect_bd_net -net M_ARESETN_1 [get_bd_pins M_ARESETN] [get_bd_pins m00_regslice/aresetn]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
+
+# Hierarchical cell: rr_pcim_pchk_interconnect
+proc create_hier_cell_rr_pcim_pchk_interconnect_1 { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_rr_pcim_pchk_interconnect_1() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2090 -severity "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2091 -severity "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M00_AXI
+
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S00_AXI
+
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S01_AXI
+
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S02_AXI
+
+
+  # Create pins
+  create_bd_pin -dir I -type clk ACLK
+  create_bd_pin -dir I -type rst ARESETN
+  create_bd_pin -dir I -type clk M00_ACLK
+  create_bd_pin -dir I -type rst M00_ARESETN
+  create_bd_pin -dir I -type clk S00_ACLK
+  create_bd_pin -dir I -type rst S00_ARESETN
+  create_bd_pin -dir I -type clk S01_ACLK
+  create_bd_pin -dir I -type rst S01_ARESETN
+  create_bd_pin -dir I -type clk S02_ACLK
+  create_bd_pin -dir I -type rst S02_ARESETN
+  create_bd_pin -dir O m00_pc_asserted
+  create_bd_pin -dir O -from 159 -to 0 m00_pc_status
+  create_bd_pin -dir O s00_pc_asserted
+  create_bd_pin -dir O -from 159 -to 0 s00_pc_status
+  create_bd_pin -dir O s01_pc_asserted
+  create_bd_pin -dir O -from 159 -to 0 s01_pc_status
+  create_bd_pin -dir O s02_pc_asserted
+  create_bd_pin -dir O -from 159 -to 0 s02_pc_status
+
+  # Create instance: m00_couplers
+  create_hier_cell_m00_couplers $hier_obj m00_couplers
+
+  # Create instance: m00_pchk, and set properties
+  set m00_pchk [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_checker:2.0 m00_pchk ]
+  set_property -dict [ list \
+   CONFIG.MAX_AR_WAITS {0} \
+   CONFIG.MAX_AW_WAITS {0} \
+   CONFIG.MAX_B_WAITS {0} \
+   CONFIG.MAX_RD_BURSTS {32} \
+   CONFIG.MAX_R_WAITS {0} \
+   CONFIG.MAX_WR_BURSTS {32} \
+   CONFIG.MAX_W_WAITS {0} \
+ ] $m00_pchk
+
+  # Create instance: s00_couplers
+  create_hier_cell_s00_couplers $hier_obj s00_couplers
+
+  # Create instance: s00_pchk, and set properties
+  set s00_pchk [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_checker:2.0 s00_pchk ]
+  set_property -dict [ list \
+   CONFIG.MAX_AR_WAITS {0} \
+   CONFIG.MAX_AW_WAITS {0} \
+   CONFIG.MAX_B_WAITS {0} \
+   CONFIG.MAX_RD_BURSTS {32} \
+   CONFIG.MAX_R_WAITS {0} \
+   CONFIG.MAX_WR_BURSTS {32} \
+   CONFIG.MAX_W_WAITS {0} \
+ ] $s00_pchk
+
+  # Create instance: s01_couplers
+  create_hier_cell_s01_couplers $hier_obj s01_couplers
+
+  # Create instance: s01_pchk, and set properties
+  set s01_pchk [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_checker:2.0 s01_pchk ]
+  set_property -dict [ list \
+   CONFIG.MAX_AR_WAITS {0} \
+   CONFIG.MAX_AW_WAITS {0} \
+   CONFIG.MAX_B_WAITS {0} \
+   CONFIG.MAX_RD_BURSTS {32} \
+   CONFIG.MAX_R_WAITS {0} \
+   CONFIG.MAX_WR_BURSTS {32} \
+   CONFIG.MAX_W_WAITS {0} \
+ ] $s01_pchk
+
+  # Create instance: s02_couplers
+  create_hier_cell_s02_couplers $hier_obj s02_couplers
+
+  # Create instance: s02_pchk, and set properties
+  set s02_pchk [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_checker:2.0 s02_pchk ]
+  set_property -dict [ list \
+   CONFIG.MAX_AR_WAITS {0} \
+   CONFIG.MAX_AW_WAITS {0} \
+   CONFIG.MAX_B_WAITS {0} \
+   CONFIG.MAX_RD_BURSTS {32} \
+   CONFIG.MAX_R_WAITS {0} \
+   CONFIG.MAX_WR_BURSTS {32} \
+   CONFIG.MAX_W_WAITS {0} \
+ ] $s02_pchk
+
+  # Create instance: xbar, and set properties
+  set xbar [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_crossbar:2.1 xbar ]
+  set_property -dict [ list \
+   CONFIG.NUM_MI {1} \
+   CONFIG.NUM_SI {3} \
+   CONFIG.S00_ARB_PRIORITY {1} \
+   CONFIG.S01_ARB_PRIORITY {1} \
+   CONFIG.S02_ARB_PRIORITY {0} \
+   CONFIG.STRATEGY {0} \
+ ] $xbar
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net m00_couplers_to_rr_pcim_pchk_interconnect [get_bd_intf_pins M00_AXI] [get_bd_intf_pins m00_couplers/M_AXI]
+  connect_bd_intf_net -intf_net [get_bd_intf_nets m00_couplers_to_rr_pcim_pchk_interconnect] [get_bd_intf_pins M00_AXI] [get_bd_intf_pins m00_pchk/PC_AXI]
+  set_property HDL_ATTRIBUTE.MARK_DEBUG {true} [get_bd_intf_nets m00_couplers_to_rr_pcim_pchk_interconnect]
+  connect_bd_intf_net -intf_net rr_pcim_pchk_interconnect_to_s00_couplers [get_bd_intf_pins S00_AXI] [get_bd_intf_pins s00_couplers/S_AXI]
+  connect_bd_intf_net -intf_net [get_bd_intf_nets rr_pcim_pchk_interconnect_to_s00_couplers] [get_bd_intf_pins S00_AXI] [get_bd_intf_pins s00_pchk/PC_AXI]
+  set_property HDL_ATTRIBUTE.MARK_DEBUG {true} [get_bd_intf_nets rr_pcim_pchk_interconnect_to_s00_couplers]
+  connect_bd_intf_net -intf_net rr_pcim_pchk_interconnect_to_s01_couplers [get_bd_intf_pins S01_AXI] [get_bd_intf_pins s01_couplers/S_AXI]
+  connect_bd_intf_net -intf_net [get_bd_intf_nets rr_pcim_pchk_interconnect_to_s01_couplers] [get_bd_intf_pins S01_AXI] [get_bd_intf_pins s01_pchk/PC_AXI]
+  set_property HDL_ATTRIBUTE.MARK_DEBUG {true} [get_bd_intf_nets rr_pcim_pchk_interconnect_to_s01_couplers]
+  connect_bd_intf_net -intf_net rr_pcim_pchk_interconnect_to_s02_couplers [get_bd_intf_pins S02_AXI] [get_bd_intf_pins s02_couplers/S_AXI]
+  connect_bd_intf_net -intf_net [get_bd_intf_nets rr_pcim_pchk_interconnect_to_s02_couplers] [get_bd_intf_pins S02_AXI] [get_bd_intf_pins s02_pchk/PC_AXI]
+  set_property HDL_ATTRIBUTE.MARK_DEBUG {true} [get_bd_intf_nets rr_pcim_pchk_interconnect_to_s02_couplers]
+  connect_bd_intf_net -intf_net s00_couplers_to_xbar [get_bd_intf_pins s00_couplers/M_AXI] [get_bd_intf_pins xbar/S00_AXI]
+  connect_bd_intf_net -intf_net s01_couplers_to_xbar [get_bd_intf_pins s01_couplers/M_AXI] [get_bd_intf_pins xbar/S01_AXI]
+  connect_bd_intf_net -intf_net s02_couplers_to_xbar [get_bd_intf_pins s02_couplers/M_AXI] [get_bd_intf_pins xbar/S02_AXI]
+  connect_bd_intf_net -intf_net xbar_to_m00_couplers [get_bd_intf_pins m00_couplers/S_AXI] [get_bd_intf_pins xbar/M00_AXI]
+
+  # Create port connections
+  connect_bd_net -net m00_pchk_pc_asserted [get_bd_pins m00_pc_asserted] [get_bd_pins m00_pchk/pc_asserted]
+  connect_bd_net -net m00_pchk_pc_status [get_bd_pins m00_pc_status] [get_bd_pins m00_pchk/pc_status]
+  connect_bd_net -net rr_pcim_pchk_interconnect_ACLK_net [get_bd_pins ACLK] [get_bd_pins m00_couplers/M_ACLK] [get_bd_pins m00_couplers/S_ACLK] [get_bd_pins m00_pchk/aclk] [get_bd_pins s00_couplers/M_ACLK] [get_bd_pins s00_couplers/S_ACLK] [get_bd_pins s00_pchk/aclk] [get_bd_pins s01_couplers/M_ACLK] [get_bd_pins s01_couplers/S_ACLK] [get_bd_pins s01_pchk/aclk] [get_bd_pins s02_couplers/M_ACLK] [get_bd_pins s02_couplers/S_ACLK] [get_bd_pins s02_pchk/aclk] [get_bd_pins xbar/aclk]
+  connect_bd_net -net rr_pcim_pchk_interconnect_ARESETN_net [get_bd_pins ARESETN] [get_bd_pins m00_couplers/M_ARESETN] [get_bd_pins m00_couplers/S_ARESETN] [get_bd_pins m00_pchk/aresetn] [get_bd_pins s00_couplers/M_ARESETN] [get_bd_pins s00_couplers/S_ARESETN] [get_bd_pins s00_pchk/aresetn] [get_bd_pins s01_couplers/M_ARESETN] [get_bd_pins s01_couplers/S_ARESETN] [get_bd_pins s01_pchk/aresetn] [get_bd_pins s02_couplers/M_ARESETN] [get_bd_pins s02_couplers/S_ARESETN] [get_bd_pins s02_pchk/aresetn] [get_bd_pins xbar/aresetn]
+  set_property HDL_ATTRIBUTE.MARK_DEBUG {true} [get_bd_nets rr_pcim_pchk_interconnect_ARESETN_net]
+  connect_bd_net -net s00_pchk_pc_asserted [get_bd_pins s00_pc_asserted] [get_bd_pins s00_pchk/pc_asserted]
+  connect_bd_net -net s00_pchk_pc_status [get_bd_pins s00_pc_status] [get_bd_pins s00_pchk/pc_status]
+  connect_bd_net -net s01_pchk_pc_asserted [get_bd_pins s01_pc_asserted] [get_bd_pins s01_pchk/pc_asserted]
+  connect_bd_net -net s01_pchk_pc_status [get_bd_pins s01_pc_status] [get_bd_pins s01_pchk/pc_status]
+  connect_bd_net -net s02_pchk_pc_asserted [get_bd_pins s02_pc_asserted] [get_bd_pins s02_pchk/pc_asserted]
+  connect_bd_net -net s02_pchk_pc_status [get_bd_pins s02_pc_status] [get_bd_pins s02_pchk/pc_status]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
+
 
 # Procedure to create entire design; Provide argument to make
 # procedure reusable. If parentCell is "", will use root.
@@ -270,36 +684,35 @@ proc create_root_design { parentCell } {
    CONFIG.ASSOCIATED_BUSIF {S00_AXI:M00_AXI:S01_AXI:S02_AXI} \
  ] $ACLK
   set ARESETN [ create_bd_port -dir I -type rst ARESETN ]
+  set m00_pc_asserted [ create_bd_port -dir O m00_pc_asserted ]
+  set m00_pc_status [ create_bd_port -dir O -from 159 -to 0 m00_pc_status ]
+  set s00_pc_asserted [ create_bd_port -dir O s00_pc_asserted ]
+  set s00_pc_status [ create_bd_port -dir O -from 159 -to 0 s00_pc_status ]
+  set s01_pc_asserted [ create_bd_port -dir O s01_pc_asserted ]
+  set s01_pc_status [ create_bd_port -dir O -from 159 -to 0 s01_pc_status ]
+  set s02_pc_asserted [ create_bd_port -dir O s02_pc_asserted ]
+  set s02_pc_status [ create_bd_port -dir O -from 159 -to 0 s02_pc_status ]
 
-  # Create instance: rr_pcim_axi_interconnect, and set properties
-  set rr_pcim_axi_interconnect [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 rr_pcim_axi_interconnect ]
-  set_property -dict [ list \
-   CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
-   CONFIG.ENABLE_PROTOCOL_CHECKERS {1} \
-   CONFIG.M00_HAS_REGSLICE {4} \
-   CONFIG.M01_HAS_REGSLICE {4} \
-   CONFIG.M02_HAS_REGSLICE {4} \
-   CONFIG.M03_HAS_REGSLICE {4} \
-   CONFIG.NUM_MI {1} \
-   CONFIG.NUM_SI {3} \
-   CONFIG.PCHK_MAX_RD_BURSTS {32} \
-   CONFIG.PCHK_MAX_WR_BURSTS {32} \
-   CONFIG.S00_ARB_PRIORITY {1} \
-   CONFIG.S00_HAS_REGSLICE {4} \
-   CONFIG.S01_ARB_PRIORITY {1} \
-   CONFIG.S01_HAS_REGSLICE {4} \
-   CONFIG.S02_HAS_REGSLICE {4} \
- ] $rr_pcim_axi_interconnect
+  # Create instance: rr_pcim_pchk_interconnect
+  create_hier_cell_rr_pcim_pchk_interconnect_1 [current_bd_instance .] rr_pcim_pchk_interconnect
 
   # Create interface connections
-  connect_bd_intf_net -intf_net S00_AXI_1 [get_bd_intf_ports S00_AXI] [get_bd_intf_pins rr_pcim_axi_interconnect/S00_AXI]
-  connect_bd_intf_net -intf_net S01_AXI_1 [get_bd_intf_ports S01_AXI] [get_bd_intf_pins rr_pcim_axi_interconnect/S01_AXI]
-  connect_bd_intf_net -intf_net S02_AXI_1 [get_bd_intf_ports S02_AXI] [get_bd_intf_pins rr_pcim_axi_interconnect/S02_AXI]
-  connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_ports M00_AXI] [get_bd_intf_pins rr_pcim_axi_interconnect/M00_AXI]
+  connect_bd_intf_net -intf_net S00_AXI_1 [get_bd_intf_ports S00_AXI] [get_bd_intf_pins rr_pcim_pchk_interconnect/S00_AXI]
+  connect_bd_intf_net -intf_net S01_AXI_1 [get_bd_intf_ports S01_AXI] [get_bd_intf_pins rr_pcim_pchk_interconnect/S01_AXI]
+  connect_bd_intf_net -intf_net S02_AXI_1 [get_bd_intf_ports S02_AXI] [get_bd_intf_pins rr_pcim_pchk_interconnect/S02_AXI]
+  connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_ports M00_AXI] [get_bd_intf_pins rr_pcim_pchk_interconnect/M00_AXI]
 
   # Create port connections
-  connect_bd_net -net ACLK_1 [get_bd_ports ACLK] [get_bd_pins rr_pcim_axi_interconnect/ACLK] [get_bd_pins rr_pcim_axi_interconnect/M00_ACLK] [get_bd_pins rr_pcim_axi_interconnect/S00_ACLK] [get_bd_pins rr_pcim_axi_interconnect/S01_ACLK] [get_bd_pins rr_pcim_axi_interconnect/S02_ACLK]
-  connect_bd_net -net ARESETN_1 [get_bd_ports ARESETN] [get_bd_pins rr_pcim_axi_interconnect/ARESETN] [get_bd_pins rr_pcim_axi_interconnect/M00_ARESETN] [get_bd_pins rr_pcim_axi_interconnect/S00_ARESETN] [get_bd_pins rr_pcim_axi_interconnect/S01_ARESETN] [get_bd_pins rr_pcim_axi_interconnect/S02_ARESETN]
+  connect_bd_net -net ACLK_1 [get_bd_ports ACLK] [get_bd_pins rr_pcim_pchk_interconnect/ACLK] [get_bd_pins rr_pcim_pchk_interconnect/M00_ACLK] [get_bd_pins rr_pcim_pchk_interconnect/S00_ACLK] [get_bd_pins rr_pcim_pchk_interconnect/S01_ACLK] [get_bd_pins rr_pcim_pchk_interconnect/S02_ACLK]
+  connect_bd_net -net ARESETN_1 [get_bd_ports ARESETN] [get_bd_pins rr_pcim_pchk_interconnect/ARESETN] [get_bd_pins rr_pcim_pchk_interconnect/M00_ARESETN] [get_bd_pins rr_pcim_pchk_interconnect/S00_ARESETN] [get_bd_pins rr_pcim_pchk_interconnect/S01_ARESETN] [get_bd_pins rr_pcim_pchk_interconnect/S02_ARESETN]
+  connect_bd_net -net rr_pcim_pchk_interconnect_m00_pc_asserted [get_bd_ports m00_pc_asserted] [get_bd_pins rr_pcim_pchk_interconnect/m00_pc_asserted]
+  connect_bd_net -net rr_pcim_pchk_interconnect_m00_pc_status [get_bd_ports m00_pc_status] [get_bd_pins rr_pcim_pchk_interconnect/m00_pc_status]
+  connect_bd_net -net rr_pcim_pchk_interconnect_s00_pc_asserted [get_bd_ports s00_pc_asserted] [get_bd_pins rr_pcim_pchk_interconnect/s00_pc_asserted]
+  connect_bd_net -net rr_pcim_pchk_interconnect_s00_pc_status [get_bd_ports s00_pc_status] [get_bd_pins rr_pcim_pchk_interconnect/s00_pc_status]
+  connect_bd_net -net rr_pcim_pchk_interconnect_s01_pc_asserted [get_bd_ports s01_pc_asserted] [get_bd_pins rr_pcim_pchk_interconnect/s01_pc_asserted]
+  connect_bd_net -net rr_pcim_pchk_interconnect_s01_pc_status [get_bd_ports s01_pc_status] [get_bd_pins rr_pcim_pchk_interconnect/s01_pc_status]
+  connect_bd_net -net rr_pcim_pchk_interconnect_s02_pc_asserted [get_bd_ports s02_pc_asserted] [get_bd_pins rr_pcim_pchk_interconnect/s02_pc_asserted]
+  connect_bd_net -net rr_pcim_pchk_interconnect_s02_pc_status [get_bd_ports s02_pc_status] [get_bd_pins rr_pcim_pchk_interconnect/s02_pc_status]
 
   # Create address segments
   assign_bd_address -offset 0x00000000 -range 0x00010000000000000000 -target_address_space [get_bd_addr_spaces S00_AXI] [get_bd_addr_segs M00_AXI/Reg] -force
