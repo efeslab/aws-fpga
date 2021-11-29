@@ -51,7 +51,10 @@ module rr_trace_rw #(
     // The number of bits that has been replayed in the hardware
     output logic [63:0] rt_replay_bits,
     output logic [3:0] overflowed,
-    output logic [3:0] underflowed
+    output logic [3:0] underflowed,
+
+    output rr_trace_rw_cnts_t rr_trace_rw_cnts,
+    output rr_trace_merge_cnts_t rr_trace_merge_cnts
 );
 
 `ifdef TEST_REPLAY
@@ -139,7 +142,8 @@ module rr_trace_rw #(
         .record_out_fifo_almfull(record_out_fifo_almfull),
         .record_out_fifo_empty(record_out_fifo_empty),
         .record_finish(record_finish),
-        .record_din_valid(record_din_valid)
+        .record_din_valid(record_din_valid),
+        .trace_merge_cnts(rr_trace_merge_cnts)
     );
 
     merged_fifo #(
@@ -575,6 +579,60 @@ end
         end
     end
     assign underflowed = {record_in_fifo_underflowed, record_out_fifo_underflowed, replay_in_fifo_underflowed, replay_out_fifo_underflowed};
+
+    always_ff @(posedge clk) begin
+        if (~sync_rst_n) begin
+            rr_trace_rw_cnts.record_in_pkt_cnt <= 0;
+            rr_trace_rw_cnts.record_out_pkt_cnt <= 0;
+            rr_trace_rw_cnts.record_in_bits_cnt <= 0;
+            rr_trace_rw_cnts.record_out_bits_cnt <= 0;
+            rr_trace_rw_cnts.wb_aw_trans_cnt <= 0;
+            rr_trace_rw_cnts.wb_w_trans_cnt <= 0;
+            rr_trace_rw_cnts.wb_b_trans_cnt <= 0;
+            rr_trace_rw_cnts.record_in_fifo_out_pkt_cnt <= 0;
+            rr_trace_rw_cnts.record_in_fifo_out_orig_bits_cnt <= 0;
+            rr_trace_rw_cnts.record_in_fifo_out_aligned_bits_cnt <= 0;
+        end else begin
+            if (record_din_valid & record_din_ready) begin
+                rr_trace_rw_cnts.record_in_pkt_cnt <= rr_trace_rw_cnts.record_in_pkt_cnt + 1;
+                rr_trace_rw_cnts.record_in_bits_cnt <= rr_trace_rw_cnts.record_in_bits_cnt + record_din_width;
+            end
+            if (record_out_fifo_rd_en) begin
+                rr_trace_rw_cnts.record_out_pkt_cnt <= rr_trace_rw_cnts.record_out_pkt_cnt + 1;
+                rr_trace_rw_cnts.record_out_bits_cnt <= rr_trace_rw_cnts.record_out_bits_cnt + record_out_fifo_out_size;
+            end
+            if (axi_aw_transmitted) begin
+                rr_trace_rw_cnts.wb_aw_trans_cnt <= rr_trace_rw_cnts.wb_aw_trans_cnt + 1;
+            end
+            if (axi_w_transmitted) begin
+                rr_trace_rw_cnts.wb_w_trans_cnt <= rr_trace_rw_cnts.wb_w_trans_cnt + 1;
+            end
+            if (axi_out.bvalid & axi_out.bready) begin
+                rr_trace_rw_cnts.wb_b_trans_cnt <= rr_trace_rw_cnts.wb_b_trans_cnt + 1;
+            end
+            if (record_in_fifo_rd_en) begin
+                rr_trace_rw_cnts.record_in_fifo_out_pkt_cnt <= rr_trace_rw_cnts.record_in_fifo_out_pkt_cnt + 1;
+                rr_trace_rw_cnts.record_in_fifo_out_orig_bits_cnt
+                    <= rr_trace_rw_cnts.record_in_fifo_out_orig_bits_cnt + record_in_fifo_out_width;
+                rr_trace_rw_cnts.record_in_fifo_out_aligned_bits_cnt
+                    <= rr_trace_rw_cnts.record_in_fifo_out_aligned_bits_cnt + record_in_fifo_out_width_aligned;
+            end
+        end
+    end
+
+    always_ff @(posedge clk) begin
+        rr_trace_rw_cnts.axi_status <= {
+            axi_out.awready, // 37
+            axi_out.awvalid, // 36
+            axi_out.wready, // 35
+            axi_out.wvalid, // 34
+            axi_out.bready, // 33
+            axi_out.bvalid, // 32
+            axi_out.awid, // 31:16
+            axi_out.bid // 15:0
+        };
+    end
+
 `ifdef DEBUG_INTERCONNECT
 pcim_dbg_cnt dbg_cnt (
     .clk(clk), .rstn(sync_rst_n),

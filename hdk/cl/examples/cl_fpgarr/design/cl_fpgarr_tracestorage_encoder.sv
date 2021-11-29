@@ -27,7 +27,9 @@ module rr_trace_merge #(
     input logic record_out_fifo_empty,
 
     input logic record_finish,
-    input logic record_din_valid
+    input logic record_din_valid,
+
+    output rr_trace_merge_cnts_t trace_merge_cnts
 );
 
     localparam NSTAGES = (WIDTH - 1) / AXI_WIDTH + 1;
@@ -151,6 +153,13 @@ module rr_trace_merge #(
     always_ff @(posedge clk)
         if (sync_rst_n)
             assert(record_curr < NSTAGES);
+
+    always_ff @(posedge clk) begin
+        trace_merge_cnts.rt_record_unhandled_size = record_unhandled_size;
+        trace_merge_cnts.rt_current_record_unhandled_size = current_record_unhandled_size;
+        trace_merge_cnts.rt_leftover_size = record_leftover_size;
+        trace_merge_cnts.rt_record_curr = record_curr;
+    end
 
 `ifdef SIMULATION_AVOID_X
     logic [2*WIDTH-1:0] check_in;

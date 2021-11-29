@@ -167,6 +167,39 @@ module rr_csrs #(
                 wb_record_dbg_csr_i.chpkt_cnt.sda_W;
             csrs[RR_WB_RECORD_DBG_BITS_CHPKT_CNT_bar1_AR] <=
                 wb_record_dbg_csr_i.chpkt_cnt.bar1_AR;
+
+            // mjc dbg_csr
+            csrs[RR_RECORD_IN_PKT_CNT_HI] <= storage_axi_read_csr_i.trace_rw_cnts.record_in_pkt_cnt[32 +: 32];
+            csrs[RR_RECORD_IN_PKT_CNT_LO] <= storage_axi_read_csr_i.trace_rw_cnts.record_in_pkt_cnt[0 +: 32];
+            csrs[RR_RECORD_OUT_PKT_CNT_HI] <= storage_axi_read_csr_i.trace_rw_cnts.record_out_pkt_cnt[32 +: 32];
+            csrs[RR_RECORD_OUT_PKT_CNT_LO] <= storage_axi_read_csr_i.trace_rw_cnts.record_out_pkt_cnt[0 +: 32];
+            csrs[RR_RECORD_IN_BITS_CNT_HI] <= storage_axi_read_csr_i.trace_rw_cnts.record_in_bits_cnt[32 +: 32];
+            csrs[RR_RECORD_IN_BITS_CNT_LO] <= storage_axi_read_csr_i.trace_rw_cnts.record_in_bits_cnt[0 +: 32];
+            csrs[RR_RECORD_OUT_BITS_CNT_HI] <= storage_axi_read_csr_i.trace_rw_cnts.record_out_bits_cnt[32 +: 32];
+            csrs[RR_RECORD_OUT_BITS_CNT_LO] <= storage_axi_read_csr_i.trace_rw_cnts.record_out_bits_cnt[0 +: 32];
+            csrs[RR_RECORD_IN_FIFO_OUT_PKT_CNT_HI] <= storage_axi_read_csr_i.trace_rw_cnts.record_in_fifo_out_pkt_cnt[32 +: 32];
+            csrs[RR_RECORD_IN_FIFO_OUT_PKT_CNT_LO] <= storage_axi_read_csr_i.trace_rw_cnts.record_in_fifo_out_pkt_cnt[0 +: 32];
+            csrs[RR_RECORD_IN_FIFO_OUT_ORIG_BITS_CNT_HI] <= storage_axi_read_csr_i.trace_rw_cnts.record_in_fifo_out_orig_bits_cnt[32 +: 32];
+            csrs[RR_RECORD_IN_FIFO_OUT_ORIG_BITS_CNT_LO] <= storage_axi_read_csr_i.trace_rw_cnts.record_in_fifo_out_orig_bits_cnt[0 +: 32];
+            csrs[RR_RECORD_IN_FIFO_OUT_ALIGNED_BITS_CNT_HI] <= storage_axi_read_csr_i.trace_rw_cnts.record_in_fifo_out_aligned_bits_cnt[32 +: 32];
+            csrs[RR_RECORD_IN_FIFO_OUT_ALIGNED_BITS_CNT_LO] <= storage_axi_read_csr_i.trace_rw_cnts.record_in_fifo_out_aligned_bits_cnt[0 +: 32];
+            csrs[RR_WB_AW_TRANS_CNT_HI] <= storage_axi_read_csr_i.trace_rw_cnts.wb_aw_trans_cnt[32 +: 32];
+            csrs[RR_WB_AW_TRANS_CNT_LO] <= storage_axi_read_csr_i.trace_rw_cnts.wb_aw_trans_cnt[0 +: 32];
+            csrs[RR_WB_W_TRANS_CNT_HI] <= storage_axi_read_csr_i.trace_rw_cnts.wb_w_trans_cnt[32 +: 32];
+            csrs[RR_WB_W_TRANS_CNT_LO] <= storage_axi_read_csr_i.trace_rw_cnts.wb_w_trans_cnt[0 +: 32];
+            csrs[RR_WB_B_TRANS_CNT_HI] <= storage_axi_read_csr_i.trace_rw_cnts.wb_b_trans_cnt[32 +: 32];
+            csrs[RR_WB_B_TRANS_CNT_LO] <= storage_axi_read_csr_i.trace_rw_cnts.wb_b_trans_cnt[0 +: 32];
+            csrs[RT_RECORD_UNHANDLED_SIZE_HI] <= storage_axi_read_csr_i.trace_merge_cnts.rt_record_unhandled_size[32 +: 32];
+            csrs[RT_RECORD_UNHANDLED_SIZE_LO] <= storage_axi_read_csr_i.trace_merge_cnts.rt_record_unhandled_size[0 +: 32];
+            csrs[RT_CURRENT_RECORD_UNHANDLED_SIZE_HI] <= storage_axi_read_csr_i.trace_merge_cnts.rt_current_record_unhandled_size[32 +: 32];
+            csrs[RT_CURRENT_RECORD_UNHANDLED_SIZE_LO] <= storage_axi_read_csr_i.trace_merge_cnts.rt_current_record_unhandled_size[0 +: 32];
+            csrs[RT_LEFTOVER_SIZE_HI] <= storage_axi_read_csr_i.trace_merge_cnts.rt_leftover_size[32 +: 32];
+            csrs[RT_LEFTOVER_SIZE_LO] <= storage_axi_read_csr_i.trace_merge_cnts.rt_leftover_size[0 +: 32];
+            csrs[RT_RECORD_CURR_HI] <= storage_axi_read_csr_i.trace_merge_cnts.rt_record_curr[32 +: 32];
+            csrs[RT_RECORD_CURR_LO] <= storage_axi_read_csr_i.trace_merge_cnts.rt_record_curr[0 +: 32];
+
+            csrs[RR_AXI_STATUS_HI] <= storage_axi_read_csr_i.trace_rw_cnts.axi_status[32 +: 32];
+            csrs[RR_AXI_STATUS_LO] <= storage_axi_read_csr_i.trace_rw_cnts.axi_status[0 +: 32];
         end
     end
 

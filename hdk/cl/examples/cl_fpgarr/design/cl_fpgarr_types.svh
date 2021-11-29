@@ -239,10 +239,33 @@ typedef struct packed {
 } storage_axi_write_csr_t;
 
 typedef struct packed {
+    logic [63:0] record_in_pkt_cnt;
+    logic [63:0] record_out_pkt_cnt;
+    logic [63:0] record_in_bits_cnt;
+    logic [63:0] record_out_bits_cnt;
+    logic [63:0] wb_aw_trans_cnt;
+    logic [63:0] wb_w_trans_cnt;
+    logic [63:0] wb_b_trans_cnt;
+    logic [63:0] record_in_fifo_out_pkt_cnt;
+    logic [63:0] record_in_fifo_out_orig_bits_cnt;
+    logic [63:0] record_in_fifo_out_aligned_bits_cnt;
+    logic [63:0] axi_status;
+} rr_trace_rw_cnts_t;
+
+typedef struct packed {
+    logic [63:0] rt_record_unhandled_size;
+    logic [63:0] rt_current_record_unhandled_size;
+    logic [63:0] rt_leftover_size;
+    logic [63:0] rt_record_curr;
+} rr_trace_merge_cnts_t;
+
+typedef struct packed {
     logic [63:0] record_bits;
     logic [63:0] validate_bits;
     logic [63:0] rt_replay_bits;
     logic [31:0] trace_fifo_assert;
+    rr_trace_rw_cnts_t trace_rw_cnts;
+    rr_trace_merge_cnts_t trace_merge_cnts;
 } storage_axi_read_csr_t;
 
 // rr_mode_csr_t is a interpretation of the RR_MODE csr

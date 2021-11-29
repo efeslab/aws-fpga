@@ -99,7 +99,9 @@ rr_trace_rw #(
   .read_interrupt(rw_read_interrupt),
   .rt_replay_bits(counter.rt_replay_bits),
   .overflowed(trace_fifo_overflowed),
-  .underflowed(trace_fifo_underflowed)
+  .underflowed(trace_fifo_underflowed),
+  .rr_trace_rw_cnts(counter.trace_rw_cnts),
+  .rr_trace_merge_cnts(counter.trace_merge_cnts)
 );
 
 localparam VALIDATE_BUS_WIDTH = validate_bus.FULL_WIDTH;
