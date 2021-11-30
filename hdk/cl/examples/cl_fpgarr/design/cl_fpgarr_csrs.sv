@@ -17,6 +17,9 @@ module rr_csrs #(
     if ($bits(rr_state_csr_t) > 64)
         $error("rr_state_csr_t (%d bits) no longer fits inside two CSRs",
             $bits(rr_state_csr_t));
+    if ($bits(trace_split_dbg_csr_t) > 32*4)
+        $error("trace_split_dbg_csr_t (%d bits) nolonger fits inside 4 CSRs",
+            $bits(trace_split_dbg_csr_t));
     rr_csr_enum rr_csr_nouse;
     $info("Reserved %d csrs, used %d", RR_CSR_CNT, rr_csr_nouse.num()-1);
 
@@ -200,10 +203,12 @@ module rr_csrs #(
             csrs[RR_REPLAY_IN_FIFO_OUT_CNT] <= storage_axi_read_csr_i.trace_rw_cnts.replay_in_fifo_out_cnt;
             csrs[RR_REPLAY_OUT_FIFO_IN_CNT] <= storage_axi_read_csr_i.trace_rw_cnts.replay_out_fifo_in_cnt;
             csrs[RR_REPLAY_OUT_FIFO_OUT_CNT] <= storage_axi_read_csr_i.trace_rw_cnts.replay_out_fifo_out_cnt;
-            csrs[RR_TRACE_SPLIT_DBG_CSR_LO] <= storage_axi_read_csr_i.trace_rw_cnts.trace_split_dbg_csr[0 +: 32];
-            csrs[RR_TRACE_SPLIT_DBG_CSR_HI] <=
-                storage_axi_read_csr_i.trace_rw_cnts.trace_split_dbg_csr[32 +:
-                $bits(trace_split_dbg_csr_t) - 32];
+            csrs[RR_TRACE_SPLIT_DBG_CSR_P0] <= storage_axi_read_csr_i.trace_rw_cnts.trace_split_dbg_csr[0 +: 32];
+            csrs[RR_TRACE_SPLIT_DBG_CSR_P1] <= storage_axi_read_csr_i.trace_rw_cnts.trace_split_dbg_csr[32 +: 32];
+            csrs[RR_TRACE_SPLIT_DBG_CSR_P2] <= storage_axi_read_csr_i.trace_rw_cnts.trace_split_dbg_csr[64 +: 32];
+            csrs[RR_TRACE_SPLIT_DBG_CSR_P3] <=
+                storage_axi_read_csr_i.trace_rw_cnts.trace_split_dbg_csr[
+                $bits(trace_split_dbg_csr_t) - 1 : 96];
             // pcim pchk csrs
             csrs[RR_PCIM_PCHK_ASSERTED] <= {
                 pcim_interconnect_dbg_csr_i.logging_wb_pchk.pc_asserted,

@@ -920,5 +920,10 @@ always_ff @(posedge clk)
       dbg_csr.lo_remain_len <= lo_remain_len;
       dbg_csr.rt_replay_axi_cnt <= rt_replay_axi_cnt;
       dbg_csr.trace_axi_cnt <= trace_axi_cnt;
+      dbg_csr.hi_pad_last_oneoff <= dbg_csr.hi_pad_last_oneoff | hi_pad_last;
+      dbg_csr.hi_pad_last <= hi_pad_last;
+      dbg_csr.hi_lo_shift <= hi_lo_shift;
+      dbg_csr.lo_valid_off <= lo_valid_off;
+      dbg_csr.replay_axi_total <= replay_axi_total;
    end
 endmodule

@@ -240,6 +240,11 @@ typedef struct packed {
 } storage_axi_write_csr_t;
 
 typedef struct packed {
+  logic [31:0] replay_axi_total;                // bit 71-102
+  logic [7:0] lo_valid_off;                     // bit 63-70
+  logic hi_lo_shift;                            // bit 62
+  logic hi_pad_last;                            // bit 61
+  logic hi_pad_last_oneoff;                     // bit 60
   logic [3:0] trace_axi_cnt;                    // bit 56-59
   logic [31:0] rt_replay_axi_cnt;               // bit 24-55
   logic [15:0] lo_remain_len;                   // bit 8-23
