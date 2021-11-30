@@ -266,7 +266,7 @@ class Decoder {
 
     static_assert(*std::max_element(BUSCFG::CW.cbegin(), BUSCFG::CW.cend()) <
                   BUFSIZE * 8);
-    int parsed_bits = 0;
+    size_t parsed_bits = 0;
     while (parsed_bits < trace_bits) {
       // pktsize is in terms of bits, aligned to PACKET_ALIGNMENT
       pktsize_t pktsize = getNbits<pktsize_t>(BUSCFG::OFFSET_WIDTH);
