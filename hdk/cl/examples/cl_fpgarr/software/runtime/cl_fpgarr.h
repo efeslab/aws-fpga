@@ -3,7 +3,7 @@
 #define CL_FPGARR_CSR_BASE 0x100000
 #include <stdint.h>
 
-#define RR_CSR_VERSION_INT 20211129
+#define RR_CSR_VERSION_INT 20211130
 typedef enum {
   BUF_ADDR_HI = 0,           // 0
   BUF_ADDR_LO,               // 1
@@ -99,6 +99,14 @@ typedef enum {
   RR_SH_PCIM_PCHK_P2,
   RR_SH_PCIM_PCHK_P3,
   RR_SH_PCIM_PCHK_P4,
+  RR_REPLAY_AR_TRANS_CNT,
+  RR_REPLAY_R_TRANS_CNT,
+  RR_REPLAY_IN_FIFO_IN_CNT,
+  RR_REPLAY_IN_FIFO_OUT_CNT,
+  RR_REPLAY_OUT_FIFO_IN_CNT,
+  RR_REPLAY_OUT_FIFO_OUT_CNT,
+  RR_TRACE_SPLIT_DBG_CSR_HI,
+  RR_TRACE_SPLIT_DBG_CSR_LO,
 } rr_csr_enum;
 
 #define RR_CSR_ADDR(idx) (CL_FPGARR_CSR_BASE + 0x4 * idx)
@@ -108,7 +116,7 @@ typedef enum {
 
 #ifdef SV_TEST
 // 128 MB
-#define DEFAULT_BUFFER_SIZE (0x8000000)
+#define DEFAULT_BUFFER_SIZE (1UL << 30)
 #define POLLING_INTERVAL 1
 #else
 #define DEFAULT_BUFFER_SIZE (1ULL << 30)

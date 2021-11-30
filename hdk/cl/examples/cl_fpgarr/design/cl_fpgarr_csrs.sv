@@ -194,6 +194,16 @@ module rr_csrs #(
 
             csrs[RR_AXI_STATUS_HI] <= storage_axi_read_csr_i.trace_rw_cnts.axi_status[32 +: 32];
             csrs[RR_AXI_STATUS_LO] <= storage_axi_read_csr_i.trace_rw_cnts.axi_status[0 +: 32];
+            csrs[RR_REPLAY_AR_TRANS_CNT] <= storage_axi_read_csr_i.trace_rw_cnts.replay_ar_trans_cnt;
+            csrs[RR_REPLAY_R_TRANS_CNT] <= storage_axi_read_csr_i.trace_rw_cnts.replay_r_trans_cnt;
+            csrs[RR_REPLAY_IN_FIFO_IN_CNT] <= storage_axi_read_csr_i.trace_rw_cnts.replay_in_fifo_in_cnt;
+            csrs[RR_REPLAY_IN_FIFO_OUT_CNT] <= storage_axi_read_csr_i.trace_rw_cnts.replay_in_fifo_out_cnt;
+            csrs[RR_REPLAY_OUT_FIFO_IN_CNT] <= storage_axi_read_csr_i.trace_rw_cnts.replay_out_fifo_in_cnt;
+            csrs[RR_REPLAY_OUT_FIFO_OUT_CNT] <= storage_axi_read_csr_i.trace_rw_cnts.replay_out_fifo_out_cnt;
+            csrs[RR_TRACE_SPLIT_DBG_CSR_LO] <= storage_axi_read_csr_i.trace_rw_cnts.trace_split_dbg_csr[0 +: 32];
+            csrs[RR_TRACE_SPLIT_DBG_CSR_HI] <=
+                storage_axi_read_csr_i.trace_rw_cnts.trace_split_dbg_csr[32 +:
+                $bits(trace_split_dbg_csr_t) - 32];
             // pcim pchk csrs
             csrs[RR_PCIM_PCHK_ASSERTED] <= {
                 pcim_interconnect_dbg_csr_i.logging_wb_pchk.pc_asserted,

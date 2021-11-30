@@ -249,7 +249,7 @@ endfunction
 // !!!!!!!!!!!!!!!!!!!!!!!! ATTENTION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // ALWAYS update (increase) this RR_CSR_VERSION_INT after making changes to CSR
 // address allocation
-parameter int RR_CSR_VERSION_INT = 20211129;
+parameter int RR_CSR_VERSION_INT = 20211130;
 ////////////////////////////////////////////////////////////////////////////////
 parameter int RR_CSR_CNT = 128;
 parameter int RR_CSR_ADDR_WIDTH = $clog2(RR_CSR_CNT);
@@ -361,6 +361,14 @@ typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
   RR_SH_PCIM_PCHK_P2,
   RR_SH_PCIM_PCHK_P3,
   RR_SH_PCIM_PCHK_P4,
+  RR_REPLAY_AR_TRANS_CNT,
+  RR_REPLAY_R_TRANS_CNT,
+  RR_REPLAY_IN_FIFO_IN_CNT,
+  RR_REPLAY_IN_FIFO_OUT_CNT,
+  RR_REPLAY_OUT_FIFO_IN_CNT,
+  RR_REPLAY_OUT_FIFO_OUT_CNT,
+  RR_TRACE_SPLIT_DBG_CSR_HI,
+  RR_TRACE_SPLIT_DBG_CSR_LO,
   RR_CSR_LAST_DONT_USE = RR_CSR_CNT - 1
 } rr_csr_enum;
 `define RR_CSR_ADDR(idx) (idx << 2)

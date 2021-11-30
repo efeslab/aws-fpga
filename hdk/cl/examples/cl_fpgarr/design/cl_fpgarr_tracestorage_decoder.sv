@@ -316,7 +316,8 @@ module rr_parse_replay_trace #(
     input logic replay_out_fifo_empty,
     // number of bits expected to replay (including paddings for alignment)
     input logic [63:0] replay_bits,
-    output logic [63:0] rt_replay_bits
+    output logic [63:0] rt_replay_bits,
+    output trace_split_dbg_csr_t dbg_csr
 );
 
 // highlevel structure
@@ -902,4 +903,22 @@ assign asm_out_len = trace_data[0 +: OFFSET_WIDTH];
 logic [LOGGING_UNIT_WIDTH-OFFSET_WIDTH-1:0] asm_out_data;
 assign asm_out_data = trace_data[LOGGING_UNIT_WIDTH-1:OFFSET_WIDTH];
 `endif
+
+// for debugging
+always_ff @(posedge clk)
+   if (!sync_rst_n)
+      dbg_csr <= 0;
+   else begin
+      dbg_csr.asm_done <= (asm_fsm == ASM_DONE);
+      dbg_csr.asm_wait_body <= (asm_fsm == ASM_WAIT_BODY);
+      dbg_csr.asm_wait_header <= (asm_fsm == ASM_WAIT_HEADER);
+      dbg_csr.hi_full <= hi_full;
+      dbg_csr.lo_empty <= (lo_fsm == LO_EMPTY);
+      dbg_csr.lo_header <= (lo_fsm == LO_HEADER);
+      dbg_csr.lo_body <= (lo_fsm == LO_BODY);
+      dbg_csr.lo_replay_done <= lo_replay_done;
+      dbg_csr.lo_remain_len <= lo_remain_len;
+      dbg_csr.rt_replay_axi_cnt <= rt_replay_axi_cnt;
+      dbg_csr.trace_axi_cnt <= trace_axi_cnt;
+   end
 endmodule

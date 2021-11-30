@@ -493,7 +493,8 @@ module rr_trace_rw #(
         .replay_out_fifo_almfull(replay_out_fifo_almfull),
         .replay_out_fifo_empty(replay_out_fifo_empty),
         .replay_bits(replay_bits),
-        .rt_replay_bits(rt_replay_bits)
+        .rt_replay_bits(rt_replay_bits),
+        .dbg_csr(rr_trace_rw_cnts.trace_split_dbg_csr)
     );
 
 // simulation debug
@@ -578,6 +579,12 @@ end
             rr_trace_rw_cnts.record_in_fifo_out_pkt_cnt <= 0;
             rr_trace_rw_cnts.record_in_fifo_out_orig_bits_cnt <= 0;
             rr_trace_rw_cnts.record_in_fifo_out_aligned_bits_cnt <= 0;
+            rr_trace_rw_cnts.replay_ar_trans_cnt <= 0;
+            rr_trace_rw_cnts.replay_r_trans_cnt <= 0;
+            rr_trace_rw_cnts.replay_in_fifo_in_cnt <= 0;
+            rr_trace_rw_cnts.replay_in_fifo_out_cnt <= 0;
+            rr_trace_rw_cnts.replay_out_fifo_in_cnt <= 0;
+            rr_trace_rw_cnts.replay_out_fifo_out_cnt <= 0;
         end else begin
             if (record_din_valid & record_din_ready) begin
                 rr_trace_rw_cnts.record_in_pkt_cnt <= rr_trace_rw_cnts.record_in_pkt_cnt + 1;
@@ -603,11 +610,33 @@ end
                 rr_trace_rw_cnts.record_in_fifo_out_aligned_bits_cnt
                     <= rr_trace_rw_cnts.record_in_fifo_out_aligned_bits_cnt + record_in_fifo_out_width_aligned;
             end
+            if (axi_out.arvalid && axi_out.arready)
+                rr_trace_rw_cnts.replay_ar_trans_cnt <=
+                    rr_trace_rw_cnts.replay_ar_trans_cnt + 1;
+            if (axi_out.rvalid && axi_out.rready)
+                rr_trace_rw_cnts.replay_r_trans_cnt <=
+                    rr_trace_rw_cnts.replay_r_trans_cnt + 1;
+            if (replay_in_fifo_wr_en)
+                rr_trace_rw_cnts.replay_in_fifo_in_cnt <=
+                    rr_trace_rw_cnts.replay_in_fifo_in_cnt + 1;
+            if (replay_in_fifo_rd_en)
+                rr_trace_rw_cnts.replay_in_fifo_out_cnt <=
+                    rr_trace_rw_cnts.replay_in_fifo_out_cnt + 1;
+            if (replay_out_fifo_wr_en)
+                rr_trace_rw_cnts.replay_out_fifo_in_cnt <=
+                    rr_trace_rw_cnts.replay_out_fifo_in_cnt + 1;
+            if (replay_out_fifo_rd_en)
+                rr_trace_rw_cnts.replay_out_fifo_out_cnt <=
+                    rr_trace_rw_cnts.replay_out_fifo_out_cnt + 1;
         end
     end
 
     always_ff @(posedge clk) begin
         rr_trace_rw_cnts.axi_status <= {
+            axi_out.rready,  // 41
+            axi_out.rvalid,  // 40
+            axi_out.arready, // 39
+            axi_out.arvalid, // 38
             axi_out.awready, // 37
             axi_out.awvalid, // 36
             axi_out.wready, // 35

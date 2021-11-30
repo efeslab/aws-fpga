@@ -292,6 +292,7 @@ void do_record_stop() {
     }
 }
 void do_replay_start() {
+    rr_cfg_poke(RR_ON_THE_FLY_BALANCE, 80);
     // always set RR_MODE first to avoid silently dropping traffic
     rr_cfg_poke(RR_MODE, rr_mode.val);
     if (is_validate()) {
@@ -433,6 +434,14 @@ void debug_check() {
     LOG_INFO_DBG_CSR_U64("%ld", RT_LEFTOVER_SIZE);
     LOG_INFO_DBG_CSR_U64("%ld", RT_RECORD_CURR);
     LOG_INFO_DBG_CSR_U64("%ld", RR_AXI_STATUS);
+    LOG_INFO_DBG_CSR_U32("%d", RR_ON_THE_FLY_BALANCE);
+    LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_AR_TRANS_CNT);
+    LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_R_TRANS_CNT);
+    LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_IN_FIFO_IN_CNT);
+    LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_IN_FIFO_OUT_CNT);
+    LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_OUT_FIFO_IN_CNT);
+    LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_OUT_FIFO_OUT_CNT);
+    LOG_INFO_DBG_CSR_U64("%#lx", RR_TRACE_SPLIT_DBG_CSR);
 
     debug_pcim_pchk();
 }

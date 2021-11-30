@@ -240,6 +240,20 @@ typedef struct packed {
 } storage_axi_write_csr_t;
 
 typedef struct packed {
+  logic [3:0] trace_axi_cnt;                    // bit 56-59
+  logic [31:0] rt_replay_axi_cnt;               // bit 24-55
+  logic [15:0] lo_remain_len;                   // bit 8-23
+  logic lo_replay_done;                         // bit 7
+  logic lo_body;                                // bit 6
+  logic lo_header;                              // bit 5
+  logic lo_empty;                               // bit 4
+  logic hi_full;                                // bit 3
+  logic asm_wait_header;                        // bit 2
+  logic asm_wait_body;                          // bit 1
+  logic asm_done;                               // bit 0
+} trace_split_dbg_csr_t;
+
+typedef struct packed {
     logic [63:0] record_in_pkt_cnt;
     logic [63:0] record_out_pkt_cnt;
     logic [63:0] record_in_bits_cnt;
@@ -251,6 +265,13 @@ typedef struct packed {
     logic [63:0] record_in_fifo_out_orig_bits_cnt;
     logic [63:0] record_in_fifo_out_aligned_bits_cnt;
     logic [63:0] axi_status;
+    logic [31:0] replay_ar_trans_cnt;
+    logic [31:0] replay_r_trans_cnt;
+    logic [31:0] replay_in_fifo_in_cnt;
+    logic [31:0] replay_in_fifo_out_cnt;
+    logic [31:0] replay_out_fifo_in_cnt;
+    logic [31:0] replay_out_fifo_out_cnt;
+    trace_split_dbg_csr_t trace_split_dbg_csr;
 } rr_trace_rw_cnts_t;
 
 typedef struct packed {
