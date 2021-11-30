@@ -471,31 +471,6 @@ module rr_trace_rw #(
         replay_dout_width = replay_out_fifo_out[0 +: OFFSET_WIDTH];
         replay_out_fifo_rd_en = replay_dout_valid & replay_dout_ready;
     end
-`define TEST_NEW_REPLAY_TIMING
-`ifndef TEST_NEW_REPLAY_TIMING
-    rr_trace_split #(
-        .WIDTH(ALIGNED_WIDTH),
-        .AXI_WIDTH(AXI_WIDTH),
-        .OFFSET_WIDTH(OFFSET_WIDTH),
-        .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH),
-        .LOGB_CHANNEL_CNT(LOGB_CHANNEL_CNT),
-        .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
-        .SHUFFLED_CHANNEL_WIDTHS(SHUFFLED_CHANNEL_WIDTHS))
-    trace_split(
-        .clk(clk),
-        .sync_rst_n(sync_rst_n),
-        .replay_in_fifo_out(replay_in_fifo_out),
-        .replay_in_fifo_rd_en(replay_in_fifo_rd_en),
-        .replay_in_fifo_full(replay_in_fifo_full),
-        .replay_in_fifo_almfull(replay_in_fifo_almfull),
-        .replay_in_fifo_empty(replay_in_fifo_empty),
-        .replay_out_fifo_in(replay_out_fifo_in),
-        .replay_out_fifo_in_width(replay_out_fifo_in_width),
-        .replay_out_fifo_wr_en(replay_out_fifo_wr_en),
-        .replay_out_fifo_full(replay_out_fifo_full),
-        .replay_out_fifo_almfull(replay_out_fifo_almfull),
-        .replay_out_fifo_empty(replay_out_fifo_empty)
-`else
     rr_parse_replay_trace #(
         .LOGGING_UNIT_WIDTH(ALIGNED_WIDTH),
         .OFFSET_WIDTH(OFFSET_WIDTH),
@@ -519,7 +494,6 @@ module rr_trace_rw #(
         .replay_out_fifo_empty(replay_out_fifo_empty),
         .replay_bits(replay_bits),
         .rt_replay_bits(rt_replay_bits)
-`endif
     );
 
 // simulation debug
