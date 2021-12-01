@@ -926,4 +926,38 @@ always_ff @(posedge clk)
       dbg_csr.lo_valid_off <= lo_valid_off;
       dbg_csr.replay_axi_total <= replay_axi_total;
    end
+
+// need debug:
+// probe 0: hi_fsm == HI_EMPTY
+// probe 1: hi_fsm == HI_FULL
+// probe 2: hi_in
+// probe 3: rt_replay_axi_cnt
+// probe 4: lo_fsm == LO_EMPTY
+// probe 5: lo_fsm == LO_HEADER
+// probe 6: lo_fsm == LO_BODY
+// probe 7: hi_lo_shift
+// probe 8: lo_valid_off
+// probe 9: lo_out
+// probe 10: lo_remain_len
+// probe 11: lo_exhaust
+// probe 12: lo_valid_satisfied
+// probe 13: rt_replay_bits
+dbg_trace_split_ila
+ila_inst (
+   .clk(clk),
+   .probe0(hi_fsm == HI_EMPTY),
+   .probe1(hi_fsm == HI_FULL),
+   .probe2(hi_in),
+   .probe3(rt_replay_axi_cnt),
+   .probe4(lo_fsm == LO_EMPTY),
+   .probe5(lo_fsm == LO_HEADER),
+   .probe6(lo_fsm == LO_BODY),
+   .probe7(hi_lo_shift),
+   .probe8(lo_valid_off),
+   .probe9(lo_out),
+   .probe10(lo_remain_len),
+   .probe11(lo_exhaust),
+   .probe12(lo_valid_satisfied),
+   .probe13(rt_replay_bits)
+);
 endmodule

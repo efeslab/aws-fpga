@@ -129,6 +129,8 @@ ${CL_ROOT}/ip/rr_pcim_pchk_interconnect/ip/rr_pcim_pchk_interconnect_m00_pchk_0/
 ${CL_ROOT}/ip/rr_cfg_axil_interconnect/sim/rr_cfg_axil_interconnect.v
 ${CL_ROOT}/ip/rr_cfg_axil_interconnect/ip/rr_cfg_axil_interconnect_xbar_2/sim/rr_cfg_axil_interconnect_xbar_2.v
 #../../ip/rr_pcim_axi_interconnect/ip/
+# ila
+${CL_ROOT}/ip/dbg_trace_split_ila/sim/dbg_trace_split_ila.v
 # fpgarr top module
 ${CL_ROOT}/design/cl_fpgarr_wrapper.sv
 
