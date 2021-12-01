@@ -23,6 +23,7 @@
 ## +define+MODEL_DEBUG_MEMORY +define+MODEL_DEBUG_CMDS 
 ##################################################################
 
+# if you want debug, add -CFLAGS "-g" then make clean then make compile
 compile: $(COMPLIB_DIR)
 	mkdir -p $(SIM_DIR)
 	cd ${SIM_DIR} && ln -s -f ../vcs_complib/synopsys_sim.setup 
