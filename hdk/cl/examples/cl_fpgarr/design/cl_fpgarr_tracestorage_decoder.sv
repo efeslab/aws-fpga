@@ -676,12 +676,13 @@ always_ff @(posedge clk)
             default:
                 // unified LO_HEADER and LO_BODY
                 if (hi_lo_shift)
-                    if (lo_valid_satisfied)
+                    if (lo_valid_satisfied) begin
                         // LO_HEADER |-> header_flow (lo_exhaust)
                         // LO_BODY |-> reload (lo_exhaust)
                         lo_valid_off <=
-                            lo_remain_len[0 +: AXI_ALIGNED_OFFSET_WIDTH] +
-                            lo_valid_off - AXI_ALIGNED_WIDTH;
+                            lo_valid_off +
+                            lo_remain_len[0 +: AXI_ALIGNED_OFFSET_WIDTH];
+                    end
                     else
                         // LO_HEADER |-> extend
                         // LO_BODY |-> body_flow (lo_exhaust)
@@ -928,36 +929,37 @@ always_ff @(posedge clk)
    end
 
 // need debug:
-// probe 0: hi_fsm == HI_EMPTY
-// probe 1: hi_fsm == HI_FULL
-// probe 2: hi_in
-// probe 3: rt_replay_axi_cnt
-// probe 4: lo_fsm == LO_EMPTY
-// probe 5: lo_fsm == LO_HEADER
-// probe 6: lo_fsm == LO_BODY
-// probe 7: hi_lo_shift
-// probe 8: lo_valid_off
-// probe 9: lo_out
-// probe 10: lo_remain_len
-// probe 11: lo_exhaust
-// probe 12: lo_valid_satisfied
-// probe 13: rt_replay_bits
+// probe 0: hi_full
+// probe 1: lo_empty
+// probe 2: lo_header
+// probe 3: lo_body
+// probe 4: hi_in
+// probe 5: rt_replay_axi_cnt
+// probe 6: hi_lo_shift
+// probe 7: lo_valid_off
+// probe 8: lo_out
+// probe 9: lo_remain_len
+// probe 10: lo_exhaust
+// probe 11: lo_valid_satisfied
+// probe 12: rt_replay_bits
+logic lo_header, lo_body;
+assign lo_header = (lo_fsm == LO_HEADER);
+assign lo_body = (lo_fsm == LO_BODY);
 dbg_trace_split_ila
 ila_inst (
    .clk(clk),
-   .probe0(hi_fsm == HI_EMPTY),
-   .probe1(hi_fsm == HI_FULL),
-   .probe2(hi_in),
-   .probe3(rt_replay_axi_cnt),
-   .probe4(lo_fsm == LO_EMPTY),
-   .probe5(lo_fsm == LO_HEADER),
-   .probe6(lo_fsm == LO_BODY),
-   .probe7(hi_lo_shift),
-   .probe8(lo_valid_off),
-   .probe9(lo_out),
-   .probe10(lo_remain_len),
-   .probe11(lo_exhaust),
-   .probe12(lo_valid_satisfied),
-   .probe13(rt_replay_bits)
+   .probe0(hi_full),
+   .probe1(lo_empty),
+   .probe2(lo_header),
+   .probe3(lo_body),
+   .probe4(hi_in),
+   .probe5(rt_replay_axi_cnt),
+   .probe6(hi_lo_shift),
+   .probe7(lo_valid_off),
+   .probe8(lo_out),
+   .probe9(lo_remain_len),
+   .probe10(lo_exhaust),
+   .probe11(lo_valid_satisfied),
+   .probe12(rt_replay_bits)
 );
 endmodule

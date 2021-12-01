@@ -95,7 +95,7 @@ read_bd [ list \
 ]
 
 read_ip [ list \
-  $CL_DIR/ip/fifo_128x128/fifo_128x128.xci,
+  $CL_DIR/ip/fifo_128x128/fifo_128x128.xci \
   $CL_DIR/ip/dbg_trace_split_ila/dbg_trace_split_ila.xci
 ]
 
