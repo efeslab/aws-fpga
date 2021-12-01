@@ -1,0 +1,7 @@
+MAKE_FILE_PATH = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+CL_FPGARR_PATH := $(patsubst %/,%,$(MAKE_FILE_PATH))
+CL_FPGARR_SRC := $(wildcard ${CL_FPGARR_PATH}/*.c)
+CL_FPGARR_HEADERS := $(wildcard ${CL_FPGARR_PATH}/*.h)
+CL_FPGARR_INCLUDE := $(CL_FPGARR_PATH)
+CL_FPGARR_ALL_FILES := $(CL_FPGARR_HEADERS) $(CL_FPGARR_SRC)
+$(info $$CL_FPGARR_PATH is $(CL_FPGARR_PATH))

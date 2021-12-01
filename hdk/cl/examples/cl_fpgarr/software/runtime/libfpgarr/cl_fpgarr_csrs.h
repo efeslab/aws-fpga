@@ -1,8 +1,19 @@
-#ifndef CL_FPGARR_H
-#define CL_FPGARR_H
-#define CL_FPGARR_CSR_BASE 0x100000
+#ifndef CL_FPGARR_CSRS_H
+#define CL_FPGARR_CSRS_H
 #include <stdint.h>
+#include <assert.h>
 
+#ifdef SV_TEST
+//#include <fpga_pci_sv.h>
+#include <utils/sh_dpi_tasks.h>
+#else
+#include <fpga_pci.h>
+extern pci_bar_handle_t pci_bar1_handle;
+#endif
+
+#include "cl_fpgarr_utils.h"
+
+#define CL_FPGARR_CSR_BASE 0x100000
 #define RR_CSR_VERSION_INT 2021113018
 typedef enum {
   BUF_ADDR_HI = 0,           // 0
@@ -112,30 +123,41 @@ typedef enum {
 } rr_csr_enum;
 
 #define RR_CSR_ADDR(idx) (CL_FPGARR_CSR_BASE + 0x4 * idx)
-#define UINT64_HI32(x) ((((uint64_t) x) >> 32) & 0xffffffff)
-#define UINT64_LO32(x) ( ((uint64_t) x) & 0xffffffff)
-#define UINT64_FROM32(hi, lo) ((((uint64_t) hi) << 32) | ((uint64_t) lo))
 
+static inline int rr_cfg_poke(uint64_t csr_idx, uint32_t value) {
 #ifdef SV_TEST
-// 128 MB
-#define DEFAULT_BUFFER_SIZE (1UL << 30)
-#define POLLING_INTERVAL 1
+    cl_poke_bar1(RR_CSR_ADDR(csr_idx), value);
+    return 0;
 #else
-#define DEFAULT_BUFFER_SIZE (1ULL << 30)
-#define POLLING_INTERVAL 5
+    assert(pci_bar1_handle != PCI_BAR_HANDLE_INIT);
+    return fpga_pci_poke(pci_bar1_handle, RR_CSR_ADDR(csr_idx), value);
 #endif
-#define BUFFER_ALIGNMENT 4096
-#define TRACE_LEN_BYTES 8
+}
 
-// MACRO configuration
-#undef DUMP_TRACE_TXT
+static inline int rr_cfg_peek(uint64_t csr_idx, uint32_t *value) {
+#ifdef SV_TEST
+    cl_peek_bar1(RR_CSR_ADDR(csr_idx), value);
+    return 0;
+#else
+    assert(pci_bar1_handle != PCI_BAR_HANDLE_INIT);
+    return fpga_pci_peek(pci_bar1_handle, RR_CSR_ADDR(csr_idx), value);
+#endif
+}
 
-extern int init_rr(int slot_id);
-extern void do_pre_rr();
-extern void do_post_rr();
+// TODO: There is a fpga_pci_peek64 but I haven't tested it.
+static inline int rr_cfg_peek64(uint64_t lo_csr_idx, uint64_t hi_csr_idx,
+                                uint64_t *value) {
+    uint32_t lo, hi;
+    int rc = 0;
+    rc |= rr_cfg_peek(lo_csr_idx, &lo);
+    rc |= rr_cfg_peek(hi_csr_idx, &hi);
+    *value = UINT64_FROM32(hi, lo);
+    return rc;
+}
 
-extern uint8_t is_record();
-extern uint8_t is_replay();
-extern uint8_t is_validate();
+extern void setup_buffer(uint8_t *p, uint64_t size, uint64_t buf_update_csr);
+extern uint64_t rr_wait_counter_stable(uint64_t lo_csr_idx, uint64_t hi_csr_idx);
 
-#endif // CL_FPGARR_H
+extern void debug_check();
+extern void check_rr_state();
+#endif // CL_FPGARR_CSRS_H
