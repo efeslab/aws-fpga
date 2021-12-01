@@ -246,6 +246,7 @@ typedef struct packed {
   logic hi_pad_last;                            // bit 61
   logic hi_pad_last_oneoff;                     // bit 60
   logic [3:0] trace_axi_cnt;                    // bit 56-59
+  // FIXME: reorder to prevent CSR boundary cutoff
   logic [31:0] rt_replay_axi_cnt;               // bit 24-55
   logic [15:0] lo_remain_len;                   // bit 8-23
   logic lo_replay_done;                         // bit 7

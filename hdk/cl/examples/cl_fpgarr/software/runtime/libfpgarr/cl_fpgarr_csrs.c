@@ -1,6 +1,7 @@
 #include <utils/log.h>
 
 #include "cl_fpgarr_csrs.h"
+#include "cl_fpgarr_csrs_decode.h"
 #include "cl_fpgarr_cfg.h"
 
 #ifndef SV_TEST
@@ -102,7 +103,7 @@ void debug_check() {
     LOG_INFO_DBG_CSR_U64("%ld", RT_CURRENT_RECORD_UNHANDLED_SIZE);
     LOG_INFO_DBG_CSR_U64("%ld", RT_LEFTOVER_SIZE);
     LOG_INFO_DBG_CSR_U64("%ld", RT_RECORD_CURR);
-    LOG_INFO_DBG_CSR_U64("%ld", RR_AXI_STATUS);
+    dump_trace_rw_axi_status();
     LOG_INFO_DBG_CSR_U32("%d", RR_ON_THE_FLY_BALANCE);
     LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_AR_TRANS_CNT);
     LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_R_TRANS_CNT);
@@ -110,10 +111,7 @@ void debug_check() {
     LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_IN_FIFO_OUT_CNT);
     LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_OUT_FIFO_IN_CNT);
     LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_OUT_FIFO_OUT_CNT);
-    LOG_INFO_DBG_CSR_U32("%#x", RR_TRACE_SPLIT_DBG_CSR_P0);
-    LOG_INFO_DBG_CSR_U32("%#x", RR_TRACE_SPLIT_DBG_CSR_P1);
-    LOG_INFO_DBG_CSR_U32("%#x", RR_TRACE_SPLIT_DBG_CSR_P2);
-    LOG_INFO_DBG_CSR_U32("%#x", RR_TRACE_SPLIT_DBG_CSR_P3);
+    dump_trace_split_dbg_csr();
 
     debug_pcim_pchk();
 }
