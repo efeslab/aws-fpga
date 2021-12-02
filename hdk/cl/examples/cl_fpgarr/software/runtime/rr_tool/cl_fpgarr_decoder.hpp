@@ -231,6 +231,8 @@ class Decoder {
   vector<loge_cnt_t> loge_cnt_vec;
   // logb_valid_vec contains logb_valid of all logging units in the trace
   vector<bitset<BUSCFG::LOGB_CNT>> logb_valid_vec;
+  vector<size_t> start_off;
+  vector<size_t> pktsize_vec;
 
   constexpr void channels_init() {
     constexpr_for<0, BUSCFG::LOGB_CNT, 1>([&](auto i) {
@@ -270,6 +272,12 @@ class Decoder {
     while (parsed_bits < trace_bits) {
       // pktsize is in terms of bits, aligned to PACKET_ALIGNMENT
       pktsize_t pktsize = getNbits<pktsize_t>(BUSCFG::OFFSET_WIDTH);
+      // {{{ for debug
+      assert((pktsize%8) == 0);
+      assert((parsed_bits % 8) == 0);
+      start_off.push_back(parsed_bits/8 + 8);
+      pktsize_vec.push_back(pktsize);
+      // }}} end of debug
       logb_valid_t logb_valid = getNbits<logb_valid_t>(BUSCFG::LOGB_CNT);
       loge_valid_t loge_valid = getNbits<loge_valid_t>(BUSCFG::LOGE_CNT);
       // aligned to PACKET_ALIGNMENT
@@ -326,7 +334,15 @@ class Decoder {
     print_header_loge_names(fp);
     array<size_t, BUSCFG::LOGB_CNT> channel_idx = {};
     size_t loge_cnt_id = 0;
+    size_t pktsize_vec_acc = 0;
     for (auto bset : logb_valid_vec) {
+      fprintf(fp,
+              "file_off %ldB, trace_off %ldB, pktsize_vec_acc %ld (%ldB), "
+              "pktsize_vec %ld(%ldB)\n",
+              start_off[loge_cnt_id], start_off[loge_cnt_id] - 8,
+              pktsize_vec_acc, pktsize_vec_acc / 8, pktsize_vec[loge_cnt_id],
+              pktsize_vec[loge_cnt_id] / 8);
+      pktsize_vec_acc += pktsize_vec[loge_cnt_id];
       if (bset.any()) {
         for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
           if (bset.test(i)) {
