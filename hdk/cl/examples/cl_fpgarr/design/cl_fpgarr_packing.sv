@@ -95,7 +95,7 @@ always_comb begin
 `ifdef SIMULATION_AVOID_X
    out.data[0 +: inA.FULL_WIDTH] = inA_q.any_valid ? inA_q.data : 0;
    out.data[valid_len_A +: inB.FULL_WIDTH] = inB_q.any_valid ? inB_q.data : 0;
-   out.data[valid_len_A + valid_len_B +: PACKET_ALIGNMENT] = 0;
+   out.data[out.len +: PACKET_ALIGNMENT] = 0;
 `else
    out.data[0 +: inA.FULL_WIDTH] = inA_q.data;
    out.data[valid_len_A +: inB.FULL_WIDTH] = inB_q.data;
