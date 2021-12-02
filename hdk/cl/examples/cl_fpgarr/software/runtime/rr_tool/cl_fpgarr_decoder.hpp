@@ -121,6 +121,14 @@ class Decoder {
 
   // return true: equal, false: not equal
   bool gen_compare_report(FILE *fp, Decoder<BUSCFG> &other) {
+    size_t hb_mismatch_cnt = 0;
+    size_t violation_cnt = 0;
+    size_t content_mismatch_cnt = 0;
+    size_t pkt_cnt = 0;
+    fprintf(fp,
+            "Checking whether the happen-before in trace %s is obeyed in "
+            "trace %s\n",
+            filepath, other.filepath);
     // compare every channel in each trace
     for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
       const auto *cha = channels[i];
@@ -154,25 +162,60 @@ class Decoder {
           cha->printPkt(fp, i);
           fprintf(fp, "From trace file %s, ", other.filepath);
           chb->printPkt(fp, i);
-          return false;
+          ++content_mismatch_cnt;
         }
-        // compare the happen-before (i.e. For each packet from current channel
+        // compare the happen-before
+        // Three cases:
+        // 1. Exact match: For the start of each new packet, previous packets
+        //   finished in each channel in traceA, have also finished in each
+        //   channel in traceB and there are no more packets finished in traceB
+        //   that had not finished in traceA.
+        // 2. OK match: previous packets finished in traceA have also finished
+        //   in traceB, but there are additional packets finished in traceB that
+        //   had not finished in traceA.
+        // 3. Violation: some of the previous packets finished in traceA have
+        //   not finished in traceB.
+        // (i.e. For each packet from current channel
         // in each trace, do they have the same number of packets finish before
         // the start of current packet?)
         loge_cnt_t loge_cnt_a = loge_cnt_vec[cha->loge_cnt_id_vec[i]];
         loge_cnt_t loge_cnt_b = other.loge_cnt_vec[chb->loge_cnt_id_vec[i]];
-        if (loge_cnt_a != loge_cnt_b) {
+        bool mismatch = false;
+        bool violation = false;
+        if (loge_cnt_a == loge_cnt_b) {
+          // exact match
+          continue;
+        } else if (loge_cnt_a <= loge_cnt_b) {
+          // OK match
+          ++hb_mismatch_cnt;
+          mismatch = true;
+        } else {
+          // Violation
+          ++violation_cnt;
+          violation = true;
+        }
+        if (mismatch)
           fprintf(fp, "Channel %s packet[%d] happen-before mismatch:\n",
                   cha->name, i);
+        if (violation)
+          fprintf(fp, "Channel %s packet[%d] happen-before violation:\n",
+                  cha->name, i);
+        if (mismatch || violation) {
           print_header_loge_names(fp);
           fprintf(fp, "From trace file %s:\n", filepath);
           print_loge_cnt(fp, cha->loge_cnt_id_vec[i]);
           fprintf(fp, "From trace file %s:\n", other.filepath);
           other.print_loge_cnt(fp, chb->loge_cnt_id_vec[i]);
-          // return false;
         }
       }
+      pkt_cnt += cha->cnt;
     }
+    fprintf(fp,
+            "Total packets %ld, Total HB mismatches: %ld(%f%%), "
+            "Total violations: %ld(%lf%%), Total content mismatches: %ld(%f%%)\n",
+            pkt_cnt, hb_mismatch_cnt, (double)hb_mismatch_cnt / pkt_cnt * 100,
+            violation_cnt, (double)violation_cnt / pkt_cnt * 100,
+            content_mismatch_cnt, (double)content_mismatch_cnt / pkt_cnt * 100);
     return true;
   }
 
@@ -333,16 +376,17 @@ class Decoder {
     // header for LOGE
     print_header_loge_names(fp);
     array<size_t, BUSCFG::LOGB_CNT> channel_idx = {};
+    size_t pkt_id = 0;
     size_t loge_cnt_id = 0;
     size_t pktsize_vec_acc = 0;
     for (auto bset : logb_valid_vec) {
       fprintf(fp,
               "file_off %ldB, trace_off %ldB, pktsize_vec_acc %ld (%ldB), "
-              "pktsize_vec %ld(%ldB)\n",
-              start_off[loge_cnt_id], start_off[loge_cnt_id] - 8,
-              pktsize_vec_acc, pktsize_vec_acc / 8, pktsize_vec[loge_cnt_id],
-              pktsize_vec[loge_cnt_id] / 8);
-      pktsize_vec_acc += pktsize_vec[loge_cnt_id];
+              "pktsize_vec %ld(%ldB), loge_cnt_id %ld\n",
+              start_off[pkt_id], start_off[pkt_id] - 8,
+              pktsize_vec_acc, pktsize_vec_acc / 8, pktsize_vec[pkt_id],
+              pktsize_vec[pkt_id] / 8, pkt_id);
+      pktsize_vec_acc += pktsize_vec[pkt_id];
       if (bset.any()) {
         for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
           if (bset.test(i)) {
@@ -354,6 +398,7 @@ class Decoder {
         print_loge_cnt(fp, loge_cnt_id);
         ++loge_cnt_id;
       }
+      ++pkt_id;
     }
   }
 
