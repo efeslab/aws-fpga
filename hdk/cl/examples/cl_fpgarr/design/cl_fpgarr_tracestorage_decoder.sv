@@ -410,7 +410,12 @@ logic hi_lo_shift;  // transfer one axi unit from HI to LO
 // lo_out should be paired with asm_ready
 logic lo_out;
 logic [AXI_WIDTH-1:0] lo_out_data;
-assign lo_out_data = shift_buf_aligned[lo_valid_off +: AXI_ALIGNED_WIDTH];
+// if lo_valid_off is 6'd63, the synthesized circuits does not do the indexed
+// part-select correctly. I guess the width of the offset could be a problem.
+// I found this out using ila
+logic [AXI_ALIGNED_OFFSET_WIDTH:0] lo_valid_off_bugfix;
+assign lo_valid_off_bugfix = {1'b0, lo_valid_off};
+assign lo_out_data = shift_buf_aligned[lo_valid_off_bugfix +: AXI_ALIGNED_WIDTH];
 // the remaining len of the valid data of the current loging unit waiting to be
 // transmitted to the assemble buffer
 // Only valid if
