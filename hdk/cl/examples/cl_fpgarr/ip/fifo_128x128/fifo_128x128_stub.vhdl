@@ -1,10 +1,10 @@
 -- Copyright 1986-2020 Xilinx, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2020.2 (lin64) Build 3064766 Wed Nov 18 09:12:47 MST 2020
--- Date        : Sat Nov 13 20:44:37 2021
+-- Date        : Thu Dec  2 23:47:11 2021
 -- Host        : cilantro running 64-bit Ubuntu 20.04.3 LTS
--- Command     : write_vhdl -force -mode synth_stub -rename_top fifo_128x128 -prefix
---               fifo_128x128_ fifo_128x128_stub.vhdl
+-- Command     : write_vhdl -force -mode synth_stub
+--               /mnt/storage/gefeizuo/FPGA/FPGARR/aws-fpga/hdk/cl/examples/cl_fpgarr/ip/fifo_128x128/fifo_128x128_stub.vhdl
 -- Design      : fifo_128x128
 -- Purpose     : Stub declaration of top-level module interface
 -- Device      : xcvu9p-flgb2104-2-i
