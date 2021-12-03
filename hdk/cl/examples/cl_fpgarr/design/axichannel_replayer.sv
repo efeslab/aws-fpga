@@ -16,7 +16,8 @@ localparam REPLAY_FIFO_ALMFUL_THRESHOLD =
 module axichannel_valid_replayer #(
   parameter DATA_WIDTH,
   parameter PIPE_DEPTH,
-  parameter LOGE_CHANNEL_CNT
+  parameter LOGE_CHANNEL_CNT,
+  parameter DEBUG = 0
 ) (
   input wire clk,
   input wire rstn,
@@ -81,7 +82,8 @@ xpm_fifo_sync_wrapper #(
 
 twowayhandshake_replayer #(
   .DATA_WIDTH(DATA_WIDTH),
-  .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
+  .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
+  .DEBUG(DEBUG)
 ) replayer (
   .clk(clk), .rstn(rstn),
   .in_valid(in_valid_f),
@@ -153,7 +155,8 @@ module axichannel_ready_replayer #(
   parameter PIPE_DEPTH,
   parameter LOGE_CHANNEL_CNT,
   parameter NUM_RDYRPLY,
-  parameter int LOGE_IDX [NUM_RDYRPLY-1:0]
+  parameter int LOGE_IDX [NUM_RDYRPLY-1:0],
+  parameter DEBUG = 0
 ) (
   input wire clk,
   input wire rstn,
@@ -196,7 +199,8 @@ xpm_fifo_sync_wrapper #(
 twowayhandshake_ready_replayer #(
   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
   .NUM_RDYRPLY(NUM_RDYRPLY),
-  .LOGE_IDX(LOGE_IDX)
+  .LOGE_IDX(LOGE_IDX),
+  .DEBUG(DEBUG)
 ) ready_replayer (
   .clk(clk), .rstn(rstn),
   .in_valid(in_valid_f),

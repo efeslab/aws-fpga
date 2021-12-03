@@ -36,7 +36,8 @@ localparam PKT_CNT_WIDTH = $clog2(2 * ON_THE_FLY_CNT);
 module twowayhandshake_replayer #(
   // these low numbers is to ease the proof
   parameter DATA_WIDTH=16,
-  parameter LOGE_CHANNEL_CNT=2
+  parameter LOGE_CHANNEL_CNT=2,
+  parameter DEBUG=0
 ) (
   input wire clk,
   input wire rstn,
@@ -437,13 +438,65 @@ else
     out_valid == old_out_valid
   );
 `endif
+if (DEBUG) begin
+  if (LOGE_CHANNEL_CNT != 25)
+    $error("Invalid Debug Parameter: LOGE_CHANNEL_CNT %d", LOGE_CHANNEL_CNT);
+  logic state_empty, state_busy, state_full;
+  assign state_empty = (state == EMPTY);
+  assign state_busy = (state == BUSY);
+  assign state_full = (state == FULL);
+  // probe 0: state_empty
+  // probe 1: state_busy
+  // probe 2: state_full
+  // probe 3: o_logb_valid
+  // probe 4: o_loge_valid[24:0]
+  // probe 5: rt_loge_valid[24:0]
+  // probe 6: rt_sub_loge_cnt[0][6:0] (to test longer PKT_CNT_WIDTH, this will be 8bit)
+  // ...
+  // probe 30: rt_sub_loge_cnt[24]
+  dbg_valid_replayer_ila ila (
+    .clk(clk),
+    .probe0(state_empty),
+    .probe1(state_busy),
+    .probe2(state_full),
+    .probe3(o_logb_valid),
+    .probe4(o_loge_valid),
+    .probe5(rt_loge_valid),
+    .probe6({1'b0,rt_sub_loge_cnt[0]}),
+    .probe7({1'b0,rt_sub_loge_cnt[1]}),
+    .probe8({1'b0,rt_sub_loge_cnt[2]}),
+    .probe9({1'b0,rt_sub_loge_cnt[3]}),
+    .probe10({1'b0,rt_sub_loge_cnt[4]}),
+    .probe11({1'b0,rt_sub_loge_cnt[5]}),
+    .probe12({1'b0,rt_sub_loge_cnt[6]}),
+    .probe13({1'b0,rt_sub_loge_cnt[7]}),
+    .probe14({1'b0,rt_sub_loge_cnt[8]}),
+    .probe15({1'b0,rt_sub_loge_cnt[9]}),
+    .probe16({1'b0,rt_sub_loge_cnt[10]}),
+    .probe17({1'b0,rt_sub_loge_cnt[11]}),
+    .probe18({1'b0,rt_sub_loge_cnt[12]}),
+    .probe19({1'b0,rt_sub_loge_cnt[13]}),
+    .probe20({1'b0,rt_sub_loge_cnt[14]}),
+    .probe21({1'b0,rt_sub_loge_cnt[15]}),
+    .probe22({1'b0,rt_sub_loge_cnt[16]}),
+    .probe23({1'b0,rt_sub_loge_cnt[17]}),
+    .probe24({1'b0,rt_sub_loge_cnt[18]}),
+    .probe25({1'b0,rt_sub_loge_cnt[19]}),
+    .probe26({1'b0,rt_sub_loge_cnt[20]}),
+    .probe27({1'b0,rt_sub_loge_cnt[21]}),
+    .probe28({1'b0,rt_sub_loge_cnt[22]}),
+    .probe29({1'b0,rt_sub_loge_cnt[23]}),
+    .probe30({1'b0,rt_sub_loge_cnt[24]})
+  );
+end
 endmodule
 
 module twowayhandshake_ready_replayer #(
   // the total number of loge_valid from all channels
   parameter LOGE_CHANNEL_CNT = 5,
   parameter NUM_RDYRPLY = 1,
-  parameter int LOGE_IDX [NUM_RDYRPLY-1:0] = {0}
+  parameter int LOGE_IDX [NUM_RDYRPLY-1:0] = {0},
+  parameter DEBUG = 0
 ) (
   input wire clk,
   input wire rstn,
@@ -577,4 +630,51 @@ endgenerate
     );
   // }}}
 `endif // FORMAL
+if (DEBUG) begin
+  if (LOGE_CHANNEL_CNT != 25)
+    $error("Invalid Debug Parameter: LOGE_CHANNEL_CNT %d", LOGE_CHANNEL_CNT);
+  // probe 0: in_valid
+  // probe 1: in_ready
+  // probe 2: in_loge_valid[24:0]
+  // probe 3: rt_loge_valid[24:0]
+  // probe 4: rt_sub_loge_cnt_sign[24:0]
+  // probe 5: ok_to_replay_ready[24:0]
+  // probe 6: rt_sub_loge_cnt[0][6:0] (to test longer PKT_CNT_WIDTH, this will be 8bit)
+  // ...
+  // probe 30: rt_sub_loge_cnt[24]
+  dbg_ready_replayer_ila ila (
+    .clk(clk),
+    .probe0(in_valid),
+    .probe1(in_ready),
+    .probe2(in_loge_valid),
+    .probe3(rt_loge_valid),
+    .probe4(rt_sub_loge_cnt_sign),
+    .probe5(ok_to_replay_ready),
+    .probe6({1'b0,rt_sub_loge_cnt[0]}),
+    .probe7({1'b0,rt_sub_loge_cnt[1]}),
+    .probe8({1'b0,rt_sub_loge_cnt[2]}),
+    .probe9({1'b0,rt_sub_loge_cnt[3]}),
+    .probe10({1'b0,rt_sub_loge_cnt[4]}),
+    .probe11({1'b0,rt_sub_loge_cnt[5]}),
+    .probe12({1'b0,rt_sub_loge_cnt[6]}),
+    .probe13({1'b0,rt_sub_loge_cnt[7]}),
+    .probe14({1'b0,rt_sub_loge_cnt[8]}),
+    .probe15({1'b0,rt_sub_loge_cnt[9]}),
+    .probe16({1'b0,rt_sub_loge_cnt[10]}),
+    .probe17({1'b0,rt_sub_loge_cnt[11]}),
+    .probe18({1'b0,rt_sub_loge_cnt[12]}),
+    .probe19({1'b0,rt_sub_loge_cnt[13]}),
+    .probe20({1'b0,rt_sub_loge_cnt[14]}),
+    .probe21({1'b0,rt_sub_loge_cnt[15]}),
+    .probe22({1'b0,rt_sub_loge_cnt[16]}),
+    .probe23({1'b0,rt_sub_loge_cnt[17]}),
+    .probe24({1'b0,rt_sub_loge_cnt[18]}),
+    .probe25({1'b0,rt_sub_loge_cnt[19]}),
+    .probe26({1'b0,rt_sub_loge_cnt[20]}),
+    .probe27({1'b0,rt_sub_loge_cnt[21]}),
+    .probe28({1'b0,rt_sub_loge_cnt[22]}),
+    .probe29({1'b0,rt_sub_loge_cnt[23]}),
+    .probe30({1'b0,rt_sub_loge_cnt[24]})
+  );
+end
 endmodule

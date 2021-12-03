@@ -233,7 +233,11 @@ endmodule
 module axi_mstr_replayer #(
    parameter int NUM_INTERFACES,
    parameter int LOGE_PER_AXI,
-   parameter int INTF_ID
+   parameter int INTF_ID,
+   parameter DBG_AW = 0,
+   parameter DBG_W = 0,
+   parameter DBG_AR = 0,
+   parameter DBG_RDY = 0
 ) (
    input clk,
    input sync_rst_n,
@@ -285,7 +289,8 @@ assign fifo_underflow = |fifo_underflow_ch | rdyrply_fifo_underflow;
 axichannel_valid_replayer #(
    .DATA_WIDTH(AXI_RR_AW_WIDTH),
    .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
-   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
+   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
+   .DEBUG(DBG_AW)
 ) AW_replayer (
    .clk(clk), .rstn(rstn),
    .in_valid(rbus.valid[LOGB_AW]),
@@ -306,7 +311,8 @@ assign o_rt_loge_valid[LOGE_AW] = outM.awvalid && outM.awready;
 axichannel_valid_replayer #(
    .DATA_WIDTH(AXI_RR_W_WIDTH),
    .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
-   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
+   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
+   .DEBUG(DBG_W)
 ) W_replayer (
    .clk(clk), .rstn(rstn),
    .in_valid(rbus.valid[LOGB_W]),
@@ -327,7 +333,8 @@ assign o_rt_loge_valid[LOGE_W] = outM.wvalid && outM.wready;
 axichannel_valid_replayer #(
    .DATA_WIDTH(AXI_RR_AR_WIDTH),
    .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
-   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
+   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
+   .DEBUG(DBG_AR)
 ) AR_replayer (
    .clk(clk), .rstn(rstn),
    .in_valid(rbus.valid[LOGB_AR]),
@@ -355,7 +362,8 @@ axichannel_ready_replayer #(
    .LOGE_IDX({
       LOGE_IDX_BASE + LOGE_B,
       LOGE_IDX_BASE + LOGE_R
-   })
+   }),
+   .DEBUG(DBG_RDY)
 ) rdy_replayer (
    .clk(clk), .rstn(rstn),
    .in_valid(rbus.rdyrply_valid[0]),
@@ -373,7 +381,10 @@ endmodule
 module axi_slv_replayer #(
    parameter int NUM_INTERFACES,
    parameter int LOGE_PER_AXI,
-   parameter int INTF_ID
+   parameter int INTF_ID,
+   parameter DBG_B = 0,
+   parameter DBG_R = 0,
+   parameter DBG_RDY = 0
 ) (
    input clk,
    input sync_rst_n,
@@ -430,7 +441,8 @@ axichannel_ready_replayer #(
       LOGE_IDX_BASE + LOGE_AW,
       LOGE_IDX_BASE + LOGE_W,
       LOGE_IDX_BASE + LOGE_AR
-   })
+   }),
+   .DEBUG(DBG_RDY)
 ) rdy_replayer (
    .clk(clk), .rstn(rstn),
    .in_valid(rbus.rdyrply_valid[0]),
@@ -449,7 +461,8 @@ assign o_rt_loge_valid[LOGE_AR] = outS.arvalid && outS.arready;
 axichannel_valid_replayer #(
    .DATA_WIDTH(AXI_RR_B_WIDTH),
    .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
-   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
+   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
+   .DEBUG(DBG_B)
 ) B_replayer (
    .clk(clk), .rstn(rstn),
    .in_valid(rbus.valid[LOGB_B]),
@@ -470,7 +483,8 @@ assign o_rt_loge_valid[LOGE_B] = outS.bvalid && outS.bready;
 axichannel_valid_replayer #(
    .DATA_WIDTH(AXI_RR_R_WIDTH),
    .PIPE_DEPTH(REPLAYER_PIPE_DEPTH),
-   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT)
+   .LOGE_CHANNEL_CNT(LOGE_CHANNEL_CNT),
+   .DEBUG(DBG_R)
 ) R_replayer (
    .clk(clk), .rstn(rstn),
    .in_valid(rbus.valid[LOGB_R]),

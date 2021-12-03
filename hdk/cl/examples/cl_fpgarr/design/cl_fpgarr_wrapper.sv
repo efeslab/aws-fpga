@@ -376,7 +376,8 @@ logic [AWSF1_NUM_INTERFACES-1:0] [LOGE_PER_AXI-1:0]
 
 // PCIM bus
 rr_axi_bus_t pcim_replay_axi_bus();
-axi_slv_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, PCIM)
+axi_slv_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, PCIM,
+  /*DBG_B*/ 1, /*DBG_R*/ 1, /*DBG_RDY*/ 1)
   pcim_bus_replayer (
   .clk(clk), .sync_rst_n(rstn),
   .rbus(rr_pcim_replay_bus),
@@ -388,7 +389,8 @@ axi_slv_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, PCIM)
 );
 // PCIS bus
 rr_axi_bus_t pcis_replay_axi_bus();
-axi_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, PCIS)
+axi_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, PCIS,
+  /*DBG_AW*/ 0, /*DBG_W*/ 0, /*DBG_AR*/ 0, /*DBG_RDY*/ 1)
   pcis_bus_replayer (
   .clk(clk), .sync_rst_n(rstn),
   .rbus(rr_dma_pcis_replay_bus),
@@ -601,6 +603,53 @@ rr_cfg_bar1_interconnect bar1_interconnect (
   .*
 );
 assign rr_pcim_bus.wid = 0;
+
+////////////////////////////////////////////////////////////////////////////////
+// Debug ILA Core
+////////////////////////////////////////////////////////////////////////////////
+`ifdef DEBUG_ILA
+localparam REPLAY_PKT_CNT_WIDTH = 32;
+`define DBG_COUNT_AXI(cntname, busname, ch)                                    \
+  logic [REPLAY_PKT_CNT_WIDTH-1:0] cntname;                                    \
+  always_ff @(posedge clk)                                                     \
+    if (!rstn)                                                                 \
+      cntname <= 0;                                                            \
+    else if (busname.``ch``valid && busname.``ch``ready)                       \
+      cntname <= cntname + 1
+`DBG_COUNT_AXI(pcis_AW, pcis_replay_axi_bus, aw);       // probe 0
+`DBG_COUNT_AXI(pcis_W, pcis_replay_axi_bus, w);         // probe 1
+`DBG_COUNT_AXI(pcis_AR, pcis_replay_axi_bus, ar);       // probe 2
+`DBG_COUNT_AXI(pcis_R, pcis_replay_axi_bus, r);         // probe 3
+`DBG_COUNT_AXI(pcis_B, pcis_replay_axi_bus, b);         // probe 4
+`DBG_COUNT_AXI(pcim_AW, pcim_replay_axi_bus, aw);       // probe 5
+`DBG_COUNT_AXI(pcim_W, pcim_replay_axi_bus, w);         // probe 6
+`DBG_COUNT_AXI(pcim_AR, pcim_replay_axi_bus, ar);       // probe 7
+`DBG_COUNT_AXI(pcim_R, pcim_replay_axi_bus, r);         // probe 8
+`DBG_COUNT_AXI(pcim_B, pcim_replay_axi_bus, b);         // probe 9
+`DBG_COUNT_AXI(ocl_AW, ocl_replay_axil_bus, aw);        // probe 10
+`DBG_COUNT_AXI(ocl_W, ocl_replay_axil_bus, w);          // probe 11
+`DBG_COUNT_AXI(ocl_AR, ocl_replay_axil_bus, ar);        // probe 12
+`DBG_COUNT_AXI(ocl_R, ocl_replay_axil_bus, r);          // probe 13
+`DBG_COUNT_AXI(ocl_B, ocl_replay_axil_bus, b);          // probe 14
+dbg_fpgarr_wrapper_ila ila (
+  .clk(clk),
+  .probe0(pcis_AW),
+  .probe1(pcis_W),
+  .probe2(pcis_AR),
+  .probe3(pcis_R),
+  .probe4(pcis_B),
+  .probe5(pcim_AW),
+  .probe6(pcim_W),
+  .probe7(pcim_AR),
+  .probe8(pcim_R),
+  .probe9(pcim_B),
+  .probe10(ocl_AW),
+  .probe11(ocl_W),
+  .probe12(ocl_AR),
+  .probe13(ocl_R),
+  .probe14(ocl_B)
+);
+`endif
 endmodule
 `ifdef TEST_REPLAY
   $error("Should not be used with TEST_REPLAY");

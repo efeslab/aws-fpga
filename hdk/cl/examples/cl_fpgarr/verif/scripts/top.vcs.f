@@ -131,6 +131,9 @@ ${CL_ROOT}/ip/rr_cfg_axil_interconnect/ip/rr_cfg_axil_interconnect_xbar_2/sim/rr
 #../../ip/rr_pcim_axi_interconnect/ip/
 # ila
 ${CL_ROOT}/ip/dbg_trace_split_ila/sim/dbg_trace_split_ila.v
+${CL_ROOT}/ip/dbg_valid_replayer_ila/sim/dbg_valid_replayer_ila.v
+${CL_ROOT}/ip/dbg_ready_replayer_ila/sim/dbg_ready_replayer_ila.v
+${CL_ROOT}/ip/dbg_fpgarr_wrapper_ila/sim/dbg_fpgarr_wrapper_ila.v
 # fpgarr top module
 ${CL_ROOT}/design/cl_fpgarr_wrapper.sv
 
