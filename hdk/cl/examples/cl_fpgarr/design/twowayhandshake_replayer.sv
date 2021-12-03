@@ -321,7 +321,7 @@ else
     if (rstn) begin
       if (in_valid && logb_valid)
         input_inorder: `ASSUME(logb_data == in_logb_cnt);
-      if (out_valid && out_ready)
+      if (out_valid)
         output_inorder: `ASSERT(out_data == out_cnt);
 
       for (int i=0; i < LOGE_CHANNEL_CNT; i=i+1) begin: loge_as
@@ -521,4 +521,60 @@ for (genvar i=0; i < NUM_RDYRPLY; i=i+1)
       o_ready[i] <= rt_sub_loge_cnt_sign[LOGE_IDX[i]];
 endgenerate
 
+`ifdef FORMAL
+  `ifdef TWOWAYHANDSHAKE_READY_REPLAYER_SELF
+    `define ASSUME assume
+    `define ASSERT assert
+  `else
+    `define ASSUME assert
+    `define ASSERT assume
+  `endif
+  ////////////////////////////////////////////////////////////////////////////
+  // Input (assumption)
+  ////////////////////////////////////////////////////////////////////////////
+  // {{{
+  in_rst_am: `ASSUME property(RESET_CLEARS_VALID(clk, rstn, in_valid));
+  in_held_am: `ASSUME property(HELD_VALID_DATA(clk, rstn, in_valid, in_ready,
+    in_loge_valid));
+  logic o_valid [NUM_RDYRPLY-1:0];
+  for (genvar i=0; i < NUM_RDYRPLY; i=i+1)
+    cyclic_as: `ASSUME property (
+      (o_valid[i] & o_ready[i]) == rt_loge_valid[LOGE_IDX[i]]
+    );
+  // }}}
+  ////////////////////////////////////////////////////////////////////////////
+  // Packet Counting Properties
+  ////////////////////////////////////////////////////////////////////////////
+  // {{{
+  localparam F_CNTWIDTH = 32;
+  reg [F_CNTWIDTH-1:0] in_loge_cnt [LOGE_CHANNEL_CNT-1:0];
+  reg [F_CNTWIDTH-1:0] rt_loge_cnt [LOGE_CHANNEL_CNT-1:0];
+  localparam bit [PKT_CNT_WIDTH-1:0] OTF = ON_THE_FLY_CNT;
+  for (genvar i=0; i < LOGE_CHANNEL_CNT; i=i+1)
+  always_ff @(posedge clk)
+    if (!rstn) begin
+      in_loge_cnt[i] <= 0;
+      rt_loge_cnt[i] <= 0;
+    end
+    else begin
+      if (in_valid && in_ready)
+        in_loge_cnt[i] <= in_loge_cnt[i] + in_loge_valid[i];
+      rt_loge_cnt[i] <= rt_loge_cnt[i] + rt_loge_valid[i];
+      on_the_fly: `ASSUME(
+        (OTF+in_loge_cnt[i] >= rt_loge_cnt[i]) &&
+        (OTF+rt_loge_cnt[i]) >= in_loge_cnt[i]
+      );
+    end
+  // }}}
+  ////////////////////////////////////////////////////////////////////////////
+  // Properties to prove
+  ////////////////////////////////////////////////////////////////////////////
+  // {{{
+  for (genvar i=0; i < NUM_RDYRPLY; i=i+1)
+    o_ready_as: `ASSERT property(@(posedge clk)
+     disable iff (!rstn)
+      o_ready[i] == (rt_loge_cnt[i] < in_loge_cnt[i])
+    );
+  // }}}
+`endif // FORMAL
 endmodule
