@@ -257,7 +257,9 @@ hls_accel_wrapper HLS_ACCEL_WRAPPER (
     .aclk(clk),
     .aresetn(dma_pcis_slv_sync_rst_n),
     .cl_axi_mstr_bus(cl_axi_mstr_bus),
-    .cl_axil_slv_bus(cl_axil_slv_bus)
+    .cl_axil_slv_bus(cl_axil_slv_bus),
+    .irq_req(cl_sh_apppf_irq_req),
+    .irq_ack(sh_cl_apppf_irq_ack)
 );
 ///////////////////////////////////////////////////////////////////////
 ///////////////// HLS Generated Accelerator ///////////////////////////

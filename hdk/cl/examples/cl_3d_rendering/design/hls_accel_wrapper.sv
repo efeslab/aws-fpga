@@ -4,7 +4,9 @@ module hls_accel_wrapper (
 
     axi_bus_t.slave cl_axi_mstr_bus,
     axi_lite_bus_t.master cl_axil_slv_bus,
-    output logic interrupt
+
+    output logic irq_req,
+    input logic irq_ack
 );
 
     rendering rendering_inst(
@@ -83,6 +85,31 @@ module hls_accel_wrapper (
     assign cl_axi_mstr_bus.awid[15:1] = 15'h0;
     assign cl_axi_mstr_bus.arid[15:1] = 15'h0;
     assign cl_axi_mstr_bus.wid[15:1] = 15'h0;
+
+    logic irq_wait, irq_trigger;
+    logic interrupt_q;
+    always_ff @(posedge aclk) begin
+        if (~aresetn) begin
+            irq_wait <= 0;
+            irq_trigger <= 0;
+            interrupt_q <= 0;
+        end else begin
+            interrupt_q <= interrupt;
+            if (~interrupt_q & interrupt) begin
+                irq_trigger <= 1;
+            end else begin
+                irq_trigger <= 0;
+            end
+
+            if (~irq_wait & irq_trigger) begin
+                irq_wait <= 1;
+            end else if (irq_ack) begin
+                irq_wait <= 0;
+            end
+
+            irq_req <= ~irq_wait & irq_trigger;
+        end
+    end
 
 endmodule
 

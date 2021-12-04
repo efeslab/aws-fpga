@@ -145,6 +145,8 @@ void usage(const char* program_name) {
 int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 {
     int write_fd, read_fd, dimm, rc;
+    FILE *ofile;
+    bit8 frame_buffer_print[MAX_X][MAX_Y];
 
     write_fd = -1;
     read_fd = -1;
@@ -181,11 +183,13 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 
     for (int k = 0; k < num_of_frame; k++) {
         for (int i = 0; i < NUM_3D_TRI; i++) {
-            write_buffer[k*NUM_3D_TRI*3 + 3*i] = ((triangle_3ds[i].x0 & 0xff) << 0) |
+            write_buffer[k*NUM_3D_TRI*3 + 3*i] =
+                                    ((triangle_3ds[i].x0 & 0xff) << 0) |
                                     ((triangle_3ds[i].y0 & 0xff) << 8) |
                                     ((triangle_3ds[i].z0 & 0xff) << 16) |
                                     ((triangle_3ds[i].x1 & 0xff) << 24);
-            write_buffer[k*NUM_3D_TRI*3 + 3*i + 1] = ((triangle_3ds[i].y1 & 0xff) << 0) |
+            write_buffer[k*NUM_3D_TRI*3 + 3*i + 1] =
+                                    ((triangle_3ds[i].y1 & 0xff) << 0) |
                                     ((triangle_3ds[i].z1 & 0xff) << 8) |
                                     ((triangle_3ds[i].x2 & 0xff) << 16) |
                                     ((triangle_3ds[i].y2 & 0xff) << 24);
@@ -196,15 +200,64 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     rc = do_dma_write(write_fd, write_buffer, total_input_size, 0, 0, slot_id);
     fail_on(rc, out, "DMA write failed on DIMM: %d", dimm);
 
-    cl_poke_ocl(0x04, 1); // Global Interrupt Enable
-    cl_poke_ocl(0x08, 1); // Enable ap_done interrupt
-    cl_poke_ocl(0x10, 0);
-    cl_poke_ocl(0x14, 0);
-    cl_poke_ocl(0x1c, total_input_size & 0xffffffff);
-    cl_poke_ocl(0x20, (total_input_size >> 32) & 0xffffffff);
-    cl_poke_ocl(0x00, 1);
-    // This must be long enough...
-    sv_pause(4000);
+    int int_status_reg, control_reg;
+
+    for (int i = 0; i < 1; i++) {
+        cl_peek_ocl(0x00, &control_reg);
+        printf("%d: %d --> control status: %x\n", i, 0, control_reg);
+
+        cl_poke_ocl(0x04, 1); // Global Interrupt Enable
+        cl_poke_ocl(0x08, 1); // Enable ap_done interrupt
+        cl_poke_ocl(0x10, 0);
+        cl_poke_ocl(0x14, 0);
+        cl_poke_ocl(0x1c, MEM_16G & 0xffffffff);
+        cl_poke_ocl(0x20, (MEM_16G >> 32) & 0xffffffff);
+        cl_poke_ocl(0x00, 1);
+
+        control_reg = 0;
+        while ((control_reg & (1 << 1)) == 0) {
+            cl_peek_ocl(0x00, &control_reg);
+            printf("%d: %d --> control status: %x\n", i, 0, control_reg);
+            sv_pause(100);
+        }
+
+        cl_peek_ocl(0x0c, &int_status_reg);
+        printf("%d: interrupt status: %d\n", i, int_status_reg);
+
+        cl_poke_ocl(0x00, 1 << 4); // make it continue
+        cl_poke_ocl(0x0c, 1);
+        cl_peek_ocl(0x0c, &int_status_reg);
+        printf("%d: interrupt status: %d\n", i, int_status_reg);
+    }
+
+    rc = do_dma_read(read_fd, read_buffer, total_output_size, MEM_16G, 0, slot_id);
+    fail_on(rc, out, "DMA read failed on DIMM: %d", dimm);
+
+    for (int i = 0, j = 0, n = 0; n < NUM_FB; n++) {
+        bit32 temp = read_buffer[n];
+        frame_buffer_print[i][j++] = (temp >> 0) & 0xff;
+        frame_buffer_print[i][j++] = (temp >> 8) & 0xff;
+        frame_buffer_print[i][j++] = (temp >> 24) & 0xff;
+        frame_buffer_print[i][j++] = (temp >> 16) & 0xff;
+        if (j == MAX_Y) {
+            i++;
+            j = 0;
+        }
+    }
+
+    ofile = fopen("outputs.txt", "w+");
+    for (int j = MAX_X - 1; j >= 0; j--) {
+        for (int i = 0; i < MAX_Y; i++) {
+            int pix;
+            pix = frame_buffer_print[i][j];
+            if (pix)
+                fprintf(ofile, "1");
+            else
+                fprintf(ofile, "0");
+        }
+        fprintf(ofile, "\n");
+    }
+    fclose(ofile);
 
     //bool passed = true;
     //for (dimm = 0; dimm < 4; dimm++) {
