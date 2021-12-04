@@ -16,8 +16,15 @@
 //
 // parameter IS_CL_PCIM:
 //     if is 0, then all channels will use logb_almful_lo
-//     if is 1, special mechanism will be applied to the PCIM-M channel, which
-//         will use logb_almful_hi while others still use logb_almful_lo
+//     if is 1, special mechanism will be applied to the PCIM-W/AW channel,
+//       which will use logb_almful_hi while others still use logb_almful_lo
+//     TODO: change twowayhandshake_logger to always log the CL-side logb even
+//       if the !logb_ready. In another word, !logb_ready only blocks the valid
+//       propagation from CL to Shell, but doesn't block the logging. For Shell
+//       to CL channel, the !logb_ready should block both the logging and the
+//       valid propagation. Such difference can be explained by the idea that
+//       I only cares the CL-side of view.
+//
 module axi_recorder #(
    parameter ENABLE_B_BUFFER = 0,
    parameter IS_CL_PCIM = 0
@@ -71,14 +78,47 @@ if (S2M_LOGE_CHANNEL_CNT != 5)
 // common signals for both log_M2S and log_S2M
 // logb_almful is shared across both M2S logging and S2M logging because the
 // loge_valid is shared (single source, which is from all channels)
-logic nonW_logb_almful;
-assign nonW_logb_almful = log_M2S.logb_almful_lo || log_S2M.logb_almful_lo;
+logic nonPCIM_logb_almful;
+assign nonPCIM_logb_almful = log_M2S.logb_almful_lo || log_S2M.logb_almful_lo;
 
-logic W_logb_almful;
-if (IS_CL_PCIM)
-   assign W_logb_almful = log_M2S.logb_almful_hi || log_S2M.logb_almful_hi;
-else
-   assign W_logb_almful = nonW_logb_almful;
+logic PCIM_logb_almful;
+logic AW_logb_almful_imme;
+logic W_logb_almful_imme;
+if (IS_CL_PCIM) begin : cl_pcim_gen
+   assign PCIM_logb_almful = log_M2S.logb_almful_hi || log_S2M.logb_almful_hi;
+   // count whether I should block the AW or W from keep logging when the
+   // easy-to-trigger almful (almful_lo) is triggered.
+   // I should only allow AW or W from keep logging if one of them has not
+   // logged enough transactions to match another.
+   // Insufficient W -> Sufficient AW and W is allowed
+   // Insufficient AW -> Sufficient AW and Insufficient W -> Sufficient AW and
+   // W is also allowed
+   // i.e. if W is blocked, W can be unblocked. But if AW is blocked, AW cannot
+   // be unblocked unless almful_lo is deasserted
+   //
+   // The most difference between AW and W can be
+   // 8 (max burst 512B) * MAX_PCIM_WR_BURSTS
+   localparam AW_W_MAX_DIFF = 8 * MAX_PCIM_WR_BURSTS;
+   // need to account for +/- AW_W_MAX_DIFF
+   localparam AW_W_CNT_WIDTH = $clog2(AW_W_MAX_DIFF) + 1;
+   logic [AW_W_CNT_WIDTH-1:0] aw_sub_w_cnt;
+   always_ff @(posedge clk)
+      if (!sync_rst_n)
+         aw_sub_w_cnt <= 0;
+      else begin
+         if (M.awvalid && M.awready)
+            aw_sub_w_cnt = aw_sub_w_cnt + M.awlen + 1;
+         if (M.wvalid && M.wready)
+            aw_sub_w_cnt = aw_sub_w_cnt - 1;
+      end
+   assign AW_logb_almful_imme = (aw_sub_w_cnt >= 0) && nonPCIM_logb_almful;
+   assign W_logb_almful_imme = (aw_sub_w_cnt <= 0) && nonPCIM_logb_almful;
+end
+else begin : no_cl_pcim_gen
+   assign PCIM_logb_almful = nonPCIM_logb_almful;
+   assign AW_logb_almful_imme = 0;
+   assign W_logb_almful_imme = 0;
+end
 
 logic loge_valid [M2S_LOGE_CHANNEL_CNT-1:0];
 assign log_M2S.loge_valid = loge_valid;
@@ -104,8 +144,8 @@ axichannel_logger #(
       M2S_GET_OFFSET(LOGB_AW) +: M2S_CHANNEL_WIDTHS[LOGB_AW]
    ]),
    .loge_valid(loge_valid[LOGE_AW]),
-   .logb_almful(nonW_logb_almful),
-   .logb_almful_imme(B_buf_almful)
+   .logb_almful(PCIM_logb_almful),
+   .logb_almful_imme(B_buf_almful || AW_logb_almful_imme)
 );
 // W  Channel, M2S
 axichannel_logger #(
@@ -125,8 +165,8 @@ axichannel_logger #(
       M2S_GET_OFFSET(LOGB_W) +: M2S_CHANNEL_WIDTHS[LOGB_W]
    ]),
    .loge_valid(loge_valid[LOGE_W]),
-   .logb_almful(W_logb_almful),
-   .logb_almful_imme(B_buf_almful)
+   .logb_almful(PCIM_logb_almful),
+   .logb_almful_imme(B_buf_almful || W_logb_almful_imme)
 );
 // AR Channel, M2S
 axichannel_logger #(
@@ -146,7 +186,7 @@ axichannel_logger #(
       M2S_GET_OFFSET(LOGB_AR) +: M2S_CHANNEL_WIDTHS[LOGB_AR]
    ]),
    .loge_valid(loge_valid[LOGE_AR]),
-   .logb_almful(nonW_logb_almful),
+   .logb_almful(nonPCIM_logb_almful),
    .logb_almful_imme(B_buf_almful)
 );
 
@@ -204,7 +244,7 @@ axichannel_logger #(
       S2M_GET_OFFSET(LOGB_B) +: S2M_CHANNEL_WIDTHS[LOGB_B]
    ]),
    .loge_valid(loge_valid[LOGE_B]),
-   .logb_almful(nonW_logb_almful),
+   .logb_almful(nonPCIM_logb_almful),
    .logb_almful_imme(1'b0)
 );
 // R  Channel, S2M
@@ -225,7 +265,7 @@ axichannel_logger #(
       S2M_GET_OFFSET(LOGB_R) +: S2M_CHANNEL_WIDTHS[LOGB_R]
    ]),
    .loge_valid(loge_valid[LOGE_R]),
-   .logb_almful(nonW_logb_almful),
+   .logb_almful(nonPCIM_logb_almful),
    .logb_almful_imme(1'b0)
 );
 endmodule
