@@ -162,7 +162,7 @@ if (ENABLE_B_BUFFER) begin : enable_B_buffer
       .WIDTH(AXI_RR_B_WIDTH),
       .DEPTH(B_BUF_SIZE),
       // 4 is a random number for overprovision
-      .ALMFUL_HI_THRESHOLD(B_BUF_SIZE - MAX_WR_BURSTS - 4)
+      .ALMFUL_HI_THRESHOLD(B_BUF_SIZE - MAX_PCIM_WR_BURSTS - 4)
    ) B_fifo_buf (
       .clk(clk), .rst(!sync_rst_n),
       .din(axi_rr_B_t'{S.bid, S.bresp}),

@@ -424,15 +424,16 @@ parameter logic [63:0] PACKET_ALIGNMENT_MASK = 64'(PACKET_ALIGNMENT) - 1;
 
 // AXI_ID configuration
 parameter int PCIM_INTERCONNECT_AXI_ID_WIDTH = 14;
-// MAX_WR_BURSTS are the max number of outstanding write transactions allowed on
-// the pcis/pcim axi bus.
+// MAX_PCIM_WR_BURSTS are the max number of outstanding write transactions allowed on
+// the pcim axi bus. This is not documented in aws readme.
+// The bursts of pcis is documented though.
 // Note that the pcim interconnect is also configured to support this much
 // bursts in its crossbar for all interfaces.
-parameter int MAX_WR_BURSTS = 32;
-parameter int MAX_AWID_WIDTH = $clog2(MAX_WR_BURSTS);
-// MAX_RD_BURSTS is similar to MAX_WR_BURSTS, but for read trasactions
-parameter int MAX_RD_BURSTS = 32;
-parameter int MAX_ARID_WIDTH = $clog2(MAX_RD_BURSTS);
+parameter int MAX_PCIM_WR_BURSTS = 32;
+parameter int MAX_PCIM_AWID_WIDTH = $clog2(MAX_PCIM_WR_BURSTS);
+// MAX_PCIM_RD_BURSTS is similar to MAX_PCIM_WR_BURSTS, but for read trasactions
+parameter int MAX_PCIM_RD_BURSTS = 32;
+parameter int MAX_PCIM_ARID_WIDTH = $clog2(MAX_PCIM_RD_BURSTS);
 
 // A wrapper around lib_pipe to encapsulate a packed struct
 `define LIB_PIPE_PACKED_STRUCT(typename, varname, suffix, _clk, _rstn, NSTAGES)\

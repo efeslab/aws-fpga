@@ -741,8 +741,8 @@ always_ff @( posedge clk)
       awuser <= 0;
    end
 // awid incremental
-localparam MAX_WR_BURSTS = 8;
-localparam MAX_AWID_WIDTH = $clog2(MAX_WR_BURSTS);
+localparam MAX_PCIM_WR_BURSTS = 8;
+localparam MAX_AWID_WIDTH = $clog2(MAX_PCIM_WR_BURSTS);
 always_ff @(posedge clk)
    if (!sync_rst_n)
       awid <= 0;
