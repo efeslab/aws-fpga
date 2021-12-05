@@ -60,6 +60,9 @@ module cl_dram_dma #(parameter NUM_DDR=4)
    localparam NO_SCRB_INST = 0;
 `endif   
 
+assign cl_sh_id0 = `CL_SH_ID0;
+assign cl_sh_id1 = `CL_SH_ID1;
+
 //---------------------------- 
 // Internal signals
 //---------------------------- 
