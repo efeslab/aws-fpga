@@ -35,13 +35,6 @@ if {[llength [glob -nocomplain -dir $TARGET_DIR *]] != 0} {
 
 ## Change file names and paths below to reflect your CL area.  DO NOT include AWS RTL files.
 file copy -force $CL_DIR/../common/design/cl_common_defines.vh     $TARGET_DIR
-file copy -force $CL_DIR/design/cl_dma_pcis_slv.sv                 $TARGET_DIR
-file copy -force $CL_DIR/design/cl_dram_dma_defines.vh             $TARGET_DIR
-file copy -force $CL_DIR/design/cl_dram_dma_pkg.sv                 $TARGET_DIR
-file copy -force $CL_DIR/design/cl_dram_dma.sv                     $TARGET_DIR
-file copy -force $CL_DIR/design/cl_id_defines.vh                   $TARGET_DIR
-file copy -force $CL_DIR/design/cl_ocl_slv_reg.sv                  $TARGET_DIR
-file copy -force $CL_DIR/design/hls_accel_wrapper.sv               $TARGET_DIR
 
 file copy -force $CL_DIR/design/hls_accel/verilog/rendering_coloringFB.v $TARGET_DIR
 file copy -force $CL_DIR/design/hls_accel/verilog/rendering_control_s_axi.v $TARGET_DIR
@@ -73,6 +66,13 @@ file copy -force $CL_DIR/design/hls_accel/verilog/rendering_zculling_z_buffer_V_
 file copy -force $CL_DIR/design/hls_accel/verilog/rendering_zculling_z_buffer_V.v $TARGET_DIR
 
 file copy -force $UNUSED_TEMPLATES_DIR/unused_sh_bar1_template.inc $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel_wrapper.sv               $TARGET_DIR
+file copy -force $CL_DIR/design/cl_dma_pcis_slv.sv                 $TARGET_DIR
+file copy -force $CL_DIR/design/cl_dram_dma_defines.vh             $TARGET_DIR
+file copy -force $CL_DIR/design/cl_dram_dma_pkg.sv                 $TARGET_DIR
+file copy -force $CL_DIR/design/cl_dram_dma.sv                     $TARGET_DIR
+file copy -force $CL_DIR/design/cl_id_defines.vh                   $TARGET_DIR
+file copy -force $CL_DIR/design/cl_ocl_slv_reg.sv                  $TARGET_DIR
 
 #---- End of section replaced by Developr ---
 
@@ -88,6 +88,6 @@ puts "AWS FPGA: VIVADO_TOOL_VERSION $TOOL_VERSION"
 puts "vivado_version $vivado_version"
 
 # encrypt .v/.sv/.vh/inc as verilog files
-encrypt -k $HDK_SHELL_DIR/build/scripts/vivado_keyfile_2017_4.txt -lang verilog  [glob -nocomplain -- $TARGET_DIR/*.{v,sv}] [glob -nocomplain -- $TARGET_DIR/*.vh] [glob -nocomplain -- $TARGET_DIR/*.inc]
+# encrypt -k $HDK_SHELL_DIR/build/scripts/vivado_keyfile_2017_4.txt -lang verilog  [glob -nocomplain -- $TARGET_DIR/*.{v,sv}] [glob -nocomplain -- $TARGET_DIR/*.vh] [glob -nocomplain -- $TARGET_DIR/*.inc]
 # encrypt *vhdl files
-encrypt -k $HDK_SHELL_DIR/build/scripts/vivado_vhdl_keyfile_2017_4.txt -lang vhdl -quiet [ glob -nocomplain -- $TARGET_DIR/*.vhd? ]
+# encrypt -k $HDK_SHELL_DIR/build/scripts/vivado_vhdl_keyfile_2017_4.txt -lang vhdl -quiet [ glob -nocomplain -- $TARGET_DIR/*.vhd? ]
