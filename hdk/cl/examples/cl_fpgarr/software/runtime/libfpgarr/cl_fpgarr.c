@@ -123,7 +123,6 @@ void do_record_stop() {
     }
 }
 void do_replay_start() {
-    rr_cfg_poke(RR_ON_THE_FLY_BALANCE, 80);
     // always set RR_MODE first to avoid silently dropping traffic
     rr_cfg_poke(RR_MODE, rr_mode.val);
     if (is_validate()) {

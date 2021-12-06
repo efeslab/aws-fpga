@@ -71,9 +71,9 @@ int main(int argc, char **argv)
 {
     size_t buffer_size;
 #if defined(SV_TEST)
-    buffer_size = 8192;
+    buffer_size = (1ULL << 15);
 // should be $clog2(buffer_size)
-#define PCIM_BUF_ALIGNMENT 8192
+#define PCIM_BUF_ALIGNMENT (1ULL << 15)
 #else
     buffer_size = 1ULL << 24;
 #define PCIM_BUF_ALIGNMENT (1ULL << 24)
@@ -151,6 +151,7 @@ void usage(const char* program_name) {
 #endif
 int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 {
+    errno = 0;
     int rc;
 #ifdef TEST_PCIS
     uint8_t *write_buffer = malloc(buffer_size);
@@ -222,9 +223,9 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         //     15:8 - Last data adj -- Number of DW to adj last data phase (0 means all DW are valid, 1 means all but 1DW valid, etc...)
         //     31:16 - User
         //NOTE: This should not exceed the sh_cl_cfg_max_payload
-        uint32_t wr_burst = 8; // max is 8
+        uint32_t wr_burst = 2; // max is 8
         uint32_t sizeB_burst = wr_burst*64;
-        uint8_t wraddr_inc_shift = 9;
+        uint8_t wraddr_inc_shift = 7;
         assert((1 << wraddr_inc_shift) == sizeB_burst);
         uint32_t Nloop = buffer_size / sizeB_burst;
         cl_poke_ocl(0x02c, wr_burst - 1);
