@@ -438,6 +438,7 @@ else
     out_valid == old_out_valid
   );
 `endif
+`ifdef DEBUG_ILA
 if (DEBUG) begin
   if (LOGE_CHANNEL_CNT != 25)
     $error("Invalid Debug Parameter: LOGE_CHANNEL_CNT %d", LOGE_CHANNEL_CNT);
@@ -489,6 +490,7 @@ if (DEBUG) begin
     .probe30({1'b0,rt_sub_loge_cnt[24]})
   );
 end
+`endif
 endmodule
 
 module twowayhandshake_ready_replayer #(
@@ -630,6 +632,7 @@ endgenerate
     );
   // }}}
 `endif // FORMAL
+`ifdef DEBUG_ILA
 if (DEBUG) begin
   if (LOGE_CHANNEL_CNT != 25)
     $error("Invalid Debug Parameter: LOGE_CHANNEL_CNT %d", LOGE_CHANNEL_CNT);
@@ -677,4 +680,5 @@ if (DEBUG) begin
     .probe30({1'b0,rt_sub_loge_cnt[24]})
   );
 end
+`endif
 endmodule
