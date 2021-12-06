@@ -315,6 +315,7 @@ end
       
       if (timeout_count >= 4000) begin
          $display("[%t] : *** ERROR *** Timeout waiting for dma transfers to cl", $realtime);
+         $display("There is likely nothing wrong, you just try to transfer too much on pcis at a time.");
          error_count++;
       end
       if(debug) begin
@@ -357,6 +358,7 @@ end
       
       if (timeout_count >= 4000) begin
          $display("[%t] : *** ERROR *** Timeout waiting for dma transfers from cl", $realtime);
+         $display("There is likely nothing wrong, you just try to transfer too much on pcis at a time.");
          error_count++;
       end
 
