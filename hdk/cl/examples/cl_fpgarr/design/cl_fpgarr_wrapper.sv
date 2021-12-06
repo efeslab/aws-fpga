@@ -508,7 +508,6 @@ rr_axil_mstr_sel bar1_sel (
   .inBS(bar1_replay_axil_bus),
   .outM(rr_bar1_record_bus)
 );
-`ifndef TEST_BRIDGE_REC_REP
 ////////////////////////////////////////////////////////////////////////////////
 // Connect packed record and replay bus to the storage backend
 ////////////////////////////////////////////////////////////////////////////////
@@ -550,20 +549,6 @@ rr_tracedecoder #(
   .packed_replay_bus(packed_replay_bus),
   .replay_bus(unpacked_replay_bus)
 );
-`else
-// TESTING replay trace decoding
-rr_tracedecoder top_decoder(
-  .clk(clk), .rstn(rstn),
-  .packed_replay_bus(record_bus),
-  .replay_bus(unpacked_replay_bus)
-);
-// placeholder for rr_storage_bus dummy signals
-assign rr_storage_bus.awvalid = 0;
-assign rr_storage_bus.wvalid = 0;
-assign rr_storage_bus.arvalid = 0;
-assign rr_storage_bus.bready = 1;
-assign rr_storage_bus.rready = 1;
-`endif
 
 // AXI Interconnect for the logging pcim traffic and user pcim traffic
 // NOTE: that all Xid field of pcim buses, either from logging or from the cl,
