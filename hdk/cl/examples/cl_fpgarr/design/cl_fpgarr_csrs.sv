@@ -129,6 +129,7 @@ module rr_csrs #(
             csrs[RR_STATE_LO] <= rr_state_csr_i[0 +: 32];
             csrs[RR_CSR_VERSION] <= RR_CSR_VERSION_INT;
             csrs[RR_TRACE_FIFO_ASSERT] <= storage_axi_read_csr_i.trace_fifo_assert[0 +: 32];
+            `ifdef DEBUG_RECORD_CSR
             // wb_record_dbg_csr
             csrs[RR_WB_RECORD_DBG_BITS_NON_ALIGNED_HI] <=
                 wb_record_dbg_csr_i.fifo_wr_dbg.bits_non_aligned[32 +: 32];
@@ -197,6 +198,8 @@ module rr_csrs #(
 
             csrs[RR_AXI_STATUS_HI] <= storage_axi_read_csr_i.trace_rw_cnts.axi_status[32 +: 32];
             csrs[RR_AXI_STATUS_LO] <= storage_axi_read_csr_i.trace_rw_cnts.axi_status[0 +: 32];
+            `endif // DEBUG_RECORD_CSR
+            `ifdef DEBUG_REPLAY_CSR
             csrs[RR_REPLAY_AR_TRANS_CNT] <= storage_axi_read_csr_i.trace_rw_cnts.replay_ar_trans_cnt;
             csrs[RR_REPLAY_R_TRANS_CNT] <= storage_axi_read_csr_i.trace_rw_cnts.replay_r_trans_cnt;
             csrs[RR_REPLAY_IN_FIFO_IN_CNT] <= storage_axi_read_csr_i.trace_rw_cnts.replay_in_fifo_in_cnt;
@@ -209,6 +212,8 @@ module rr_csrs #(
             csrs[RR_TRACE_SPLIT_DBG_CSR_P3] <=
                 storage_axi_read_csr_i.trace_rw_cnts.trace_split_dbg_csr[
                 $bits(trace_split_dbg_csr_t) - 1 : 96];
+            `endif // DEBUG_RECORD_CSR
+            `ifdef DEBUG_PCHK_CSR
             // pcim pchk csrs
             csrs[RR_PCIM_PCHK_ASSERTED] <= {
                 pcim_interconnect_dbg_csr_i.logging_wb_pchk.pc_asserted,
@@ -231,6 +236,7 @@ module rr_csrs #(
                 pcim_interconnect_dbg_csr_i.cl_pcim_pchk);
             `ASSIGN_PCHK_TO_CSRS(csrs, RR_SH_PCIM_PCHK,
                 pcim_interconnect_dbg_csr_i.sh_pcim_pchk);
+            `endif // DEBUG_PCHK_CSR
         end
     end
 

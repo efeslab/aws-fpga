@@ -3,6 +3,7 @@
 #include "cl_fpgarr_csrs.h"
 #include "cl_fpgarr_csrs_decode.h"
 
+#ifdef DEBUG_REPLAY_CSR
 void dump_trace_split_dbg_csr() {
     trace_split_dbg_csr_t d;
     rr_cfg_peek(RR_TRACE_SPLIT_DBG_CSR_P0, &(d.val[0]));
@@ -21,7 +22,9 @@ void dump_trace_split_dbg_csr() {
     log_info("hi_pad_last_oneoff %d, hi_pad_last %d, hi_lo_shift %d",
             d.hi_pad_last_oneoff, d.hi_pad_last, d.hi_lo_shift);
 }
+#endif
 
+#ifdef DEBUG_RECORD_CSR
 void dump_trace_rw_axi_status() {
     trace_rw_axi_status_t d;
     rr_cfg_peek(RR_AXI_STATUS_LO, &(d.val[0]));
@@ -33,3 +36,4 @@ void dump_trace_rw_axi_status() {
         "wvalid %d, wready %d, arvalid %d, arready %d, rvalid %d, rready %d",
         d.wvalid, d.wready, d.arvalid, d.arready, d.rvalid, d.rready);
 }
+#endif

@@ -52,6 +52,7 @@ uint64_t rr_wait_counter_stable(uint64_t lo_csr_idx, uint64_t hi_csr_idx) {
     rr_cfg_peek64(csr_idx_pfx##_LO, csr_idx_pfx##_HI, &(csr_idx_pfx##_val)); \
     log_info("DBG: " #csr_idx_pfx " = " fmt, csr_idx_pfx##_val)
 
+#ifdef DEBUG_PCHK_CSR
 #define LOG_INFO_DBG_CSR_PCHK(pchk_csr_idx) \
     LOG_INFO_DBG_CSR_U32("%#x", pchk_csr_idx##_P0); \
     LOG_INFO_DBG_CSR_U32("%#x", pchk_csr_idx##_P1); \
@@ -65,10 +66,14 @@ void debug_pcim_pchk() {
     LOG_INFO_DBG_CSR_PCHK(RR_CL_PCIM_PCHK);
     LOG_INFO_DBG_CSR_PCHK(RR_SH_PCIM_PCHK);
 }
+#endif
+
 void debug_check() {
     // OLD debug csr
     check_rr_state();
     LOG_INFO_DBG_CSR_U32("%#x", RR_TRACE_FIFO_ASSERT);
+    LOG_INFO_DBG_CSR_U32("%d", RR_ON_THE_FLY_BALANCE);
+#ifdef DEBUG_RECORD_CSR
     // gefei dbg_csr
     LOG_INFO_DBG_CSR_U64("%ld", RR_WB_RECORD_DBG_BITS_NON_ALIGNED);
     LOG_INFO_DBG_CSR_U32("%d", RR_WB_RECORD_DBG_BITS_FIFO_WR_CNT);
@@ -104,7 +109,8 @@ void debug_check() {
     LOG_INFO_DBG_CSR_U64("%ld", RT_LEFTOVER_SIZE);
     LOG_INFO_DBG_CSR_U64("%ld", RT_RECORD_CURR);
     dump_trace_rw_axi_status();
-    LOG_INFO_DBG_CSR_U32("%d", RR_ON_THE_FLY_BALANCE);
+#endif // DEBUG_RECORD_CSR
+#ifdef DEBUG_REPLAY_CSR
     LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_AR_TRANS_CNT);
     LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_R_TRANS_CNT);
     LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_IN_FIFO_IN_CNT);
@@ -112,8 +118,10 @@ void debug_check() {
     LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_OUT_FIFO_IN_CNT);
     LOG_INFO_DBG_CSR_U32("%d", RR_REPLAY_OUT_FIFO_OUT_CNT);
     dump_trace_split_dbg_csr();
-
+#endif // DEBUG_REPLAY_CSR
+#ifdef DEBUG_PCHK_CSR
     debug_pcim_pchk();
+#endif // DEBUG_PCHK_CSR
 }
 
 void check_rr_state() {

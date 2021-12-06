@@ -250,9 +250,32 @@ endfunction
 // ALWAYS update (increase) this RR_CSR_VERSION_INT after making changes to CSR
 // address allocation
 // format: YYYY_MM_DD_HH
-parameter int RR_CSR_VERSION_INT = 2021113018;
+parameter int RR_CSR_VERSION_INT = 2021120605;
 ////////////////////////////////////////////////////////////////////////////////
-parameter int RR_CSR_CNT = 128;
+// Debug CSR configurations
+`undef DEBUG_RECORD_CSR
+`undef DEBUG_PCHK_CSR
+// for DEBUG_PCHK_CSR
+`ifdef SYNTH_DEBUG_INTERCONNECT
+  `define DEBUG_PCHK_CSR
+`endif
+`undef DEBUG_REPLAY_CSR
+function automatic int GET_RR_CSR_CNT();
+  // basic CSR
+  GET_RR_CSR_CNT = 23;
+  `ifdef DEBUG_RECORD_CSR
+    GET_RR_CSR_CNT = GET_RR_CSR_CNT + 47;
+  `endif
+  `ifdef DEBUG_PCHK_CSR
+    GET_RR_CSR_CNT = GET_RR_CSR_CNT + 21;
+  `endif
+  `ifdef DEBUG_REPLAY_CSR
+    GET_RR_CSR_CNT = GET_RR_CSR_CNT + 10;
+  `endif
+  GET_RR_CSR_CNT = 2**$clog2(GET_RR_CSR_CNT);
+endfunction
+////////////////////////////////////////////////////////////////////////////////
+parameter int RR_CSR_CNT = GET_RR_CSR_CNT();
 parameter int RR_CSR_ADDR_WIDTH = $clog2(RR_CSR_CNT);
 typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
   // BUF_ADDR and BUF_SIZE are the address and size of a buffer in CPU-side
@@ -289,6 +312,8 @@ typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
   RT_REPLAY_BITS_LO,        // 19
   RR_TRACE_FIFO_ASSERT,     // 20
   RR_CSR_VERSION,           // 21
+  RR_ON_THE_FLY_BALANCE,    // 22
+  `ifdef DEBUG_RECORD_CSR
   // gefei dbg_csr
   RR_WB_RECORD_DBG_BITS_NON_ALIGNED_HI,
   RR_WB_RECORD_DBG_BITS_NON_ALIGNED_LO,
@@ -339,7 +364,8 @@ typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
 
   RR_AXI_STATUS_HI,
   RR_AXI_STATUS_LO,
-  RR_ON_THE_FLY_BALANCE,
+  `endif // DEBUG_RECORD_CSR
+  `ifdef DEBUG_PCHK_CSR
   // pcim pchk csrs
   RR_PCIM_PCHK_ASSERTED,
   RR_LOGGING_WB_PCHK_P0,
@@ -362,6 +388,8 @@ typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
   RR_SH_PCIM_PCHK_P2,
   RR_SH_PCIM_PCHK_P3,
   RR_SH_PCIM_PCHK_P4,
+  `endif // DEBUG_PCHK_CSR
+  `ifdef DEBUG_REPLAY_CSR
   RR_REPLAY_AR_TRANS_CNT,
   RR_REPLAY_R_TRANS_CNT,
   RR_REPLAY_IN_FIFO_IN_CNT,
@@ -372,6 +400,7 @@ typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
   RR_TRACE_SPLIT_DBG_CSR_P1,
   RR_TRACE_SPLIT_DBG_CSR_P2,
   RR_TRACE_SPLIT_DBG_CSR_P3,
+  `endif // DEBUG_REPLAY_CSR
   RR_CSR_LAST_DONT_USE = RR_CSR_CNT - 1
 } rr_csr_enum;
 `define RR_CSR_ADDR(idx) (idx << 2)
