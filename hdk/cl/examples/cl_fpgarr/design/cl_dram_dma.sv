@@ -311,7 +311,8 @@ cl_dram_dma_axi_mstr  CL_DRAM_DMA_AXI_MSTR (
     .aclk(clk),
     .aresetn(dma_pcis_slv_sync_rst_n),
     .cl_axi_mstr_bus(cl_axi_mstr_bus),
-    .axi_mstr_cfg_bus(axi_mstr_cfg_bus)
+    .axi_mstr_cfg_bus(axi_mstr_cfg_bus),
+    .done_irq_req(cl_sh_apppf_irq_req[14])
   );
 
 ///////////////////////////////////////////////////////////////////////
@@ -683,10 +684,11 @@ cl_int_slv CL_INT_TST
 
   .cfg_bus             (int_tst_cfg_bus),
 
-  .cl_sh_apppf_irq_req (cl_sh_apppf_irq_req),
-  .sh_cl_apppf_irq_ack (sh_cl_apppf_irq_ack)
+  .cl_sh_apppf_irq_req (cl_sh_apppf_irq_req[13:1]),
+  .sh_cl_apppf_irq_ack (sh_cl_apppf_irq_ack[13:1])
        
 );
+// interrupt[14] is reserved for axi_mstr finish
 
 //----------------------------------------- 
 // Interrrupt example  

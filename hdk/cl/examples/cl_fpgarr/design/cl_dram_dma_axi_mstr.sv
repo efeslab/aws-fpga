@@ -25,7 +25,8 @@ module cl_dram_dma_axi_mstr (
     input            aclk,
     input            aresetn,
     axi_bus_t.slave  cl_axi_mstr_bus,  // AXI Master Bus
-    cfg_bus_t.master axi_mstr_cfg_bus  // Config Bus for Register Access
+    cfg_bus_t.master axi_mstr_cfg_bus, // Config Bus for Register Access
+    output logic done_irq_req
 );
 
  `include "cl_dram_dma_defines.vh"
@@ -110,6 +111,14 @@ module cl_dram_dma_axi_mstr (
             default:    axi_mstr_cfg_bus.rdata[31:0] <= 32'hffffffff;
          endcase
    end
+
+   logic cmd_done_qq;
+   always @(posedge aclk)
+      if (!aresetn)
+         cmd_done_qq <= 0;
+      else
+         cmd_done_qq <= cmd_done_q;
+   assign done_irq_req = !cmd_done_qq && cmd_done_q; // $rose(cmd_done_q)
 
    //Ack for cycle
    always_ff @(posedge aclk)
