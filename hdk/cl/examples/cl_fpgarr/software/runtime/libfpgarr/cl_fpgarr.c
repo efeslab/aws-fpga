@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <utils/log.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "cl_fpgarr.h"
 #include "cl_fpgarr_csrs.h"
@@ -16,6 +17,7 @@
 rr_mode_t rr_mode = RR_MODE_INIT;
 
 static uint64_t buffer_size;
+static struct timespec rr_start_time;
 
 int init_rr(int slot_id) {
     char *rr_mode_env = getenv("RR_MODE");
@@ -177,8 +179,15 @@ void do_pre_rr() {
     } else if (is_replay()) {
         do_replay_start();
     }
+    clock_gettime(CLOCK_MONOTONIC, &rr_start_time);
 }
 void do_post_rr() {
+    struct timespec rr_end_time, elapsed_time;
+    uint64_t elapsed_ns;
+    clock_gettime(CLOCK_MONOTONIC, &rr_end_time);
+    timespec_sub(&rr_start_time, &rr_end_time, &elapsed_time);
+    elapsed_ns = elapsed_time.tv_sec * 1000000000L + elapsed_time.tv_nsec;
+    log_info("RR pre_rr->post_rr, elapsed ns: %ld", elapsed_ns);
     if (is_record()) {
         do_record_stop();
     } else if (is_replay()) {
