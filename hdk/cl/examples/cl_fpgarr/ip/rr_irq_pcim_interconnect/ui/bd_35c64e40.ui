@@ -1,0 +1,48 @@
+{
+   "ExpandedHierarchyInLayout":"",
+   "guistr":"# # String gsaved with Nlview 7.0r4  2019-12-20 bk=1.5203 VDI=41 GEI=36 GUI=JA:10.0 TLS
+#  -string -flagsOSRD
+preplace port S00_AXI -pg 1 -lvl 0 -x -280 -y 90 -defaultsOSRD
+preplace port M00_AXI -pg 1 -lvl 2 -x 1450 -y 350 -defaultsOSRD
+preplace port S01_AXI -pg 1 -lvl 0 -x -280 -y 260 -defaultsOSRD
+preplace port ACLK -pg 1 -lvl 0 -x -280 -y 280 -defaultsOSRD
+preplace port ARESETN -pg 1 -lvl 0 -x -280 -y 300 -defaultsOSRD
+preplace inst rr_irq_pcim_interconnect -pg 1 -lvl 1 -x 190 -y 160 -defaultsOSRD
+preplace inst rr_irq_pcim_interconnect|xbar -pg 1 -lvl 2 -x 630 -y 690 -defaultsOSRD
+preplace inst rr_irq_pcim_interconnect|s00_couplers -pg 1 -lvl 1 -x 119 -y 134 -defaultsOSRD
+preplace inst rr_irq_pcim_interconnect|s01_couplers -pg 1 -lvl 1 -x 119 -y 334 -defaultsOSRD
+preplace inst rr_irq_pcim_interconnect|m00_couplers -pg 1 -lvl 3 -x 1020 -y 362 -defaultsOSRD
+preplace inst rr_irq_pcim_interconnect|s00_couplers|s00_regslice -pg 1 -lvl 1 -x 199 -y 144 -defaultsOSRD
+preplace inst rr_irq_pcim_interconnect|m00_couplers|m00_regslice -pg 1 -lvl 1 -x 1090 -y 372 -defaultsOSRD
+preplace netloc ACLK_1 1 0 1 -250 280n
+preplace netloc ARESETN_1 1 0 1 -260 300n
+preplace netloc rr_irq_pcim_interconnect_M00_AXI 1 1 1 1430 350n
+preplace netloc S00_AXI_1 1 0 1 -240J 90n
+preplace netloc S01_AXI_1 1 0 1 -240J 260n
+preplace netloc rr_irq_pcim_interconnect|rr_irq_pcim_interconnect_ACLK_net 1 0 3 -81 424 430 220 830
+preplace netloc rr_irq_pcim_interconnect|rr_irq_pcim_interconnect_ARESETN_net 1 0 3 -71 434 440 230 810
+preplace netloc rr_irq_pcim_interconnect|rr_irq_pcim_interconnect_to_s00_couplers 1 0 1 N 124
+preplace netloc rr_irq_pcim_interconnect|s00_couplers_to_xbar 1 1 1 450 144n
+preplace netloc rr_irq_pcim_interconnect|rr_irq_pcim_interconnect_to_s01_couplers 1 0 1 N 294
+preplace netloc rr_irq_pcim_interconnect|s01_couplers_to_xbar 1 1 1 420 334n
+preplace netloc rr_irq_pcim_interconnect|m00_couplers_to_rr_irq_pcim_interconnect 1 3 1 N 372
+preplace netloc rr_irq_pcim_interconnect|xbar_to_m00_couplers 1 2 1 820 352n
+preplace netloc rr_irq_pcim_interconnect|s00_couplers|S_ACLK_1 1 0 1 69 144n
+preplace netloc rr_irq_pcim_interconnect|s00_couplers|S_ARESETN_1 1 0 1 79 164n
+preplace netloc rr_irq_pcim_interconnect|s00_couplers|s00_couplers_to_s00_regslice 1 0 1 N 124
+preplace netloc rr_irq_pcim_interconnect|s00_couplers|s00_regslice_to_s00_couplers 1 1 1 N 144
+preplace netloc rr_irq_pcim_interconnect|m00_couplers|M_ACLK_1 1 0 1 N 372
+preplace netloc rr_irq_pcim_interconnect|m00_couplers|M_ARESETN_1 1 0 1 N 392
+preplace netloc rr_irq_pcim_interconnect|m00_couplers|m00_couplers_to_m00_regslice 1 0 1 N 352
+preplace netloc rr_irq_pcim_interconnect|m00_couplers|m00_regslice_to_m00_couplers 1 1 1 N 372
+levelinfo -pg 1 -280 190 1450
+levelinfo -hier rr_irq_pcim_interconnect * 119 630 1020 *
+levelinfo -hier rr_irq_pcim_interconnect|s00_couplers * 199 *
+levelinfo -hier rr_irq_pcim_interconnect|m00_couplers * 1090 *
+pagesize -pg 1 -db -bbox -sgen -400 0 1560 1250
+pagesize -hier rr_irq_pcim_interconnect -db -bbox -sgen -120 30 1340 1150
+pagesize -hier rr_irq_pcim_interconnect|s00_couplers -db -bbox -sgen 39 64 349 224
+pagesize -hier rr_irq_pcim_interconnect|m00_couplers -db -bbox -sgen 940 292 1240 452
+"
+}
+
