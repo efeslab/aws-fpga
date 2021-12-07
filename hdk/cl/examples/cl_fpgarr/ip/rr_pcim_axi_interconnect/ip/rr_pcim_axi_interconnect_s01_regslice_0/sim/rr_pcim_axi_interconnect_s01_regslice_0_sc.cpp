@@ -74,8 +74,8 @@ rr_pcim_axi_interconnect_s01_regslice_0_sc::rr_pcim_axi_interconnect_s01_regslic
     model_param_props.addLong("C_REG_CONFIG_AW", "7");
     model_param_props.addLong("C_REG_CONFIG_W", "1");
     model_param_props.addLong("C_REG_CONFIG_B", "7");
-    model_param_props.addLong("C_REG_CONFIG_AR", "7");
-    model_param_props.addLong("C_REG_CONFIG_R", "1");
+    model_param_props.addLong("C_REG_CONFIG_AR", "0");
+    model_param_props.addLong("C_REG_CONFIG_R", "0");
     model_param_props.addLong("C_RESERVE_MODE", "0");
     model_param_props.addLong("C_NUM_SLR_CROSSINGS", "0");
     model_param_props.addLong("C_PIPELINES_MASTER_AW", "0");

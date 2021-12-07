@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0x6EE16F8DC4B998F1",
+      "boundary_crc": "0x780C0F4F9C87C25",
       "device": "xcvu9p-flgb2104-2-i",
       "name": "rr_pcim_axi_interconnect",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
@@ -349,7 +349,7 @@
             "value": "AXI4"
           },
           "READ_WRITE_MODE": {
-            "value": "READ_WRITE"
+            "value": "WRITE_ONLY"
           },
           "RUSER_BITS_PER_BYTE": {
             "value": "0"
@@ -784,16 +784,16 @@
               }
             },
             "interface_nets": {
-              "s00_couplers_to_s00_regslice": {
-                "interface_ports": [
-                  "S_AXI",
-                  "s00_regslice/S_AXI"
-                ]
-              },
               "s00_regslice_to_s00_couplers": {
                 "interface_ports": [
                   "M_AXI",
                   "s00_regslice/M_AXI"
+                ]
+              },
+              "s00_couplers_to_s00_regslice": {
+                "interface_ports": [
+                  "S_AXI",
+                  "s00_regslice/S_AXI"
                 ]
               }
             },
@@ -874,16 +874,16 @@
               }
             },
             "interface_nets": {
-              "s01_regslice_to_s01_couplers": {
-                "interface_ports": [
-                  "M_AXI",
-                  "s01_regslice/M_AXI"
-                ]
-              },
               "s01_couplers_to_s01_regslice": {
                 "interface_ports": [
                   "S_AXI",
                   "s01_regslice/S_AXI"
+                ]
+              },
+              "s01_regslice_to_s01_couplers": {
+                "interface_ports": [
+                  "M_AXI",
+                  "s01_regslice/M_AXI"
                 ]
               }
             },
@@ -1054,16 +1054,16 @@
               }
             },
             "interface_nets": {
-              "m00_regslice_to_m00_couplers": {
-                "interface_ports": [
-                  "M_AXI",
-                  "m00_regslice/M_AXI"
-                ]
-              },
               "m00_couplers_to_m00_regslice": {
                 "interface_ports": [
                   "S_AXI",
                   "m00_regslice/S_AXI"
+                ]
+              },
+              "m00_regslice_to_m00_couplers": {
+                "interface_ports": [
+                  "M_AXI",
+                  "m00_regslice/M_AXI"
                 ]
               }
             },
@@ -1084,6 +1084,12 @@
           }
         },
         "interface_nets": {
+          "rr_pcim_axi_interconnect_to_s02_couplers": {
+            "interface_ports": [
+              "S02_AXI",
+              "s02_couplers/S_AXI"
+            ]
+          },
           "s02_couplers_to_xbar": {
             "interface_ports": [
               "s02_couplers/M_AXI",
@@ -1102,22 +1108,16 @@
               "m00_couplers/S_AXI"
             ]
           },
-          "s01_couplers_to_xbar": {
-            "interface_ports": [
-              "s01_couplers/M_AXI",
-              "xbar/S01_AXI"
-            ]
-          },
           "rr_pcim_axi_interconnect_to_s01_couplers": {
             "interface_ports": [
               "S01_AXI",
               "s01_couplers/S_AXI"
             ]
           },
-          "rr_pcim_axi_interconnect_to_s02_couplers": {
+          "s01_couplers_to_xbar": {
             "interface_ports": [
-              "S02_AXI",
-              "s02_couplers/S_AXI"
+              "s01_couplers/M_AXI",
+              "xbar/S01_AXI"
             ]
           },
           "s00_couplers_to_xbar": {

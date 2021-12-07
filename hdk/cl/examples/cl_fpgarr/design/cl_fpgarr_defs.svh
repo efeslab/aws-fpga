@@ -464,7 +464,9 @@ parameter logic [63:0] PACKET_ALIGNMENT_MASK = 64'(PACKET_ALIGNMENT) - 1;
 `define IS_ALIGNED_SIZE(size) ((size & PACKET_ALIGNMENT_MASK) == 0)
 
 // AXI_ID configuration
+parameter SHELL_PCIM_AXI_ID_WIDTH = 16;
 parameter int PCIM_INTERCONNECT_AXI_ID_WIDTH = 14;
+parameter int CL_PCIM_AXI_ID_WIDTH = 13;
 // MAX_PCIM_WR_BURSTS are the max number of outstanding write transactions allowed on
 // the pcim axi bus. This is not documented in aws readme.
 // The bursts of pcis is documented though.

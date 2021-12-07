@@ -2397,7 +2397,7 @@
         </spirit:parameter>
         <spirit:parameter>
           <spirit:name>READ_WRITE_MODE</spirit:name>
-          <spirit:value spirit:resolve="generated" spirit:id="BUSIFPARAM_VALUE.S01_AXI.READ_WRITE_MODE">READ_WRITE</spirit:value>
+          <spirit:value spirit:resolve="generated" spirit:id="BUSIFPARAM_VALUE.S01_AXI.READ_WRITE_MODE">WRITE_ONLY</spirit:value>
           <spirit:vendorExtensions>
             <xilinx:parameterInfo>
               <xilinx:parameterUsage>simulation.tlm</xilinx:parameterUsage>
@@ -27335,7 +27335,7 @@
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>outputProductCRC</spirit:name>
-            <spirit:value>9:bf4b3a2e</spirit:value>
+            <spirit:value>9:83f7a698</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -27349,11 +27349,11 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>GENtimestamp</spirit:name>
-            <spirit:value>Wed Nov 24 20:28:29 UTC 2021</spirit:value>
+            <spirit:value>Tue Dec 07 20:59:58 UTC 2021</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>outputProductCRC</spirit:name>
-            <spirit:value>9:bf4b3a2e</spirit:value>
+            <spirit:value>9:83f7a698</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -27369,11 +27369,11 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>GENtimestamp</spirit:name>
-            <spirit:value>Wed Nov 24 20:28:29 UTC 2021</spirit:value>
+            <spirit:value>Tue Dec 07 20:59:58 UTC 2021</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>outputProductCRC</spirit:name>
-            <spirit:value>9:bf4b3a2e</spirit:value>
+            <spirit:value>9:83f7a698</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -27408,7 +27408,7 @@
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>outputProductCRC</spirit:name>
-            <spirit:value>9:6871dacd</spirit:value>
+            <spirit:value>9:baf29c59</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -27424,11 +27424,11 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>GENtimestamp</spirit:name>
-            <spirit:value>Wed Nov 24 20:28:29 UTC 2021</spirit:value>
+            <spirit:value>Tue Dec 07 20:59:58 UTC 2021</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>outputProductCRC</spirit:name>
-            <spirit:value>9:d479770c</spirit:value>
+            <spirit:value>9:78271117</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>sim_type</spirit:name>
@@ -27452,11 +27452,11 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>GENtimestamp</spirit:name>
-            <spirit:value>Wed Nov 24 20:28:29 UTC 2021</spirit:value>
+            <spirit:value>Tue Dec 07 20:59:59 UTC 2021</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>outputProductCRC</spirit:name>
-            <spirit:value>9:6871dacd</spirit:value>
+            <spirit:value>9:baf29c59</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -27472,11 +27472,11 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>GENtimestamp</spirit:name>
-            <spirit:value>Wed Nov 24 20:28:29 UTC 2021</spirit:value>
+            <spirit:value>Tue Dec 07 20:59:59 UTC 2021</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>outputProductCRC</spirit:name>
-            <spirit:value>9:d479770c</spirit:value>
+            <spirit:value>9:78271117</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>sim_type</spirit:name>
@@ -31685,7 +31685,7 @@
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="std_logic_vector">
         <spirit:name>C_M_AXI_READ_CONNECTIVITY</spirit:name>
-        <spirit:value spirit:format="bitString" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_M_AXI_READ_CONNECTIVITY" spirit:bitStringLength="32">0x00000007</spirit:value>
+        <spirit:value spirit:format="bitString" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_M_AXI_READ_CONNECTIVITY" spirit:bitStringLength="32">0x00000005</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>C_R_REGISTER</spirit:name>
@@ -31701,7 +31701,7 @@
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>C_S_AXI_READ_ACCEPTANCE</spirit:name>
-        <spirit:value spirit:format="bitString" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_S_AXI_READ_ACCEPTANCE" spirit:bitStringLength="96">0x000000200000002000000020</spirit:value>
+        <spirit:value spirit:format="bitString" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_S_AXI_READ_ACCEPTANCE" spirit:bitStringLength="96">0x000000200000000200000020</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="std_logic_vector">
         <spirit:name>C_M_AXI_WRITE_ISSUING</spirit:name>
@@ -32271,7 +32271,7 @@
     <spirit:parameter>
       <spirit:name>M00_S01_READ_CONNECTIVITY</spirit:name>
       <spirit:displayName>My M00_S01_READ_CONNECTIVITY</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.M00_S01_READ_CONNECTIVITY" spirit:choiceRef="choice_pairs_4873554b">1</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.M00_S01_READ_CONNECTIVITY" spirit:choiceRef="choice_pairs_4873554b">0</spirit:value>
       <spirit:vendorExtensions>
         <xilinx:parameterInfo>
           <xilinx:enablement>
@@ -38799,7 +38799,7 @@
     <spirit:parameter>
       <spirit:name>S01_READ_ACCEPTANCE</spirit:name>
       <spirit:displayName>My S01_READ_ACCEPTANCE</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.S01_READ_ACCEPTANCE" spirit:order="566" spirit:minimum="1" spirit:maximum="32" spirit:rangeType="long">32</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.S01_READ_ACCEPTANCE" spirit:order="566" spirit:minimum="1" spirit:maximum="32" spirit:rangeType="long">2</spirit:value>
       <spirit:vendorExtensions>
         <xilinx:parameterInfo>
           <xilinx:enablement>
@@ -46604,7 +46604,7 @@
         <xilinx:configElementInfo xilinx:referenceId="BUSIFPARAM_VALUE.S01_AXI.NUM_WRITE_THREADS" xilinx:valuePermission="bd"/>
         <xilinx:configElementInfo xilinx:referenceId="BUSIFPARAM_VALUE.S01_AXI.PHASE" xilinx:valuePermission="bd"/>
         <xilinx:configElementInfo xilinx:referenceId="BUSIFPARAM_VALUE.S01_AXI.PROTOCOL" xilinx:valuePermission="bd"/>
-        <xilinx:configElementInfo xilinx:referenceId="BUSIFPARAM_VALUE.S01_AXI.READ_WRITE_MODE" xilinx:valuePermission="bd"/>
+        <xilinx:configElementInfo xilinx:referenceId="BUSIFPARAM_VALUE.S01_AXI.READ_WRITE_MODE" xilinx:valueSource="constant" xilinx:valuePermission="bd"/>
         <xilinx:configElementInfo xilinx:referenceId="BUSIFPARAM_VALUE.S01_AXI.RUSER_BITS_PER_BYTE" xilinx:valuePermission="bd"/>
         <xilinx:configElementInfo xilinx:referenceId="BUSIFPARAM_VALUE.S01_AXI.RUSER_WIDTH" xilinx:valuePermission="bd"/>
         <xilinx:configElementInfo xilinx:referenceId="BUSIFPARAM_VALUE.S01_AXI.SUPPORTS_NARROW_BURST" xilinx:valuePermission="bd"/>

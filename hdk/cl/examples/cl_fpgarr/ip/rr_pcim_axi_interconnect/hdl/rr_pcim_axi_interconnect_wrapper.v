@@ -1,7 +1,7 @@
 //Copyright 1986-2020 Xilinx, Inc. All Rights Reserved.
 //--------------------------------------------------------------------------------
 //Tool Version: Vivado v.2020.2 (lin64) Build 3064766 Wed Nov 18 09:12:47 MST 2020
-//Date        : Wed Nov 24 15:28:28 2021
+//Date        : Tue Dec  7 15:59:58 2021
 //Host        : cilantro running 64-bit Ubuntu 20.04.3 LTS
 //Command     : generate_target rr_pcim_axi_interconnect_wrapper.bd
 //Design      : rr_pcim_axi_interconnect_wrapper
@@ -90,18 +90,6 @@ module rr_pcim_axi_interconnect_wrapper
     S00_AXI_wready,
     S00_AXI_wstrb,
     S00_AXI_wvalid,
-    S01_AXI_araddr,
-    S01_AXI_arburst,
-    S01_AXI_arcache,
-    S01_AXI_arid,
-    S01_AXI_arlen,
-    S01_AXI_arlock,
-    S01_AXI_arprot,
-    S01_AXI_arqos,
-    S01_AXI_arready,
-    S01_AXI_arregion,
-    S01_AXI_arsize,
-    S01_AXI_arvalid,
     S01_AXI_awaddr,
     S01_AXI_awburst,
     S01_AXI_awcache,
@@ -118,12 +106,6 @@ module rr_pcim_axi_interconnect_wrapper
     S01_AXI_bready,
     S01_AXI_bresp,
     S01_AXI_bvalid,
-    S01_AXI_rdata,
-    S01_AXI_rid,
-    S01_AXI_rlast,
-    S01_AXI_rready,
-    S01_AXI_rresp,
-    S01_AXI_rvalid,
     S01_AXI_wdata,
     S01_AXI_wlast,
     S01_AXI_wready,
@@ -248,18 +230,6 @@ module rr_pcim_axi_interconnect_wrapper
   output S00_AXI_wready;
   input [63:0]S00_AXI_wstrb;
   input S00_AXI_wvalid;
-  input [63:0]S01_AXI_araddr;
-  input [1:0]S01_AXI_arburst;
-  input [3:0]S01_AXI_arcache;
-  input [13:0]S01_AXI_arid;
-  input [7:0]S01_AXI_arlen;
-  input [0:0]S01_AXI_arlock;
-  input [2:0]S01_AXI_arprot;
-  input [3:0]S01_AXI_arqos;
-  output S01_AXI_arready;
-  input [3:0]S01_AXI_arregion;
-  input [2:0]S01_AXI_arsize;
-  input S01_AXI_arvalid;
   input [63:0]S01_AXI_awaddr;
   input [1:0]S01_AXI_awburst;
   input [3:0]S01_AXI_awcache;
@@ -276,12 +246,6 @@ module rr_pcim_axi_interconnect_wrapper
   input S01_AXI_bready;
   output [1:0]S01_AXI_bresp;
   output S01_AXI_bvalid;
-  output [511:0]S01_AXI_rdata;
-  output [13:0]S01_AXI_rid;
-  output S01_AXI_rlast;
-  input S01_AXI_rready;
-  output [1:0]S01_AXI_rresp;
-  output S01_AXI_rvalid;
   input [511:0]S01_AXI_wdata;
   input S01_AXI_wlast;
   output S01_AXI_wready;
@@ -407,18 +371,6 @@ module rr_pcim_axi_interconnect_wrapper
   wire S00_AXI_wready;
   wire [63:0]S00_AXI_wstrb;
   wire S00_AXI_wvalid;
-  wire [63:0]S01_AXI_araddr;
-  wire [1:0]S01_AXI_arburst;
-  wire [3:0]S01_AXI_arcache;
-  wire [13:0]S01_AXI_arid;
-  wire [7:0]S01_AXI_arlen;
-  wire [0:0]S01_AXI_arlock;
-  wire [2:0]S01_AXI_arprot;
-  wire [3:0]S01_AXI_arqos;
-  wire S01_AXI_arready;
-  wire [3:0]S01_AXI_arregion;
-  wire [2:0]S01_AXI_arsize;
-  wire S01_AXI_arvalid;
   wire [63:0]S01_AXI_awaddr;
   wire [1:0]S01_AXI_awburst;
   wire [3:0]S01_AXI_awcache;
@@ -435,12 +387,6 @@ module rr_pcim_axi_interconnect_wrapper
   wire S01_AXI_bready;
   wire [1:0]S01_AXI_bresp;
   wire S01_AXI_bvalid;
-  wire [511:0]S01_AXI_rdata;
-  wire [13:0]S01_AXI_rid;
-  wire S01_AXI_rlast;
-  wire S01_AXI_rready;
-  wire [1:0]S01_AXI_rresp;
-  wire S01_AXI_rvalid;
   wire [511:0]S01_AXI_wdata;
   wire S01_AXI_wlast;
   wire S01_AXI_wready;
@@ -567,18 +513,6 @@ module rr_pcim_axi_interconnect_wrapper
         .S00_AXI_wready(S00_AXI_wready),
         .S00_AXI_wstrb(S00_AXI_wstrb),
         .S00_AXI_wvalid(S00_AXI_wvalid),
-        .S01_AXI_araddr(S01_AXI_araddr),
-        .S01_AXI_arburst(S01_AXI_arburst),
-        .S01_AXI_arcache(S01_AXI_arcache),
-        .S01_AXI_arid(S01_AXI_arid),
-        .S01_AXI_arlen(S01_AXI_arlen),
-        .S01_AXI_arlock(S01_AXI_arlock),
-        .S01_AXI_arprot(S01_AXI_arprot),
-        .S01_AXI_arqos(S01_AXI_arqos),
-        .S01_AXI_arready(S01_AXI_arready),
-        .S01_AXI_arregion(S01_AXI_arregion),
-        .S01_AXI_arsize(S01_AXI_arsize),
-        .S01_AXI_arvalid(S01_AXI_arvalid),
         .S01_AXI_awaddr(S01_AXI_awaddr),
         .S01_AXI_awburst(S01_AXI_awburst),
         .S01_AXI_awcache(S01_AXI_awcache),
@@ -595,12 +529,6 @@ module rr_pcim_axi_interconnect_wrapper
         .S01_AXI_bready(S01_AXI_bready),
         .S01_AXI_bresp(S01_AXI_bresp),
         .S01_AXI_bvalid(S01_AXI_bvalid),
-        .S01_AXI_rdata(S01_AXI_rdata),
-        .S01_AXI_rid(S01_AXI_rid),
-        .S01_AXI_rlast(S01_AXI_rlast),
-        .S01_AXI_rready(S01_AXI_rready),
-        .S01_AXI_rresp(S01_AXI_rresp),
-        .S01_AXI_rvalid(S01_AXI_rvalid),
         .S01_AXI_wdata(S01_AXI_wdata),
         .S01_AXI_wlast(S01_AXI_wlast),
         .S01_AXI_wready(S01_AXI_wready),
