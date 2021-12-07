@@ -88,8 +88,20 @@ rr_axi_register_slice_lite BAR1_AXL_REG_SLC (
   .slv(bar1_bus),
   .mstr(bar1_bus_q)
 );
-// cl_pcim_bus is the pcim bus coming directly to the Shell. It is combined with
-// the storage backend bus in an axi interconnect ip
+// irq_pcim_bus is the pcim bus converted from interrupt requests
+rr_axi_bus_t irq_pcim_bus();
+// rr_pcim_bus is the pcim bus coming directly out of cl, it is supposed to be
+// logged then passed through to an axi interconnect together with the logging
+// traffic
+rr_axi_bus_t rr_pcim_bus();
+// Both rr_pcim_bus and irq_pcim_bus are considered CL pcim traffics that should
+// be record and replay.
+// rr_irq_pcim_bus merges the above two pcim buses and will be merged later with
+// non-CL pcim traffics, that should not be record and replay.
+rr_axi_bus_t rr_irq_pcim_bus();
+// cl_pcim_bus is the pcim bus coming directly to the Shell.
+// Depending on replay or not, I choose between cl_pcim_bus or the replayed pcim
+// bus to connect to the CL.
 rr_axi_bus_t cl_pcim_bus();
 // cl_bar1_bus is the lower 1MB of the bar1 bus connected to the cl
 // The higher 1MB of the bar1 bus is reserved for rr_cfg_bus
@@ -136,10 +148,6 @@ pcim_interconnect_dbg_csr_t pcim_interconnect_dbg_csr;
 ////////////////////////////////////////////////////////////////////////////////
 // PCIM bus
 rr_axi_bus_t rr_pcim_record_bus();
-// rr_pcim_bus is the pcim bus coming directly out of cl, it is supposed to be
-// logged then passed through to an axi interconnect together with the logging
-// traffic
-rr_axi_bus_t rr_pcim_bus();
 `AXI_SLV_LOGGING_BUS(rr_pcim_SH2CL_logging_bus, "pcim");
 `AXI_MSTR_LOGGING_BUS(rr_pcim_CL2SH_logging_bus, "pcim");
 axi_recorder #(
@@ -149,7 +157,7 @@ axi_recorder #(
   .clk(clk),
   .sync_rst_n(rstn),
   .S(rr_pcim_record_bus),
-  .M(rr_pcim_bus),
+  .M(rr_irq_pcim_bus),
   .log_M2S(rr_pcim_CL2SH_logging_bus),
   .log_S2M(rr_pcim_SH2CL_logging_bus),
   .B_fifo_almful(rr_state_csr_next.rt.almful.pcimB_buf),
@@ -476,7 +484,7 @@ rr_axi_bus_t rr_validation_bus();
 // It can be the bus connected to the shell, or the corresponding replay bus
 ////////////////////////////////////////////////////////////////////////////////
 // rr_mode_csr.replayEn decides
-// cl_pcim or pcim_replay_axi_bus ?
+// rr_irq_pcim or pcim_replay_axi_bus ?
 rr_axi_slv_sel pcim_sel (
   .sel(rr_mode_csr.replayEn),
   .inAM(cl_pcim_bus),
@@ -518,11 +526,7 @@ rr_axil_mstr_sel bar1_sel (
 // It expects RW addresses in 0x100000~0x1FFFFF.
 rr_stream_bus_t #(.FULL_WIDTH(record_bus.FULL_WIDTH)) packed_replay_bus();
 
-logic [15:0] cl_irq_req, cl_irq_ack;
 logic storage_backend_irq_req, storage_backend_irq_ack;
-assign cl_sh_apppf_irq_req = {storage_backend_irq_req, cl_irq_req[14:0]};
-assign cl_irq_ack[14:0] = sh_cl_apppf_irq_ack[14:0];
-assign cl_irq_ack[15] = 0;
 assign storage_backend_irq_ack = sh_cl_apppf_irq_ack[15];
 
 rr_storage_backend_axi #(
@@ -552,6 +556,29 @@ rr_tracedecoder #(
   .packed_replay_bus(packed_replay_bus),
   .replay_bus(unpacked_replay_bus)
 );
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Interrupt Handling
+// Convert cl interrupt requests to cl pcim requests
+////////////////////////////////////////////////////////////////////////////////
+// irq_req[15] is reserved for rr buffer management (not implemented yet)
+logic [15:0] cl_irq_req, cl_irq_ack;
+assign cl_sh_apppf_irq_req = {storage_backend_irq_req, cl_irq_req[14:0]};
+assign cl_irq_ack[14:0] = sh_cl_apppf_irq_ack[14:0];
+assign cl_irq_ack[15] = 0;
+// TODO: jiach will instantiate a module to convert cl_irq_req to irq_pcim_bus
+assign irq_pcim_bus.awvalid = 0;
+assign irq_pcim_bus.wvalid = 0;
+assign irq_pcim_bus.bready = 1;
+rr_cl_irq2pcim_interconnect cl_irq_pcim_interconnect (
+  .clk(clk), .rstn(rstn),
+  .rr_pcim_bus(rr_pcim_bus),
+  .irq_pcim_bus(irq_pcim_bus),
+  .rr_irq_pcim_bus(rr_irq_pcim_bus)
+);
+assign rr_irq_pcim_bus.wid = 0;
+assign rr_irq_pcim_bus.awid[SHELL_PCIM_AXI_ID_WIDTH-1:PCIM_INTERCONNECT_AXI_ID_WIDTH] = 0;
 
 // AXI Interconnect for the logging pcim traffic and user pcim traffic
 // NOTE: that all Xid field of pcim buses, either from logging or from the cl,

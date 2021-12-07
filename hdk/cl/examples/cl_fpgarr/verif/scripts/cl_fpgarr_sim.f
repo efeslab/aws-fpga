@@ -55,6 +55,7 @@ ${CL_FPGARR_ROOT}/ip/rr_pcim_pchk_interconnect/ip/rr_pcim_pchk_interconnect_s01_
 ${CL_FPGARR_ROOT}/ip/rr_pcim_pchk_interconnect/ip/rr_pcim_pchk_interconnect_s02_pchk_0/sim/rr_pcim_pchk_interconnect_s02_pchk_0.sv
 ${CL_FPGARR_ROOT}/ip/rr_pcim_pchk_interconnect/ip/rr_pcim_pchk_interconnect_m00_pchk_0/sim/rr_pcim_pchk_interconnect_m00_pchk_0.sv
 ## start of rr_irq_pcim_interconnect (to convert interrupt requests to pcim requests)
+${CL_FPGARR_ROOT}/design/cl_fpgarr_irq_pcim_interconnect.sv
 ${CL_FPGARR_ROOT}/ip/rr_irq_pcim_interconnect/sim/rr_irq_pcim_interconnect.v
 ${CL_FPGARR_ROOT}/ip/rr_irq_pcim_interconnect/ip/rr_irq_pcim_interconnect_xbar_1/sim/rr_irq_pcim_interconnect_xbar_1.v
 ${CL_FPGARR_ROOT}/ip/rr_irq_pcim_interconnect/ip/rr_irq_pcim_interconnect_m00_regslice_0/sim/rr_irq_pcim_interconnect_m00_regslice_0.v
