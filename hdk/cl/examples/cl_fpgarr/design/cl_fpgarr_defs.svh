@@ -1,5 +1,17 @@
 `ifndef CL_FPGARR_DEFS
 `define CL_FPGARR_DEFS
+////////////////////////////////////////////////////////////////////////////////
+// MACROS
+// 1. DEBUG_ILA: allow ILA instances to be synthesized
+// 2. DEBUG_INTERCONNECT: switch to pcim_pchk axi interconnect, work in both
+// simulation and synthesis
+// 3. SIMULATION_AVOID_X: enforce alignment padding to be all zero in simulation
+// 4. WRITEBACK_DEBUG: print out record and validate writeback in simulation
+// 5. DEBUG_MERGE_TREE_STRUCTURE: print out merge tree structure to be used in
+// the autogeneration script (treegen.py)
+// 6. TEST_REPLAY: Connect record trace writeback directly to replay trace
+// readback. Used in test_rr_parse_replay_trace unit test.
+////////////////////////////////////////////////////////////////////////////////
 // register pipeline related configuration
 parameter RECORDER_PIPE_DEPTH=4;
 parameter MERGETREE_OUT_QUEUE_NSTAGES=1;
