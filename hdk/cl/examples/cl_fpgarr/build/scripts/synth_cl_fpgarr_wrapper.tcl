@@ -88,19 +88,12 @@ read_ip [ list \
 
 # Additional IP's that might be needed if using the DDR
 read_bd [ list \
-  $HDK_SHELL_DESIGN_DIR/ip/cl_axi_interconnect/cl_axi_interconnect.bd \
-  $CL_DIR/ip/rr_pcim_axi_interconnect/rr_pcim_axi_interconnect.bd \
-  $CL_DIR/ip/rr_cfg_axil_interconnect/rr_cfg_axil_interconnect.bd \
-  $CL_DIR/ip/rr_pcim_pchk_interconnect/rr_pcim_pchk_interconnect.bd
+  $HDK_SHELL_DESIGN_DIR/ip/cl_axi_interconnect/cl_axi_interconnect.bd
 ]
 
-read_ip [ list \
-  $CL_DIR/ip/fifo_128x128/fifo_128x128.xci \
-  $CL_DIR/ip/dbg_trace_split_ila/dbg_trace_split_ila.xci \
-  $CL_DIR/ip/dbg_valid_replayer_ila/dbg_valid_replayer_ila.xci \
-  $CL_DIR/ip/dbg_ready_replayer_ila/dbg_ready_replayer_ila.xci \
-  $CL_DIR/ip/dbg_fpgarr_wrapper_ila/dbg_fpgarr_wrapper_ila.xci
-]
+puts "CL_FPGARR: setting up cl_fpgarr synthesis"
+# Include cl_fpgarr synthesis related scripts
+source ${CL_FPGARR_ROOT}/build/scripts/cl_fpgarr_synth.tcl
 
 puts "AWS FPGA: Reading AWS constraints";
 

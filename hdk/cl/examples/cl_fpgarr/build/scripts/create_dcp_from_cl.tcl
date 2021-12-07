@@ -20,6 +20,7 @@ set TOP top_sp
 
 ## Replace with the name of your module
 set CL_MODULE cl_fpgarr_wrapper
+set SYNTH_SCRIPTS ./synth_${CL_MODULE}.tcl
 set_param general.maxThreads 32
 #################################################
 ## Command-line Arguments
@@ -200,6 +201,10 @@ puts "AWS FPGA: ([clock format [clock seconds] -format %T]) Calling the encrypt.
 #Encrypt source code
 source encrypt.tcl
 
+#Include cl_fpgarr source code
+set CL_FPGARR_ROOT $::env(CL_FPGARR_ROOT)
+source ${CL_FPGARR_ROOT}/build/scripts/cl_fpgarr_src.tcl
+
 #Set the Device Type
 source $HDK_SHELL_DIR/build/scripts/device_type.tcl
 
@@ -222,7 +227,7 @@ set_param hd.clockRoutingWireReduction false
 ### CL XPR OOC Synthesis
 ##################################################
 if {${cl.synth}} {
-   source -notrace ./synth_${CL_MODULE}.tcl
+   source -notrace ${SYNTH_SCRIPTS}
    set synth_dcp ${timestamp}.CL.post_synth.dcp
 } else {
    open_checkpoint ../checkpoints/CL.post_synth.dcp

@@ -53,40 +53,6 @@ file copy -force $CL_DIR/design/cl_ocl_slv.sv                      $TARGET_DIR
 file copy -force $CL_DIR/design/cl_sda_slv.sv                      $TARGET_DIR
 file copy -force $CL_DIR/design/cl_dram_dma_axi_mstr.sv            $TARGET_DIR
 file copy -force $UNUSED_TEMPLATES_DIR/unused_sh_bar1_template.inc $TARGET_DIR
-# fpgarr project
-file copy -force $CL_DIR/design/cl_fpgarr_defs.svh                 $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_types.svh                $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_pkg.sv                   $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_utils.sv                 $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_axi_rr.sv                $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_axil_rr.sv               $TARGET_DIR
-file copy -force $CL_DIR/design/twowayhandshake_logger.sv          $TARGET_DIR
-file copy -force $CL_DIR/design/twowayhandshake_replayer.sv        $TARGET_DIR
-file copy -force $CL_DIR/design/transkidbuf.sv                     $TARGET_DIR
-file copy -force $CL_DIR/design/transkidbuf_pipeline.sv            $TARGET_DIR
-file copy -force $CL_DIR/design/axichannel_logger.sv               $TARGET_DIR
-file copy -force $CL_DIR/design/axichannel_replayer.sv             $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_packing.sv               $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_packing_cfg.svh          $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_happenbefore_encoder.sv  $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_csrs.sv                  $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_tracedecoder.sv          $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_chgrouping.sv            $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_rr_sel.sv                $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_rt_loge_crossbar.sv      $TARGET_DIR
-## fpgarr tracestorage files
-file copy -force $CL_DIR/design/cl_fpgarr_tracestorage_axi.sv      $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_tracestorage_wrapper.sv  $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_tracestorage_wrapper_writeonly.sv  $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_tracestorage_encoder.sv  $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_tracestorage_decoder.sv  $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fpgarr_pcim_interconnect.sv     $TARGET_DIR
-file copy -force $CL_DIR/design/merged_fifo.sv                     $TARGET_DIR
-### parameterized fifo
-file copy -force $CL_DIR/design/lib/xpm_fifo_sync_wrapper.sv       $TARGET_DIR
-
-# fpgarr top module
-file copy -force $CL_DIR/design/cl_fpgarr_wrapper.sv               $TARGET_DIR
 
 #---- End of section replaced by Developr ---
 
