@@ -449,12 +449,15 @@ rr_rt_loge_crossbar #(
 ////////////////////////////////////////////////////////////////////////////////
 // Process rr_csrs and output configurations to other modules
 ////////////////////////////////////////////////////////////////////////////////
+// flop rstn according to timing report
+logic rstn_q = 1'b0;
+always_ff @(posedge clk) rstn_q <= rstn;
 rr_axi_lite_bus_t rr_cfg_bus();
 rr_csrs #(
     .REG_STAGES(CSR_PIPE_DEPTH)
 ) csrs (
     .clk(clk),
-    .rstn(rstn),
+    .rstn(rstn_q),
     .rr_cfg_bus(rr_cfg_bus),
     .storage_axi_write_csr(storage_axi_write_csr),
     .storage_axi_read_csr(storage_axi_read_csr),
