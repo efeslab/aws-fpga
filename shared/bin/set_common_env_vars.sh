@@ -78,3 +78,6 @@ PATH=$AWS_FPGA_REPO_DIR/shared/bin/scripts:$PATH
 
 # Enable xilinx licensing
 export XILINX_ENABLE_AWS_WHITELIST=095707098027
+
+# setup FPGARR env
+export CL_FPGARR_ROOT=$HDK_DIR/cl/examples/cl_fpgarr
