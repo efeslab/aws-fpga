@@ -23,4 +23,10 @@ static inline void timespec_sub(struct timespec *start, struct timespec *end,
     result->tv_sec -= 1;
   }
 }
+// about interrupt
+extern uint8_t *irq_buffer;
+extern uint64_t irq_buffer_size;
+void init_irq();
+void destroy_irq();
+
 #endif // CL_FPGARR_UTILS_H

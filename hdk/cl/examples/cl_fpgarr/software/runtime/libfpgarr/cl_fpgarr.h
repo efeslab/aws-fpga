@@ -5,6 +5,9 @@
 extern int init_rr(int slot_id);
 extern void do_pre_rr();
 extern void do_post_rr();
+// wait indefinitely until the interrupt appears
+// Then clear that interrupt and return
+extern void rr_wait_irq(uint32_t irq_id);
 
 extern uint8_t is_record();
 extern uint8_t is_replay();

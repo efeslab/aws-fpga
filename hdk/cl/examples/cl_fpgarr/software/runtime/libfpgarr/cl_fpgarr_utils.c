@@ -97,3 +97,13 @@ void dump_trace(const char *msg, const char *filename, uint8_t *p,
         log_warning("Empty trace %s, will not save to file", filename);
 }
 
+uint8_t *irq_buffer = NULL;
+uint64_t irq_buffer_size = 0;
+void init_irq() {
+    irq_buffer_size = 4096;
+    irq_buffer =
+        rr_alloc_setup_buffer(irq_buffer_size, INT_BUF_UPDATE);
+}
+void destroy_irq() {
+    rr_dealloc_buffer(irq_buffer);
+}

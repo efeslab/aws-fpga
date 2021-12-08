@@ -87,9 +87,6 @@ err_out:
 static uint8_t *record_buffer = NULL;
 static uint64_t record_buffer_size = 0;
 
-static uint8_t *int_buffer = NULL;
-static uint64_t int_buffer_size = 0;
-
 static uint8_t *validate_buffer = NULL;
 static uint64_t validate_buffer_size = 0;
 
@@ -104,15 +101,12 @@ void do_record_start() {
     record_buffer =
         rr_alloc_setup_buffer(record_buffer_size, RECORD_BUF_UPDATE);
 
-    int_buffer_size = 4096;
-    int_buffer =
-        rr_alloc_setup_buffer(int_buffer_size, INT_BUF_UPDATE);
-
     if (is_validate()) {
         validate_buffer_size = buffer_size;
         validate_buffer =
             rr_alloc_setup_buffer(validate_buffer_size, VALIDATE_BUF_UPDATE);
     }
+    init_irq();
 }
 
 void do_record_stop() {
@@ -132,6 +126,7 @@ void do_record_stop() {
                    validate_bits);
         rr_dealloc_buffer(validate_buffer);
     }
+    destroy_irq();
 }
 void do_replay_start() {
     // always set RR_MODE first to avoid silently dropping traffic
@@ -218,3 +213,16 @@ uint8_t is_replay() { return rr_mode.replayEn == 1; }
 
 uint8_t is_validate() { return rr_mode.outputValidateEn == 1; }
 
+void rr_wait_irq(uint32_t irq_id) {
+    uint32_t offset = irq_id * 64;
+    assert(irq_buffer);
+    assert(offset < irq_buffer_size);
+    while (irq_buffer[offset] == 0) {
+#ifdef SV_TEST
+        rr_wait(1);
+#else
+        ;
+#endif
+    }
+    irq_buffer[offset] = 0;
+}
