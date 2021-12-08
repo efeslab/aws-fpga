@@ -36,9 +36,6 @@
 +incdir+${HDK_SHELL_DESIGN_DIR}/sh_ddr/sim
 +incdir+${HDK_SHELL_DESIGN_DIR}/ip/src_register_slice/hdl
 
--f ${HDK_COMMON_DIR}/verif/tb/filelists/tb.${SIMULATOR}.f
-${TEST_NAME}
-
 ${HDK_SHELL_DESIGN_DIR}/ip/cl_axi_interconnect/ipshared/9909/hdl/axi_data_fifo_v2_1_vl_rfs.v
 ${HDK_SHELL_DESIGN_DIR}/ip/cl_axi_interconnect/ipshared/c631/hdl/axi_crossbar_v2_1_vl_rfs.v
 ${HDK_SHELL_DESIGN_DIR}/ip/cl_axi_interconnect/ip/cl_axi_interconnect_xbar_0/sim/cl_axi_interconnect_xbar_0.v
@@ -93,3 +90,11 @@ ${CL_ROOT}/design/hls_accel/verilog/rendering_urem_16ns_8ns_8_20_1.v
 ${CL_ROOT}/design/hls_accel/verilog/rendering.v
 ${CL_ROOT}/design/hls_accel/verilog/rendering_zculling.v
 ${CL_ROOT}/design/hls_accel/verilog/rendering_zculling_z_buffer_V.v
+
+-f ${CL_FPGARR_ROOT}/verif/scripts/cl_fpgarr_sim.f
+
+-f ${HDK_COMMON_DIR}/verif/tb/filelists/tb.${SIMULATOR}.f
+${TEST_NAME}
+
++define+DEBUG_INTERCONNECT
++define+SIMULATION_AVOID_X

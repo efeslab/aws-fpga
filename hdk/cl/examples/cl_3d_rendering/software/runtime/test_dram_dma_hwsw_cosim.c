@@ -36,6 +36,7 @@
 #include "test_dram_dma_common.h"
 #include "typedefs.h"
 #include "input_data.h"
+#include "cl_fpgarr.h"
 
 #define MEM_16G              (1ULL << 34)
 
@@ -144,7 +145,7 @@ void usage(const char* program_name) {
  */
 int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 {
-    int write_fd, read_fd, dimm, rc;
+    int write_fd, read_fd, rc;
     FILE *ofile;
     bit8 frame_buffer_print[MAX_X][MAX_Y];
 
@@ -175,10 +176,14 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         /*channel*/ 0, /*is_read*/ false);
     fail_on((rc = (write_fd < 0) ? -1 : 0), out, "unable to open write dma queue");
 #else
-    setup_send_rdbuf_to_c(read_buffer, total_input_size);
+    setup_send_rdbuf_to_c((uint8_t*)read_buffer, total_input_size);
     printf("Starting DDR init...\n");
     init_ddr();
     printf("Done DDR init...\n");
+    rc = init_rr(0);
+    fail_on(rc, out, "init rr failed");
+    do_pre_rr();
+    fail_on(is_replay(), out, "Skip application code, replaying");
 #endif
 
     for (int k = 0; k < num_of_frame; k++) {
@@ -197,10 +202,10 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         }
     }
 
-    rc = do_dma_write(write_fd, write_buffer, total_input_size, 0, 0, slot_id);
-    fail_on(rc, out, "DMA write failed on DIMM: %d", dimm);
+    rc = do_dma_write(write_fd, (uint8_t*)write_buffer, total_input_size, 0, 0, slot_id);
+    fail_on(rc, out, "DMA write failed on DIMM 0");
 
-    int int_status_reg, control_reg;
+    unsigned int int_status_reg, control_reg;
 
     for (int i = 0; i < 1; i++) {
         cl_peek_ocl(0x00, &control_reg);
@@ -230,8 +235,8 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         printf("%d: interrupt status: %d\n", i, int_status_reg);
     }
 
-    rc = do_dma_read(read_fd, read_buffer, total_output_size, MEM_16G, 0, slot_id);
-    fail_on(rc, out, "DMA read failed on DIMM: %d", dimm);
+    rc = do_dma_read(read_fd, (uint8_t*)read_buffer, total_output_size, MEM_16G, 0, slot_id);
+    fail_on(rc, out, "DMA read failed on DIMM 1");
 
     for (int i = 0, j = 0, n = 0; n < NUM_FB; n++) {
         bit32 temp = read_buffer[n];
@@ -289,6 +294,7 @@ out:
         close(read_fd);
     }
 #endif
+    do_post_rr();
     /* if there is an error code, exit with status 1 */
     return (rc != 0 ? 1 : 0);
 }
