@@ -313,6 +313,7 @@ out:
     return rc;
 }
 
+#define USE_RR_INT_POLLING
 /* Helper function for accessing DDR controllers via AXI Master block */
 int axi_mstr_ddr_access(int slot_id, pci_bar_handle_t pci_bar_handle, uint32_t ddr_hi_addr, uint32_t ddr_lo_addr, uint32_t  ddr_data) {
     int rc;
@@ -322,7 +323,6 @@ int axi_mstr_ddr_access(int slot_id, pci_bar_handle_t pci_bar_handle, uint32_t d
     static uint32_t cwdr_offset = 0x50C;
     static uint32_t crdr_offset = 0x510;
     uint32_t read_data;
-    int poll_limit = 20;
 
     /* Issue AXI Master Write Command */
     rc = fpga_pci_poke(pci_bar_handle, cahr_offset, ddr_hi_addr);
@@ -335,6 +335,10 @@ int axi_mstr_ddr_access(int slot_id, pci_bar_handle_t pci_bar_handle, uint32_t d
     fail_on(rc, out, "Unable to write to AXI Master CCR register!");
 
     /* Poll for done */
+#ifdef USE_RR_INT_POLLING
+    rr_wait_irq(14);
+#else
+    int poll_limit = 20;
     do{
         // Read the CCR until the done bit is set
         rc = fpga_pci_peek(pci_bar_handle, ccr_offset, &read_data);
@@ -343,12 +347,16 @@ int axi_mstr_ddr_access(int slot_id, pci_bar_handle_t pci_bar_handle, uint32_t d
         poll_limit--;
     } while (!read_data && poll_limit > 0);
     fail_on((rc = !read_data), out, "AXI Master write to DDR did not complete. Done bit not set in CCR.");
+#endif
 
     /* Issue AXI Master Read Command */
     rc = fpga_pci_poke(pci_bar_handle, ccr_offset, 0x5);
     fail_on(rc, out, "Unable to write to AXI Master CCR register!");
 
     /* Poll for done */
+#ifdef USE_RR_INT_POLLING
+    rr_wait_irq(14);
+#else
     poll_limit = 20;
     do{
         // Read the CCR until the done bit is set
@@ -358,6 +366,7 @@ int axi_mstr_ddr_access(int slot_id, pci_bar_handle_t pci_bar_handle, uint32_t d
         poll_limit--;
     } while (!read_data && poll_limit > 0);
     fail_on((rc = !read_data), out, "AXI Master read from DDR did not complete. Done bit not set in CCR.");
+#endif
 
     /* Compare Read/Write Data */
     // Read the CRDR for read data
@@ -465,6 +474,7 @@ int pcim_example(int slot_id, size_t buffer_size) {
     for (size_t i = 0; i < wr_burst * 512 / 8 / sizeof(*va_u32); ++i) {
         log_info("PCIM example addr[%ld] = %x", i, va_u32[i]);
     }
+    while (va_u32[buffer_size/sizeof(*va_u32)-1] == 0) ;
     // }}} end of set for pcim
 free_huge:
     fpga_hugealloc_put(va);
