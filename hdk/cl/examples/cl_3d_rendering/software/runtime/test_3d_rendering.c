@@ -139,6 +139,32 @@ void usage(const char* program_name) {
     printf("usage: %s [--slot <slot>]\n", program_name);
 }
 
+int interrupt_polling(int interrupt_number) {
+    struct pollfd fds[1];
+    uint32_t fd;
+    char event_file_name[256];
+    int device_num = 0;
+    int rc = 0, rd = 0;
+
+    rc = sprintf(event_file_name, "/dev/xdma%i_events_%i", device_num, interrupt_number);
+    fail_on((rc = (rc < 0) ? 1: 0), out, "Unable to format event file name.");
+    if ((fd = open(event_file_name, O_RDONLY)) == -1) {
+        fail_on((rc = 1), out, "Unable to open event device");
+    }
+    fds[0].fd = fd;
+    fds[0].events = POLLIN;
+
+    rd = poll(fds, 1, -1);
+    if (rd > 0 && (fds[0].revents & POLLIN)) {
+        uint32_t events_user;
+        rc = pread(fd, &events_user, sizeof(events_user), 0);
+    }
+    close(fd);
+
+out:
+    return rc;
+}
+
 /**
  * Write 4 identical buffers to the 4 different DRAM channels of the AFI
  */
@@ -240,6 +266,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         fpga_pci_poke(pci_bar_handle, 0x00, 1);
 #endif
 
+#ifdef CSR_POLLING
         control_reg = 0;
         while ((control_reg & (1 << 1)) == 0) {
 #ifdef SV_TEST
@@ -254,6 +281,16 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
             usleep(100);
 #endif
         }
+#else /* CSR_POLLING */
+        // This function would poll the 0th interrupt
+        interrupt_polling(0);
+#ifdef SV_TEST
+        cl_peek_ocl(0x00, &control_reg);
+#else
+        fpga_pci_peek(pci_bar_handle, 0x00, &control_reg);
+#endif
+        printf("%d: %d --> control status: %x\n", i, 0, control_reg);
+#endif /* CSR_POLLING */
 
 #ifdef SV_TEST
         cl_peek_ocl(0x0c, &int_status_reg);
