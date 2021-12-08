@@ -110,12 +110,14 @@ void do_record_start() {
 
 void do_record_stop() {
     rr_wait_counter_stable(RECORD_BITS_LO, RECORD_BITS_HI);
+    if (is_validate()) {
+        rr_wait_counter_stable(VALIDATE_BITS_LO, VALIDATE_BITS_HI);
+    }
     rr_cfg_poke(RECORD_FORCE_FINISH, 1);
     uint64_t record_bits =
         rr_wait_counter_stable(RECORD_BITS_LO, RECORD_BITS_HI);
     dump_trace("Record Buffer", "record.dump", record_buffer, record_bits);
     rr_dealloc_buffer(record_buffer);
-
     if (is_validate()) {
         uint64_t validate_bits =
             rr_wait_counter_stable(VALIDATE_BITS_LO, VALIDATE_BITS_HI);
