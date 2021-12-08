@@ -144,21 +144,32 @@ void usage(const char* program_name) {
  */
 int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 {
-    int write_fd, read_fd, dimm, rc;
-    FILE *ofile;
-    bit8 frame_buffer_print[MAX_X][MAX_Y];
-
-    write_fd = -1;
-    read_fd = -1;
-
     const long input_size_per_frame = 3 * NUM_3D_TRI;
     const long output_size_per_frame = NUM_FB;
     const long num_of_frame = 1;
     const long total_input_size = input_size_per_frame * num_of_frame * sizeof(bit32);
     const long total_output_size = output_size_per_frame * num_of_frame * sizeof(bit32);
 
-    bit32 *write_buffer = malloc(total_input_size);
-    bit32 *read_buffer = malloc(total_output_size);
+    int rc, pf_id = 0, bar_id = 0, fpga_attach_flags = 0;
+    int device_num = 0;
+    int write_fd, read_fd, dimm=0;
+    FILE *ofile;
+    bit8 frame_buffer_print[MAX_X][MAX_Y];
+    bit32 *write_buffer = NULL, *read_buffer = NULL;
+    uint32_t int_status_reg, control_reg;
+
+    pci_bar_handle_t pci_bar_handle = PCI_BAR_HANDLE_INIT;
+    rc = fpga_pci_get_dma_device_num(FPGA_DMA_XDMA, slot_id, &device_num);
+    fail_on((rc = (rc != 0)? 1:0), out, "Unable to get xdma device number.");
+
+    rc = fpga_pci_attach(slot_id, pf_id, bar_id, fpga_attach_flags, &pci_bar_handle);
+    fail_on(rc, out, "Unable to attach to the AFI on slot id %d", slot_id);
+
+    write_fd = -1;
+    read_fd = -1;
+
+    write_buffer = malloc(total_input_size);
+    read_buffer = malloc(total_output_size);
 
     if (write_buffer == NULL || read_buffer == NULL) {
         rc = -ENOMEM;
@@ -197,15 +208,18 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         }
     }
 
-    rc = do_dma_write(write_fd, write_buffer, total_input_size, 0, 0, slot_id);
+    rc = do_dma_write(write_fd, (uint8_t*)write_buffer, total_input_size, 0, 0, slot_id);
     fail_on(rc, out, "DMA write failed on DIMM: %d", dimm);
 
-    int int_status_reg, control_reg;
-
     for (int i = 0; i < 1; i++) {
+#ifdef SV_TEST
         cl_peek_ocl(0x00, &control_reg);
+#else
+        fpga_pci_peek(pci_bar_handle, 0x00, &control_reg);
+#endif
         printf("%d: %d --> control status: %x\n", i, 0, control_reg);
 
+#ifdef SV_TEST
         cl_poke_ocl(0x04, 1); // Global Interrupt Enable
         cl_poke_ocl(0x08, 1); // Enable ap_done interrupt
         cl_poke_ocl(0x10, 0);
@@ -213,24 +227,52 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         cl_poke_ocl(0x1c, MEM_16G & 0xffffffff);
         cl_poke_ocl(0x20, (MEM_16G >> 32) & 0xffffffff);
         cl_poke_ocl(0x00, 1);
+#else
+        fpga_pci_poke(pci_bar_handle, 0x04, 1); // Global Interrupt Enable
+        fpga_pci_poke(pci_bar_handle, 0x08, 1); // Enable ap_done interrupt
+        fpga_pci_poke(pci_bar_handle, 0x10, 0);
+        fpga_pci_poke(pci_bar_handle, 0x14, 0);
+        fpga_pci_poke(pci_bar_handle, 0x1c, MEM_16G & 0xffffffff);
+        fpga_pci_poke(pci_bar_handle, 0x20, (MEM_16G >> 32) & 0xffffffff);
+        fpga_pci_poke(pci_bar_handle, 0x00, 1);
+#endif
+
 
         control_reg = 0;
         while ((control_reg & (1 << 1)) == 0) {
+#ifdef SV_TEST
             cl_peek_ocl(0x00, &control_reg);
+#else
+            fpga_pci_peek(pci_bar_handle, 0x00, &control_reg);
+#endif
             printf("%d: %d --> control status: %x\n", i, 0, control_reg);
+#ifdef SV_TEST
             sv_pause(100);
+#else
+            usleep(100);
+#endif
         }
 
+#ifdef SV_TEST
         cl_peek_ocl(0x0c, &int_status_reg);
+#else
+        fpga_pci_peek(pci_bar_handle, 0x0c, &int_status_reg);
+#endif
         printf("%d: interrupt status: %d\n", i, int_status_reg);
 
+#ifdef SV_TEST
         cl_poke_ocl(0x00, 1 << 4); // make it continue
         cl_poke_ocl(0x0c, 1);
         cl_peek_ocl(0x0c, &int_status_reg);
+#else
+        fpga_pci_poke(pci_bar_handle, 0x00, 1 << 4); // make it continue
+        fpga_pci_poke(pci_bar_handle, 0x0c, 1);
+        fpga_pci_peek(pci_bar_handle, 0x0c, &int_status_reg);
+#endif
         printf("%d: interrupt status: %d\n", i, int_status_reg);
     }
 
-    rc = do_dma_read(read_fd, read_buffer, total_output_size, MEM_16G, 0, slot_id);
+    rc = do_dma_read(read_fd, (uint8_t*)read_buffer, total_output_size, MEM_16G, 0, slot_id);
     fail_on(rc, out, "DMA read failed on DIMM: %d", dimm);
 
     for (int i = 0, j = 0, n = 0; n < NUM_FB; n++) {

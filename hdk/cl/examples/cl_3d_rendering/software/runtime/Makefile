@@ -24,13 +24,7 @@ SRC = test_dram_dma_common.c test_dram_dma_retention.c test_dram_dma.c test_dram
 OBJ = $(SRC:.c=.o)
 
 
-all: test_dram_dma check_env retention cosim $(BIN)
-
-test_dram_dma: $(OBJ)
-	$(CC) $(CFLAGS) -o test_dram_dma test_dram_dma.o test_dram_dma_common.o  $(LDFLAGS) $(LDLIBS)
-
-retention: $(OBJ)
-	$(CC) $(CFLAGS) -o test_dram_dma_retention test_dram_dma_retention.o test_dram_dma_common.o $(LDFLAGS) $(LDLIBS)
+all: cosim $(BIN)
 
 cosim: $(OBJ)
 	$(CC) $(CFLAGS) -o test_dram_dma_hwsw_cosim test_dram_dma_hwsw_cosim.o test_dram_dma_common.o $(LDFLAGS) $(LDLIBS)
