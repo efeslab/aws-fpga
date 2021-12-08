@@ -565,12 +565,18 @@ rr_tracedecoder #(
 // irq_req[15] is reserved for rr buffer management (not implemented yet)
 logic [15:0] cl_irq_req, cl_irq_ack;
 assign cl_sh_apppf_irq_req = {storage_backend_irq_req, cl_irq_req[14:0]};
-assign cl_irq_ack[14:0] = sh_cl_apppf_irq_ack[14:0];
 assign cl_irq_ack[15] = 0;
-// TODO: jiach will instantiate a module to convert cl_irq_req to irq_pcim_bus
-assign irq_pcim_bus.awvalid = 0;
-assign irq_pcim_bus.wvalid = 0;
-assign irq_pcim_bus.bready = 1;
+rr_int_to_pcim #(
+    .NUM_INT(15))
+cl_int_to_pcim(
+    .clk(clk),
+    .rstn(rstn),
+    .offset(storage_axi_write_csr.buf_addr),
+    .offset_update(storage_axi_write_csr.int_buf_update),
+    .int_req(cl_irq_req),
+    .int_ack(cl_irq_ack[14:0]),
+    .pcim(irq_pcim_bus)
+);
 rr_cl_irq2pcim_interconnect cl_irq_pcim_interconnect (
   .clk(clk), .rstn(rstn),
   .rr_pcim_bus(rr_pcim_bus),

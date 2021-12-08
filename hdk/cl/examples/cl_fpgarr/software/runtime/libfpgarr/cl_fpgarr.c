@@ -87,6 +87,9 @@ err_out:
 static uint8_t *record_buffer = NULL;
 static uint64_t record_buffer_size = 0;
 
+static uint8_t *int_buffer = NULL;
+static uint64_t int_buffer_size = 0;
+
 static uint8_t *validate_buffer = NULL;
 static uint64_t validate_buffer_size = 0;
 
@@ -100,6 +103,10 @@ void do_record_start() {
     record_buffer_size = buffer_size;
     record_buffer =
         rr_alloc_setup_buffer(record_buffer_size, RECORD_BUF_UPDATE);
+
+    int_buffer_size = 4096;
+    int_buffer =
+        rr_alloc_setup_buffer(int_buffer_size, INT_BUF_UPDATE);
 
     if (is_validate()) {
         validate_buffer_size = buffer_size;

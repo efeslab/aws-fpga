@@ -325,6 +325,7 @@ typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
   RR_TRACE_FIFO_ASSERT,     // 20
   RR_CSR_VERSION,           // 21
   RR_ON_THE_FLY_BALANCE,    // 22
+  INT_BUF_UPDATE,           // 23
   `ifdef DEBUG_RECORD_CSR
   // gefei dbg_csr
   RR_WB_RECORD_DBG_BITS_NON_ALIGNED_HI,

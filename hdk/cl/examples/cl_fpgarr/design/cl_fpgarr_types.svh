@@ -237,6 +237,7 @@ typedef struct packed {
   logic [63:0] replay_bits;
   logic validate_buf_update;
   logic [31:0] on_the_fly_balance;
+  logic int_buf_update;
 } storage_axi_write_csr_t;
 
 typedef struct packed {

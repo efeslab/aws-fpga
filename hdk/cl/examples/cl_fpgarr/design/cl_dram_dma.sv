@@ -684,8 +684,8 @@ cl_int_slv CL_INT_TST
 
   .cfg_bus             (int_tst_cfg_bus),
 
-  .cl_sh_apppf_irq_req (cl_sh_apppf_irq_req[13:1]),
-  .sh_cl_apppf_irq_ack (sh_cl_apppf_irq_ack[13:1])
+  .cl_sh_apppf_irq_req (cl_sh_apppf_irq_req[13:0]),
+  .sh_cl_apppf_irq_ack (sh_cl_apppf_irq_ack[13:0])
        
 );
 // interrupt[14] is reserved for axi_mstr finish

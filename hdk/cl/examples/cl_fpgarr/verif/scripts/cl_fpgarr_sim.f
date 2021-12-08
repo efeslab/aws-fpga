@@ -18,6 +18,7 @@ ${CL_FPGARR_ROOT}/design/cl_fpgarr_tracedecoder.sv
 ${CL_FPGARR_ROOT}/design/cl_fpgarr_chgrouping.sv
 ${CL_FPGARR_ROOT}/design/cl_fpgarr_rr_sel.sv
 ${CL_FPGARR_ROOT}/design/cl_fpgarr_rt_loge_crossbar.sv
+${CL_FPGARR_ROOT}/design/cl_fpgarr_int_to_pcim.sv
 
 ## fpgarr tracestorage files
 ${CL_FPGARR_ROOT}/design/cl_fpgarr_tracestorage_axi.sv

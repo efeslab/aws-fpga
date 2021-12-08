@@ -294,7 +294,8 @@ module rr_csrs #(
         // replay_start: al_write_transmitted_q && (al_addr == REPLAY_START)
         replay_bits: {csrs[REPLAY_BITS_HI], csrs[REPLAY_BITS_LO]},
         validate_buf_update: al_write_transmitted_q && (al_addr == VALIDATE_BUF_UPDATE),
-        on_the_fly_balance: csrs[RR_ON_THE_FLY_BALANCE]
+        on_the_fly_balance: csrs[RR_ON_THE_FLY_BALANCE],
+        int_buf_update: al_write_transmitted_q && (al_addr == INT_BUF_UPDATE)
     };
     lib_pipe #(
         .WIDTH($bits(storage_axi_write_csr_t)),
