@@ -20,6 +20,7 @@ file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_tracedecoder.sv          $TARG
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_chgrouping.sv            $TARGET_DIR
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_rr_sel.sv                $TARGET_DIR
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_rt_loge_crossbar.sv      $TARGET_DIR
+file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_int_to_pcim.sv           $TARGET_DIR
 ## fpgarr tracestorage files
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_tracestorage_axi.sv      $TARGET_DIR
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_tracestorage_wrapper.sv  $TARGET_DIR
