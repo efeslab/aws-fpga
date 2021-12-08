@@ -35,8 +35,8 @@ test_dram_dma: $(OBJ) $(LIBFPGARR_ALL_FILES)
 retention: $(OBJ)
 	$(CC) $(CFLAGS) -o test_dram_dma_retention test_dram_dma_retention.o test_dram_dma_common.o $(LDFLAGS) $(LDLIBS)
 
-cosim: $(OBJ)
-	$(CC) $(CFLAGS) -o test_dram_dma_hwsw_cosim test_dram_dma_hwsw_cosim.o test_dram_dma_common.o $(LDFLAGS) $(LDLIBS)
+cosim: $(OBJ) $(LIBFPGARR_ALL_FILES)
+	$(CC) $(CFLAGS) -o test_dram_dma_hwsw_cosim test_dram_dma_hwsw_cosim.o test_dram_dma_common.o $(LIBFPGARR_SRC) $(LDFLAGS) $(LDLIBS)
 
 clean:
 	rm -f *.o test_dram_dma_retention test_dram_dma test_dram_dma_hwsw_cosim
