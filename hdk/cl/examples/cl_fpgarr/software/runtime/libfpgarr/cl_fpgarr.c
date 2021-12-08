@@ -95,9 +95,6 @@ static uint64_t replay_buffer_size;
 uint64_t replay_bits;
 
 void do_record_start() {
-    // always allocate irq buffer first to make sure its phy addr is always the
-    // same (at least I hope this works)
-    init_irq();
     // always set RR_MODE first to avoid silently dropping traffic
     rr_cfg_poke(RR_MODE, rr_mode.val);
     record_buffer_size = buffer_size;
@@ -180,6 +177,9 @@ void do_replay_stop() {
     }
 }
 void do_pre_rr() {
+    // always allocate irq buffer first to make sure its phy addr is always the
+    // same (at least I hope this works)
+    init_irq();
     if (is_record()) {
         do_record_start();
     } else if (is_replay()) {
