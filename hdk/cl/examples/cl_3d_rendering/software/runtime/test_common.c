@@ -36,7 +36,7 @@
    #include <utils/lcd.h>
 #endif
 
-#include "test_dram_dma_common.h"
+#include "test_common.h"
 
 
 static const uint16_t AMZ_PCI_VENDOR_ID = 0x1D0F; /* Amazon PCI Vendor ID */
