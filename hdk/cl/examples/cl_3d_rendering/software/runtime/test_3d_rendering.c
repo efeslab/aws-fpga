@@ -33,7 +33,7 @@
 # include <utils/lcd.h>
 #endif
 
-#include "test_dram_dma_common.h"
+#include "test_common.h"
 #include "typedefs.h"
 #include "input_data.h"
 
