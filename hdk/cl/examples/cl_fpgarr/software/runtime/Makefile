@@ -23,14 +23,14 @@ LDLIBS = -lfpga_mgmt
 SRC = test_dram_dma_common.c test_dram_dma_retention.c test_dram_dma.c test_dram_dma_hwsw_cosim.c
 OBJ = $(SRC:.c=.o)
 
-include libfpgarr/Makefile.inc
-CFLAGS += -I$(CL_FPGARR_PATH)
+include ${CL_FPGARR_ROOT}/software/runtime/libfpgarr/Makefile.inc
+CFLAGS += -I$(LIBFPGARR_PATH)
 
 
 all: test_dram_dma check_env retention cosim $(BIN)
 
-test_dram_dma: $(OBJ) $(CL_FPGARR_ALL_FILES)
-	$(CC) $(CFLAGS) -o test_dram_dma test_dram_dma.o test_dram_dma_common.o $(CL_FPGARR_SRC) $(LDFLAGS) $(LDLIBS)
+test_dram_dma: $(OBJ) $(LIBFPGARR_ALL_FILES)
+	$(CC) $(CFLAGS) -o test_dram_dma test_dram_dma.o test_dram_dma_common.o $(LIBFPGARR_SRC) $(LDFLAGS) $(LDLIBS)
 
 retention: $(OBJ)
 	$(CC) $(CFLAGS) -o test_dram_dma_retention test_dram_dma_retention.o test_dram_dma_common.o $(LDFLAGS) $(LDLIBS)
