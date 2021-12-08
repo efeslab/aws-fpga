@@ -30,7 +30,7 @@ cosim: $(OBJ)
 	$(CC) $(CFLAGS) -o test_3d_rendering test_3d_rendering.o test_common.o $(LDFLAGS) $(LDLIBS)
 
 clean:
-	rm -f *.o test_3d_rendering output.txt
+	rm -f *.o test_3d_rendering outputs.txt
 
 check_env:
 ifndef SDK_DIR

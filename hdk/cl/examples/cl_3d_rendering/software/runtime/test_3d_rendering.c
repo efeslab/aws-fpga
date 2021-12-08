@@ -146,7 +146,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 {
     const long input_size_per_frame = 3 * NUM_3D_TRI;
     const long output_size_per_frame = NUM_FB;
-    const long num_of_frame = 1;
+    const long num_of_frame = 100;
     const long total_input_size = input_size_per_frame * num_of_frame * sizeof(bit32);
     const long total_output_size = output_size_per_frame * num_of_frame * sizeof(bit32);
 
@@ -211,7 +211,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     rc = do_dma_write(write_fd, (uint8_t*)write_buffer, total_input_size, 0, 0, slot_id);
     fail_on(rc, out, "DMA write failed on DIMM: %d", dimm);
 
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < num_of_frame; i++) {
 #ifdef SV_TEST
         cl_peek_ocl(0x00, &control_reg);
 #else
@@ -219,24 +219,26 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 #endif
         printf("%d: %d --> control status: %x\n", i, 0, control_reg);
 
+        uint64_t input_addr = 0 + input_size_per_frame * sizeof(bit32) * i;
+        uint64_t output_addr = MEM_16G + output_size_per_frame * sizeof(bit32) * i;
+
 #ifdef SV_TEST
         cl_poke_ocl(0x04, 1); // Global Interrupt Enable
         cl_poke_ocl(0x08, 1); // Enable ap_done interrupt
-        cl_poke_ocl(0x10, 0);
-        cl_poke_ocl(0x14, 0);
-        cl_poke_ocl(0x1c, MEM_16G & 0xffffffff);
-        cl_poke_ocl(0x20, (MEM_16G >> 32) & 0xffffffff);
+        cl_poke_ocl(0x10, input_addr & 0xffffffff);
+        cl_poke_ocl(0x14, (input_addr >> 32) & 0xffffffff);
+        cl_poke_ocl(0x1c, output_addr & 0xffffffff);
+        cl_poke_ocl(0x20, (output_addr >> 32) & 0xffffffff);
         cl_poke_ocl(0x00, 1);
 #else
         fpga_pci_poke(pci_bar_handle, 0x04, 1); // Global Interrupt Enable
         fpga_pci_poke(pci_bar_handle, 0x08, 1); // Enable ap_done interrupt
-        fpga_pci_poke(pci_bar_handle, 0x10, 0);
-        fpga_pci_poke(pci_bar_handle, 0x14, 0);
-        fpga_pci_poke(pci_bar_handle, 0x1c, MEM_16G & 0xffffffff);
-        fpga_pci_poke(pci_bar_handle, 0x20, (MEM_16G >> 32) & 0xffffffff);
+        fpga_pci_poke(pci_bar_handle, 0x10, input_addr & 0xffffffff);
+        fpga_pci_poke(pci_bar_handle, 0x14, (input_addr >> 32) & 0xffffffff);
+        fpga_pci_poke(pci_bar_handle, 0x1c, output_addr & 0xffffffff);
+        fpga_pci_poke(pci_bar_handle, 0x20, (output_addr >> 32) & 0xffffffff);
         fpga_pci_poke(pci_bar_handle, 0x00, 1);
 #endif
-
 
         control_reg = 0;
         while ((control_reg & (1 << 1)) == 0) {
@@ -275,29 +277,32 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     rc = do_dma_read(read_fd, (uint8_t*)read_buffer, total_output_size, MEM_16G, 0, slot_id);
     fail_on(rc, out, "DMA read failed on DIMM: %d", dimm);
 
-    for (int i = 0, j = 0, n = 0; n < NUM_FB; n++) {
-        bit32 temp = read_buffer[n];
-        frame_buffer_print[i][j++] = (temp >> 0) & 0xff;
-        frame_buffer_print[i][j++] = (temp >> 8) & 0xff;
-        frame_buffer_print[i][j++] = (temp >> 24) & 0xff;
-        frame_buffer_print[i][j++] = (temp >> 16) & 0xff;
-        if (j == MAX_Y) {
-            i++;
-            j = 0;
-        }
-    }
-
     ofile = fopen("outputs.txt", "w+");
-    for (int j = MAX_X - 1; j >= 0; j--) {
-        for (int i = 0; i < MAX_Y; i++) {
-            int pix;
-            pix = frame_buffer_print[i][j];
-            if (pix)
-                fprintf(ofile, "1");
-            else
-                fprintf(ofile, "0");
-        }
-        fprintf(ofile, "\n");
+
+    for (int k = 0; k < num_of_frame; k++) {
+      for (int i = 0, j = 0, n = 0; n < NUM_FB; n++) {
+          bit32 temp = read_buffer[k * output_size_per_frame + n];
+          frame_buffer_print[i][j++] = (temp >> 0) & 0xff;
+          frame_buffer_print[i][j++] = (temp >> 8) & 0xff;
+          frame_buffer_print[i][j++] = (temp >> 24) & 0xff;
+          frame_buffer_print[i][j++] = (temp >> 16) & 0xff;
+          if (j == MAX_Y) {
+              i++;
+              j = 0;
+          }
+      }
+
+      for (int j = MAX_X - 1; j >= 0; j--) {
+          for (int i = 0; i < MAX_Y; i++) {
+              int pix;
+              pix = frame_buffer_print[i][j];
+              if (pix)
+                  fprintf(ofile, "1");
+              else
+                  fprintf(ofile, "0");
+          }
+          fprintf(ofile, "\n");
+      }
     }
     fclose(ofile);
 
