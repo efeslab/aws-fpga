@@ -63,33 +63,7 @@ ${CL_ROOT}/design/hls_accel_wrapper.sv
 ${CL_ROOT}/design/cl_dram_dma.sv
 ${CL_ROOT}/design/cl_ocl_slv_reg.sv
 
-${CL_ROOT}/design/hls_accel/verilog/rendering_coloringFB.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_control_s_axi.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_dataflow_in_loop_TRIANGLES_fragment_color_V_memcore.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_dataflow_in_loop_TRIANGLES_fragment_color_V.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_dataflow_in_loop_TRIANGLES_fragment_x_V_memcore.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_dataflow_in_loop_TRIANGLES_fragment_x_V.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_dataflow_in_loop_TRIANGLES.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_dataflow_parent_loop_proc.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_fifo_w12_d2_S.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_fifo_w12_d4_S.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_fifo_w16_d2_S.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_fifo_w1_d2_S.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_fifo_w8_d2_S.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_frame_buffer_V.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_gmem_m_axi.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_mac_mulsub_9s_9s_18ns_18_4_1.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_mul_8ns_10ns_17_1_1.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_mul_9s_9s_16_1_1.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_mul_9s_9s_18_1_1.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_projection.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_rasterization1.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_rasterization2.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_udiv_16ns_8ns_8_20_1.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_urem_16ns_8ns_8_20_1.v
-${CL_ROOT}/design/hls_accel/verilog/rendering.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_zculling.v
-${CL_ROOT}/design/hls_accel/verilog/rendering_zculling_z_buffer_V.v
+-f ${CL_ROOT}/verif/scripts/3d_rendering.f
 
 -f ${CL_FPGARR_ROOT}/verif/scripts/cl_fpgarr_sim.f
 

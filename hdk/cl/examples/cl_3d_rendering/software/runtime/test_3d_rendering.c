@@ -173,7 +173,11 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 {
     const long input_size_per_frame = 3 * NUM_3D_TRI;
     const long output_size_per_frame = NUM_FB;
+#ifndef SV_TEST
     const long num_of_frame = 100;
+#else
+    const long num_of_frame = 1;
+#endif
     const long total_input_size = input_size_per_frame * num_of_frame * sizeof(bit32);
     const long total_output_size = output_size_per_frame * num_of_frame * sizeof(bit32);
 
@@ -185,12 +189,14 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     bit32 *write_buffer = NULL, *read_buffer = NULL;
     uint32_t int_status_reg, control_reg;
 
+#ifndef SV_TEST
     pci_bar_handle_t pci_bar_handle = PCI_BAR_HANDLE_INIT;
     rc = fpga_pci_get_dma_device_num(FPGA_DMA_XDMA, slot_id, &device_num);
     fail_on((rc = (rc != 0)? 1:0), out, "Unable to get xdma device number.");
 
     rc = fpga_pci_attach(slot_id, pf_id, bar_id, fpga_attach_flags, &pci_bar_handle);
     fail_on(rc, out, "Unable to attach to the AFI on slot id %d", slot_id);
+#endif
 
     write_fd = -1;
     read_fd = -1;
@@ -272,7 +278,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         fpga_pci_poke(pci_bar_handle, 0x00, 1);
 #endif
 
-#ifdef CSR_POLLING
+#if defined(CSR_POLLING) || defined(SV_TEST)
         control_reg = 0;
         while ((control_reg & (1 << 1)) == 0) {
 #ifdef SV_TEST
