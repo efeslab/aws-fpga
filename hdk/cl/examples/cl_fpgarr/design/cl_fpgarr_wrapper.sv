@@ -566,15 +566,16 @@ rr_tracedecoder #(
 logic [15:0] cl_irq_req, cl_irq_ack;
 assign cl_sh_apppf_irq_req = {storage_backend_irq_req, cl_irq_req[14:0]};
 assign cl_irq_ack[15] = 0;
+localparam CL_IRQ_ENABLED_NUM = 15;
 rr_int_to_pcim #(
-    .NUM_INT(15))
+    .NUM_INT(CL_IRQ_ENABLED_NUM))
 cl_int_to_pcim(
     .clk(clk),
     .rstn(rstn),
     .offset(storage_axi_write_csr.buf_addr),
     .offset_update(storage_axi_write_csr.int_buf_update),
-    .int_req(cl_irq_req),
-    .int_ack(cl_irq_ack[14:0]),
+    .int_req(cl_irq_req[CL_IRQ_ENABLED_NUM-1:0]),
+    .int_ack(cl_irq_ack[CL_IRQ_ENABLED_NUM-1:0]),
     .pcim(irq_pcim_bus)
 );
 rr_cl_irq2pcim_interconnect cl_irq_pcim_interconnect (
@@ -583,8 +584,6 @@ rr_cl_irq2pcim_interconnect cl_irq_pcim_interconnect (
   .irq_pcim_bus(irq_pcim_bus),
   .rr_irq_pcim_bus(rr_irq_pcim_bus)
 );
-assign rr_irq_pcim_bus.wid = 0;
-assign rr_irq_pcim_bus.awid[SHELL_PCIM_AXI_ID_WIDTH-1:PCIM_INTERCONNECT_AXI_ID_WIDTH] = 0;
 
 // AXI Interconnect for the logging pcim traffic and user pcim traffic
 // NOTE: that all Xid field of pcim buses, either from logging or from the cl,

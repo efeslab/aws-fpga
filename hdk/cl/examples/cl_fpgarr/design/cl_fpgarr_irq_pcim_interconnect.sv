@@ -123,4 +123,6 @@ rr_irq_pcim_interconnect irq_pcim_interconnect_inst (
   .S01_AXI_wstrb(irq_pcim_bus.wstrb),
   .S01_AXI_wvalid(irq_pcim_bus.wvalid)
 );
+assign rr_irq_pcim_bus.wid = 0;
+assign rr_irq_pcim_bus.awid[SHELL_PCIM_AXI_ID_WIDTH-1:PCIM_INTERCONNECT_AXI_ID_WIDTH] = 0;
 endmodule
