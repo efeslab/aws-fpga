@@ -69,38 +69,13 @@ void test_conv_layer_random(
 //------------------------------------------------------------------------
 // Main
 //------------------------------------------------------------------------
-#if defined(SV_TEST) && defined(INT_MAIN)
-extern "C" int test_main(uint32_t *exit_code)
-#elif defined(SV_TEST)
-extern "C" void test_main(uint32_t *exit_code)
-#else
-int main()
-#endif
+int main_random()
 {
   const unsigned N = 1;
 
   Word* wt = new Word[WT_WORDS];
   Word* kh = new Word[KH_WORDS];
-
-  // setup AWSF1 simulation
-
-#if defined(SCOPE)
-  svScope scope;
-  scope = svGetScopeFromName("tb");
-  svSetScope(scope);
-#endif
-  printf("Starting DDR init...\n");
-#ifdef SV_TEST
-  init_ddr();
-  printf("Done DDR init...\n");
-#endif
   int rc = 0;
-  rc = hls_init();
-  fail_on(rc, out, "init hls failed");
-  rc = init_rr(0);
-  fail_on(rc, out, "init rr failed");
-  do_pre_rr();
-  fail_on(is_replay(), out, "Skip application code, replaying");
 
   // initialize the kernel weights
   for (unsigned m = 0; m < WT_WORDS; ++m) {
@@ -128,16 +103,5 @@ int main()
 out:
   delete[] wt;
   delete[] kh;
-
-  do_post_rr();
-  hls_exit();
-
-#if !defined(SV_TEST)
-  return 0;
-#elif defined(INT_MAIN)
-  *exit_code = 0;
-  return 0;
-#else
-  *exit_code = 0;
-#endif
+  return rc;
 }

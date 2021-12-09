@@ -134,9 +134,11 @@ void run_accel_schedule(
   printf("accel_data_o: %lx\n", accel_data_o);
   printf("accel_wt_i: %lx\n", accel_wt_i);
   printf("accel_kh_i: %lx\n", accel_kh_i);
+  printf("input_words: %d\n", input_words);
+  printf("output_words: %d\n", output_words);
 
   rc = do_dma_write((uint8_t*)data_i, input_words * sizeof(Word), accel_data_i, 0, slot_id); 
-  rc = do_dma_write((uint8_t*)data_o, output_words * sizeof(Word), accel_data_o, 0, slot_id); 
+  //rc = do_dma_write((uint8_t*)data_o, output_words * sizeof(Word), accel_data_o, 0, slot_id); 
   fail_on(rc, out, "DMA write failed");
   printf("accel rounds N: %d\n", N);
 
