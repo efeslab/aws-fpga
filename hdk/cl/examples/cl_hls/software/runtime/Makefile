@@ -17,25 +17,47 @@ INCLUDES = -I$(SDK_DIR)/userspace/include
 
 CC = gcc
 CXX = g++
-CFLAGS = -DCONFIG_LOGLEVEL=4 -std=gnu11 -g -Wall -Werror $(INCLUDES)
+CFLAGS = -DCONFIG_LOGLEVEL=4 -g -Wall $(INCLUDES)
 
 LDLIBS = -lfpga_mgmt
 
-SRC = test_common.c test_3d_rendering.c
-OBJ = $(SRC:.c=.o)
+ALL_HLS_DESIGN = 3d_rendering bnn
+
+LIB_SRC = test_common.c
+LIB_HEADER = test_common.h
+LIB_ALL_FILES = $(LIB_SRC) $(LIB_HEADER)
+LIB_OBJ = $(LIB_SRC:.c=.o)
+
 
 include ${CL_FPGARR_ROOT}/software/runtime/libfpgarr/Makefile.inc
-CFLAGS += -I$(LIBFPGARR_PATH)
+CFLAGS += -I$(LIBFPGARR_PATH) -I.
+LIBFPGARR_OBJ = $(LIBFPGARR_SRC:.c=.o)
 
-all: rendering bnn $(BIN)
+# For HLS
+CXXFLAGS = $(CFLAGS) -I$(XILINX_HLS)/include
+LDLIBS += -lminizip -lz
 
-rendering: $(OBJ) $(LIBFPGARR_ALL_FILES)
-	$(CC) $(CFLAGS) -o test_3d_rendering test_3d_rendering.o test_common.o $(LIBFPGARR_SRC) $(LDFLAGS) $(LDLIBS)
-
+ifdef HLS_DESIGN
+BIN = $(HLS_DESIGN)_hw.elf
+CFLAGS += -I$(HLS_DESIGN)
+CXXFLAGS += -I$(HLS_DESIGN)
+include $(HLS_DESIGN)/Makefile.inc
+all: $(BIN)
+$(BIN): $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
+	$(HLS_DESIGN_COMPILER) -o $@ $(CFLAGS) $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)$ $(LDFLAGS) $(LDLIBS)
 clean:
-	rm -f *.o test_3d_rendering outputs.txt
+	rm -rf $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
+else
+all: $(ALL_HLS_DESIGN)
+	@for i in $^; do $(MAKE) HLS_DESIGN=$$i; done
+clean: $(ALL_HLS_DESIGN)
+	@for i in $^; do $(MAKE) HLS_DESIGN=$$i clean; done
+endif
 
 check_env:
 ifndef SDK_DIR
     $(error SDK_DIR is undefined. Try "source sdk_setup.sh" to set the software environment)
 endif
+
+help:
+	@echo "Available HLS_DESIGN: $(ALL_HLS_DESIGN)"

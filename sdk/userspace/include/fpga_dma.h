@@ -70,7 +70,7 @@ int fpga_dma_open_queue(enum fpga_dma_driver which_driver, int slot_id,
  */
 int fpga_dma_device_id(enum fpga_dma_driver which_driver, int slot_id,
     int channel, bool is_read,
-    char device_file[static FPGA_DEVICE_FILE_NAME_MAX_LEN]);
+    char device_file[FPGA_DEVICE_FILE_NAME_MAX_LEN]);
 
 /**
  * Use this function to copy an entire buffer from the FPGA into a buffer in

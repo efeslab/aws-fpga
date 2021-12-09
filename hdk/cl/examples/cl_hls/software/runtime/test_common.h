@@ -70,7 +70,7 @@ int send_rdbuf_to_c(char* rd_buf);
 extern int write_fd;
 extern int read_fd;
 extern int slot_id;
-inline int do_dma_read(uint8_t *buffer, size_t size,
+static inline int do_dma_read(uint8_t *buffer, size_t size,
     uint64_t address, int channel, int slot_id)
 {
 #if defined(SV_TEST)
@@ -81,7 +81,7 @@ inline int do_dma_read(uint8_t *buffer, size_t size,
 #endif
 }
 
-inline int do_dma_write(uint8_t *buffer, size_t size,
+static inline int do_dma_write(uint8_t *buffer, size_t size,
     uint64_t address, int channel, int slot_id)
 {
 #if defined(SV_TEST)
