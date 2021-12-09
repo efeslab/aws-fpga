@@ -176,6 +176,115 @@ int send_rdbuf_to_c(char* rd_buf)
 
 #endif
 
-void init_ddr_wrap() {
-    init_ddr();
+void hls_wait_task_complete(uint64_t ctl_reg_addr) {
+    uint32_t control_reg = 0;
+#ifdef CSR_POLLING
+    while ((control_reg & (1 << 1)) == 0) {
+        hls_peek_ocl(ctl_reg_addr, &control_reg);
+        printf("control status: %x\n", control_reg);
+        hls_wait(100);
+    }
+#else // interrupt
+#ifdef RR_IRQ_POLLING
+    rr_wait_irq(0);
+#else
+    hls_interrupt_polling(0);
+#endif
+    hls_peek_ocl(ctl_reg_addr, &control_reg);
+    printf("control status: %x\n", control_reg);
+#endif
+}
+
+static pci_bar_handle_t pci_bar_handle = PCI_BAR_HANDLE_INIT;
+
+void hls_peek_ocl(uint64_t addr, uint32_t *data) {
+#ifdef SV_TEST
+    cl_peek_ocl(addr, data);
+#else
+    fpga_pci_peek(pci_bar_handle, addr, data);
+#endif
+}
+
+void hls_poke_ocl(uint64_t addr, uint32_t data) {
+#ifdef SV_TEST
+    cl_poke_ocl(addr, data);
+#else
+    fpga_pci_poke(pci_bar_handle, addr, data);
+#endif
+}
+
+void hls_wait(uint32_t unit) {
+#ifdef SV_TEST
+    sv_pause(unit);
+#else
+    usleep(unit);
+#endif
+}
+
+int write_fd = -1;
+int read_fd = -1;
+int slot_id = 0;
+
+int hls_init() {
+    int rc = 0;
+    int pf_id = 0, bar_id = 0, fpga_attach_flags = 0;
+    int device_num = 0;
+    errno = 0;
+#ifndef SV_TEST
+    rc = fpga_pci_get_dma_device_num(FPGA_DMA_XDMA, slot_id, &device_num);
+    fail_on((rc = (rc != 0) ? 1 : 0), out, "Unable to get xdma device number.");
+
+    rc = fpga_pci_attach(slot_id, pf_id, bar_id, fpga_attach_flags,
+                         &pci_bar_handle);
+    fail_on(rc, out, "Unable to attach to the AFI on slot id %d", slot_id);
+    read_fd = fpga_dma_open_queue(FPGA_DMA_XDMA, slot_id,
+                                  /*channel*/ 0, /*is_read*/ true);
+    fail_on((rc = (read_fd < 0) ? -1 : 0), out,
+            "unable to open read dma queue");
+
+    write_fd = fpga_dma_open_queue(FPGA_DMA_XDMA, slot_id,
+                                   /*channel*/ 0, /*is_read*/ false);
+    fail_on((rc = (write_fd < 0) ? -1 : 0), out,
+            "unable to open write dma queue");
+    check_slot_config(slot_id);
+out:
+#endif
+    return rc;
+}
+
+void hls_exit() {
+#ifndef SV_TEST
+    if (write_fd >= 0) {
+        close(write_fd);
+    }
+    if (read_fd >= 0) {
+        close(read_fd);
+    }
+#endif
+}
+
+int hls_interrupt_polling(int interrupt_number) {
+    struct pollfd fds[1];
+    uint32_t fd;
+    char event_file_name[256];
+    int device_num = 0;
+    int rc = 0, rd = 0;
+
+    rc = sprintf(event_file_name, "/dev/xdma%i_events_%i", device_num, interrupt_number);
+    fail_on((rc = (rc < 0) ? 1: 0), out, "Unable to format event file name.");
+    if ((fd = open(event_file_name, O_RDONLY)) == -1) {
+        fail_on((rc = 1), out, "Unable to open event device");
+    }
+    fds[0].fd = fd;
+    fds[0].events = POLLIN;
+
+    rd = poll(fds, 1, -1);
+    if (rd > 0 && (fds[0].revents & POLLIN)) {
+        uint32_t events_user;
+        rc = pread(fd, &events_user, sizeof(events_user), 0);
+    }
+    close(fd);
+
+out:
+    return rc;
 }

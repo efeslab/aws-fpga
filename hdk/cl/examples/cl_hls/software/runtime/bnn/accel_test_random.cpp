@@ -5,6 +5,11 @@
 #include "AccelSchedule.h"
 #include "AccelTest.h"
 
+extern "C" {
+#include "test_common.h"
+}
+
+
 // used to generate test data
 unsigned simple_hash(unsigned x) {
   unsigned temp = (((x)*(x+3)*(x+11)) % 47);
@@ -77,6 +82,26 @@ int main()
   Word* wt = new Word[WT_WORDS];
   Word* kh = new Word[KH_WORDS];
 
+  // setup AWSF1 simulation
+
+#if defined(SCOPE)
+  svScope scope;
+  scope = svGetScopeFromName("tb");
+  svSetScope(scope);
+#endif
+  printf("Starting DDR init...\n");
+#ifdef SV_TEST
+  init_ddr();
+  printf("Done DDR init...\n");
+#endif
+  int rc = 0;
+  rc = hls_init();
+  fail_on(rc, out, "init hls failed");
+  rc = init_rr(0);
+  fail_on(rc, out, "init rr failed");
+  do_pre_rr();
+  fail_on(is_replay(), out, "Skip application code, replaying");
+
   // initialize the kernel weights
   for (unsigned m = 0; m < WT_WORDS; ++m) {
     for (unsigned i = 0; i < WORD_SIZE; ++i)
@@ -97,10 +122,15 @@ int main()
   test_conv_layer_random(16, wt, kh);
   test_conv_layer_random(32, wt, kh);
 
+  printf ("Tests passed!\n");
+
+
+out:
   delete[] wt;
   delete[] kh;
 
-  printf ("Tests passed!\n");
+  do_post_rr();
+  hls_exit();
 
 #if !defined(SV_TEST)
   return 0;
