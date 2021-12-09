@@ -39,8 +39,6 @@
 #include "cl_fpgarr.h"
 
 #define MEM_16G              (1ULL << 34)
-#undef CSR_POLLING
-#define RR_IRQ_POLLING
 
 void usage(const char* program_name);
 int dma_example_hwsw_cosim(int slot_id, size_t buffer_size);
@@ -137,32 +135,6 @@ void usage(const char* program_name) {
     printf("usage: %s [--slot <slot>]\n", program_name);
 }
 
-int interrupt_polling(int interrupt_number) {
-    struct pollfd fds[1];
-    uint32_t fd;
-    char event_file_name[256];
-    int device_num = 0;
-    int rc = 0, rd = 0;
-
-    rc = sprintf(event_file_name, "/dev/xdma%i_events_%i", device_num, interrupt_number);
-    fail_on((rc = (rc < 0) ? 1: 0), out, "Unable to format event file name.");
-    if ((fd = open(event_file_name, O_RDONLY)) == -1) {
-        fail_on((rc = 1), out, "Unable to open event device");
-    }
-    fds[0].fd = fd;
-    fds[0].events = POLLIN;
-
-    rd = poll(fds, 1, -1);
-    if (rd > 0 && (fds[0].revents & POLLIN)) {
-        uint32_t events_user;
-        rc = pread(fd, &events_user, sizeof(events_user), 0);
-    }
-    close(fd);
-
-out:
-    return rc;
-}
-
 /**
  * Write 4 identical buffers to the 4 different DRAM channels of the AFI
  */
@@ -178,25 +150,11 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     const long total_input_size = input_size_per_frame * num_of_frame * sizeof(bit32);
     const long total_output_size = output_size_per_frame * num_of_frame * sizeof(bit32);
 
-    int rc, pf_id = 0, bar_id = 0, fpga_attach_flags = 0;
-    int device_num = 0;
-    int write_fd, read_fd;
+    int rc = 0;
     FILE *ofile;
     bit8 frame_buffer_print[MAX_X][MAX_Y];
     bit32 *write_buffer = NULL, *read_buffer = NULL;
     uint32_t int_status_reg, control_reg;
-
-#ifndef SV_TEST
-    pci_bar_handle_t pci_bar_handle = PCI_BAR_HANDLE_INIT;
-    rc = fpga_pci_get_dma_device_num(FPGA_DMA_XDMA, slot_id, &device_num);
-    fail_on((rc = (rc != 0)? 1:0), out, "Unable to get xdma device number.");
-
-    rc = fpga_pci_attach(slot_id, pf_id, bar_id, fpga_attach_flags, &pci_bar_handle);
-    fail_on(rc, out, "Unable to attach to the AFI on slot id %d", slot_id);
-#endif
-
-    write_fd = -1;
-    read_fd = -1;
 
     write_buffer = malloc(total_input_size);
     read_buffer = malloc(total_output_size);
@@ -207,20 +165,14 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     }
 
     printf("Memory has been allocated, initializing DMA and filling the buffer...\n");
-#if !defined(SV_TEST)
-    read_fd = fpga_dma_open_queue(FPGA_DMA_XDMA, slot_id,
-        /*channel*/ 0, /*is_read*/ true);
-    fail_on((rc = (read_fd < 0) ? -1 : 0), out, "unable to open read dma queue");
-
-    write_fd = fpga_dma_open_queue(FPGA_DMA_XDMA, slot_id,
-        /*channel*/ 0, /*is_read*/ false);
-    fail_on((rc = (write_fd < 0) ? -1 : 0), out, "unable to open write dma queue");
-#else
+#ifdef SV_TEST
     setup_send_rdbuf_to_c((uint8_t*)read_buffer, total_input_size);
     printf("Starting DDR init...\n");
     init_ddr();
     printf("Done DDR init...\n");
 #endif
+    rc = hls_init();
+    fail_on(rc, out, "init hls failed");
     rc = init_rr(0);
     fail_on(rc, out, "init rr failed");
     do_pre_rr();
@@ -242,89 +194,38 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         }
     }
 
-    rc = do_dma_write(write_fd, (uint8_t*)write_buffer, total_input_size, 0, 0, slot_id);
+    rc = do_dma_write((uint8_t*)write_buffer, total_input_size, 0, 0, slot_id);
     fail_on(rc, out, "DMA write failed on DIMM 0");
 
 
     for (int i = 0; i < num_of_frame; i++) {
-#ifdef SV_TEST
-        cl_peek_ocl(0x00, &control_reg);
-#else
-        fpga_pci_peek(pci_bar_handle, 0x00, &control_reg);
-#endif
+        hls_peek_ocl(0x00, &control_reg);
         printf("%d: %d --> control status: %x\n", i, 0, control_reg);
 
         uint64_t input_addr = 0 + input_size_per_frame * sizeof(bit32) * i;
         uint64_t output_addr = MEM_16G + output_size_per_frame * sizeof(bit32) * i;
 
-#ifdef SV_TEST
-        cl_poke_ocl(0x04, 1); // Global Interrupt Enable
-        cl_poke_ocl(0x08, 1); // Enable ap_done interrupt
-        cl_poke_ocl(0x10, input_addr & 0xffffffff);
-        cl_poke_ocl(0x14, (input_addr >> 32) & 0xffffffff);
-        cl_poke_ocl(0x1c, output_addr & 0xffffffff);
-        cl_poke_ocl(0x20, (output_addr >> 32) & 0xffffffff);
-        cl_poke_ocl(0x00, 1);
-#else
-        fpga_pci_poke(pci_bar_handle, 0x04, 1); // Global Interrupt Enable
-        fpga_pci_poke(pci_bar_handle, 0x08, 1); // Enable ap_done interrupt
-        fpga_pci_poke(pci_bar_handle, 0x10, input_addr & 0xffffffff);
-        fpga_pci_poke(pci_bar_handle, 0x14, (input_addr >> 32) & 0xffffffff);
-        fpga_pci_poke(pci_bar_handle, 0x1c, output_addr & 0xffffffff);
-        fpga_pci_poke(pci_bar_handle, 0x20, (output_addr >> 32) & 0xffffffff);
-        fpga_pci_poke(pci_bar_handle, 0x00, 1);
-#endif
+        hls_poke_ocl(0x04, 1); // Global Interrupt Enable
+        hls_poke_ocl(0x08, 1); // Enable ap_done interrupt
+        hls_poke_ocl(0x10, input_addr & 0xffffffff);
+        hls_poke_ocl(0x14, (input_addr >> 32) & 0xffffffff);
+        hls_poke_ocl(0x1c, output_addr & 0xffffffff);
+        hls_poke_ocl(0x20, (output_addr >> 32) & 0xffffffff);
+        hls_poke_ocl(0x00, 1);
 
-#if defined(CSR_POLLING)
-        control_reg = 0;
-        while ((control_reg & (1 << 1)) == 0) {
-#ifdef SV_TEST
-            cl_peek_ocl(0x00, &control_reg);
-#else
-            fpga_pci_peek(pci_bar_handle, 0x00, &control_reg);
-#endif
-            printf("%d: %d --> control status: %x\n", i, 0, control_reg);
-#ifdef SV_TEST
-            sv_pause(100);
-#else
-            usleep(100);
-#endif
-        }
-#else /* CSR_POLLING */
-    #ifdef RR_IRQ_POLLING
-        rr_wait_irq(0);
-    #else
-        // This function would poll the 0th interrupt
-        interrupt_polling(0);
-    #endif // RR_IRQ_POLLING
-#ifdef SV_TEST
-        cl_peek_ocl(0x00, &control_reg);
-#else
-        fpga_pci_peek(pci_bar_handle, 0x00, &control_reg);
-#endif
-        printf("%d: %d --> control status: %x\n", i, 0, control_reg);
-#endif /* CSR_POLLING */
+        printf("wait for completion at i=%d\n", i);
+        hls_wait_task_complete(0x00);
 
-#ifdef SV_TEST
-        cl_peek_ocl(0x0c, &int_status_reg);
-#else
-        fpga_pci_peek(pci_bar_handle, 0x0c, &int_status_reg);
-#endif
+        hls_peek_ocl(0x0c, &int_status_reg);
         printf("%d: interrupt status: %d\n", i, int_status_reg);
 
-#ifdef SV_TEST
-        cl_poke_ocl(0x00, 1 << 4); // make it continue
-        cl_poke_ocl(0x0c, 1);
-        cl_peek_ocl(0x0c, &int_status_reg);
-#else
-        fpga_pci_poke(pci_bar_handle, 0x00, 1 << 4); // make it continue
-        fpga_pci_poke(pci_bar_handle, 0x0c, 1);
-        fpga_pci_peek(pci_bar_handle, 0x0c, &int_status_reg);
-#endif
+        hls_poke_ocl(0x00, 1 << 4); // make it continue
+        hls_poke_ocl(0x0c, 1);
+        hls_peek_ocl(0x0c, &int_status_reg);
         printf("%d: interrupt status: %d\n", i, int_status_reg);
     }
 
-    rc = do_dma_read(read_fd, (uint8_t*)read_buffer, total_output_size, MEM_16G, 0, slot_id);
+    rc = do_dma_read((uint8_t*)read_buffer, total_output_size, MEM_16G, 0, slot_id);
     fail_on(rc, out, "DMA read failed on DIMM 1");
 
     ofile = fopen("outputs.txt", "w+");
@@ -378,15 +279,8 @@ out:
     if (read_buffer != NULL) {
         free(read_buffer);
     }
-#if !defined(SV_TEST)
-    if (write_fd >= 0) {
-        close(write_fd);
-    }
-    if (read_fd >= 0) {
-        close(read_fd);
-    }
-#endif
     do_post_rr();
+    hls_exit();
     /* if there is an error code, exit with status 1 */
     return (rc != 0 ? 1 : 0);
 }

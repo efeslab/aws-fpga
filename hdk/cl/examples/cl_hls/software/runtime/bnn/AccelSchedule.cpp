@@ -4,16 +4,6 @@
 
 extern "C" {
 #include "test_common.h"
-#include <utils/sh_dpi_tasks.h>
-#include "cl_fpgarr.h"
-#ifdef SV_TEST
-# include <fpga_pci_sv.h>
-#else
-# include <fpga_pci.h>
-# include <fpga_mgmt.h>
-# include "fpga_dma.h"
-# include <utils/lcd.h>
-#endif
 }
 
 static Timer timers[N_LAYERS] = {
@@ -117,56 +107,22 @@ void run_accel_schedule(
     AccelSchedule& s
 ) {
   // weight mems
-  static Word* wt_i = (Word*) MEM_ALLOC( WT_WORDS*sizeof(Word) );
-  static Word* kh_i = (Word*) MEM_ALLOC( KH_WORDS*sizeof(Word) );
-  if (!wt_i || !kh_i) {
-    fprintf(stderr, "**** ERROR: Alloc wt_i or kh_i failed in %s\n", __FILE__);
-    exit(-2);
-  }
+  //static Word* wt_i = (Word*) MEM_ALLOC( WT_WORDS*sizeof(Word) );
+  //static Word* kh_i = (Word*) MEM_ALLOC( KH_WORDS*sizeof(Word) );
+  //if (!wt_i || !kh_i) {
+  //  fprintf(stderr, "**** ERROR: Alloc wt_i or kh_i failed in %s\n", __FILE__);
+  //  exit(-2);
+  //}
 
   const unsigned N = s.size();
   const unsigned LAYERS = 9;
 
-  int write_fd = -1;
-  int read_fd = -1;
-  int device_num = 0;
-  int slot_id = 0;
   uint32_t int_status_reg, control_reg;
   uint64_t accel_wt_i, accel_kh_i, accel_data_i, accel_data_o;
   int rc = 0;
 
-#if defined(SCOPE)
-  svScope scope;
-  scope = svGetScopeFromName("tb");
-  svSetScope(scope);
-#endif
-
-#ifndef SV_TEST
-  pci_bar_handle_t pci_bar_handle = PCI_BAR_HANDLE_INIT;
-  rc = fpga_pci_get_dma_device_num(FPGA_DMA_XDMA, slot_id, &device_num);
-  fail_on((rc = (rc != 0)? 1:0), out, "Unable to get xdma device number.");
-
-  rc = fpga_pci_attach(slot_id, pf_id, bar_id, fpga_attach_flags, &pci_bar_handle);
-  fail_on(rc, out, "Unable to attach to the AFI on slot id %d", slot_id);
-#endif
-
-#if !defined(SV_TEST)
-  read_fd = fpga_dma_open_queue(FPGA_DMA_XDMA, slot_id,
-      /*channel*/ 0, /*is_read*/ true);
-  fail_on((rc = (read_fd < 0) ? -1 : 0), out, "unable to open read dma queue");
-
-  write_fd = fpga_dma_open_queue(FPGA_DMA_XDMA, slot_id,
-      /*channel*/ 0, /*is_read*/ false);
-  fail_on((rc = (write_fd < 0) ? -1 : 0), out, "unable to open write dma queue");
-#else
+#ifdef SV_TEST
   setup_send_rdbuf_to_c((uint8_t*)data_i, DMEM_WORDS * sizeof(Word));
-  printf("Starting DDR init...\n");
-  init_ddr();
-  printf("Done DDR init...\n");
-  rc = init_rr(0);
-  fail_on(rc, out, "init rr failed");
-  do_pre_rr();
-  fail_on(is_replay(), out, "Skip application code, replaying");
 #endif
 
   accel_data_i = 0;
@@ -179,8 +135,8 @@ void run_accel_schedule(
   printf("accel_wt_i: %lx\n", accel_wt_i);
   printf("accel_kh_i: %lx\n", accel_kh_i);
 
-  rc = do_dma_write(write_fd, (uint8_t*)data_i, input_words * sizeof(Word), accel_data_i, 0, slot_id); 
-  rc = do_dma_write(write_fd, (uint8_t*)data_o, output_words * sizeof(Word), accel_data_o, 0, slot_id); 
+  rc = do_dma_write((uint8_t*)data_i, input_words * sizeof(Word), accel_data_i, 0, slot_id); 
+  rc = do_dma_write((uint8_t*)data_o, output_words * sizeof(Word), accel_data_o, 0, slot_id); 
   fail_on(rc, out, "DMA write failed");
   printf("accel rounds N: %d\n", N);
 
@@ -193,45 +149,39 @@ void run_accel_schedule(
 
     timers[LAYERS-1-layer_idx].start();
 
-    do_dma_write(write_fd, (uint8_t*)s[i].wt, WT_WORDS * sizeof(Word), accel_wt_i, 0, slot_id);
-    do_dma_write(write_fd, (uint8_t*)s[i].kh, KH_WORDS * sizeof(Word), accel_kh_i, 0, slot_id);
+    do_dma_write((uint8_t*)s[i].wt, WT_WORDS * sizeof(Word), accel_wt_i, 0, slot_id);
+    do_dma_write((uint8_t*)s[i].kh, KH_WORDS * sizeof(Word), accel_kh_i, 0, slot_id);
 
-    cl_peek_ocl(0x00, &control_reg);
+    hls_peek_ocl(0x00, &control_reg);
     printf("control status: %x\n", control_reg);
 
-#ifdef SV_TEST
-    cl_poke_ocl(0x10, accel_wt_i & 0xffffffff);
-    cl_poke_ocl(0x14, (accel_wt_i >> 32) & 0xffffffff);
-    cl_poke_ocl(0x1c, accel_kh_i & 0xffffffff);
-    cl_poke_ocl(0x20, (accel_kh_i >> 32) & 0xffffffff);
-    cl_poke_ocl(0x28, accel_data_i & 0xffffffff);
-    cl_poke_ocl(0x2c, (accel_data_i >> 32) & 0xffffffff);
-    cl_poke_ocl(0x34, accel_data_o & 0xffffffff);
-    cl_poke_ocl(0x38, (accel_data_o >> 32) & 0xffffffff);
-    cl_poke_ocl(0x40, s[i].n_inputs);
-    cl_poke_ocl(0x48, s[i].n_outputs);
-    cl_poke_ocl(0x50, (i==0) ? input_words : 0);
-    cl_poke_ocl(0x58, (i==N-1) ? output_words : 0);
-    cl_poke_ocl(0x60, s[i].layer_mode);
-    cl_poke_ocl(0x68, dmem_mode);
-    cl_poke_ocl(0x70, s[i].width_mode);
-    cl_poke_ocl(0x78, s[i].norm_mode);
+    hls_poke_ocl(0x10, accel_wt_i & 0xffffffff);
+    hls_poke_ocl(0x14, (accel_wt_i >> 32) & 0xffffffff);
+    hls_poke_ocl(0x1c, accel_kh_i & 0xffffffff);
+    hls_poke_ocl(0x20, (accel_kh_i >> 32) & 0xffffffff);
+    hls_poke_ocl(0x28, accel_data_i & 0xffffffff);
+    hls_poke_ocl(0x2c, (accel_data_i >> 32) & 0xffffffff);
+    hls_poke_ocl(0x34, accel_data_o & 0xffffffff);
+    hls_poke_ocl(0x38, (accel_data_o >> 32) & 0xffffffff);
+    hls_poke_ocl(0x40, s[i].n_inputs);
+    hls_poke_ocl(0x48, s[i].n_outputs);
+    hls_poke_ocl(0x50, (i==0) ? input_words : 0);
+    hls_poke_ocl(0x58, (i==N-1) ? output_words : 0);
+    hls_poke_ocl(0x60, s[i].layer_mode);
+    hls_poke_ocl(0x68, dmem_mode);
+    hls_poke_ocl(0x70, s[i].width_mode);
+    hls_poke_ocl(0x78, s[i].norm_mode);
 
-    cl_poke_ocl(0x04, 1); // Global Interrupt Enable
-    cl_poke_ocl(0x08, 1); // Enable ap_done interrupt
-    cl_poke_ocl(0x00, 1);
+    hls_poke_ocl(0x04, 1); // Global Interrupt Enable
+    hls_poke_ocl(0x08, 1); // Enable ap_done interrupt
+    hls_poke_ocl(0x00, 1);
 
-    control_reg = 0;
-    while ((control_reg & (1 << 1)) == 0) {
-        cl_peek_ocl(0x00, &control_reg);
-        printf("control status: %x\n", control_reg);
-        sv_pause(100);
-    }
-    sv_pause(100);
+    hls_wait_task_complete(0x00);
+    hls_wait(100);
 
-    cl_poke_ocl(0x00, 1 << 4); // make it continue
-    cl_poke_ocl(0x0c, 1);
-    cl_peek_ocl(0x0c, &int_status_reg);
+    hls_poke_ocl(0x00, 1 << 4); // make it continue
+    hls_poke_ocl(0x0c, 1);
+    hls_peek_ocl(0x0c, &int_status_reg);
     printf("interrupt status: %d\n", int_status_reg);
 
     //top(
@@ -244,13 +194,12 @@ void run_accel_schedule(
     //    s[i].width_mode,
     //    s[i].norm_mode
     //);
-#endif
 
 
     timers[LAYERS-1-layer_idx].stop();
   }
 
-  rc = do_dma_read(read_fd, (uint8_t*)data_o, output_words * sizeof(Word), accel_data_o, 0, slot_id);
+  rc = do_dma_read((uint8_t*)data_o, output_words * sizeof(Word), accel_data_o, 0, slot_id);
   fail_on(rc, out, "DMA read failed");
 
   //MEM_FREE( wt_i );

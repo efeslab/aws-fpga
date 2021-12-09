@@ -27,6 +27,7 @@
 #include <poll.h>
 
 #include <utils/sh_dpi_tasks.h>
+#include "cl_fpgarr.h"
 
 #ifdef SV_TEST
 # include <fpga_pci_sv.h>
@@ -37,8 +38,11 @@
 # include <utils/lcd.h>
 #endif
 
-#include "cl_fpgarr.h"
-
+/*
+ * MACRO Configuration
+ */
+#undef CSR_POLLING
+#define RR_IRQ_POLLING
 /**
  * Fills the buffer with bytes read from urandom.
  */
@@ -63,26 +67,36 @@ void setup_send_rdbuf_to_c(uint8_t *read_buffer, size_t buffer_size);
 int send_rdbuf_to_c(char* rd_buf);
 #endif
 
-inline int do_dma_read(int fd, uint8_t *buffer, size_t size,
+extern int write_fd;
+extern int read_fd;
+extern int slot_id;
+inline int do_dma_read(uint8_t *buffer, size_t size,
     uint64_t address, int channel, int slot_id)
 {
 #if defined(SV_TEST)
     sv_fpga_start_cl_to_buffer(slot_id, channel, size, (uint64_t) buffer, address);
     return 0;
 #else
-    return fpga_dma_burst_read(fd, buffer, size, address);
+    return fpga_dma_burst_read(read_fd, buffer, size, address);
 #endif
 }
 
-inline int do_dma_write(int fd, uint8_t *buffer, size_t size,
+inline int do_dma_write(uint8_t *buffer, size_t size,
     uint64_t address, int channel, int slot_id)
 {
 #if defined(SV_TEST)
     sv_fpga_start_buffer_to_cl(slot_id, channel, size, (uint64_t) buffer, address);
     return 0;
 #else
-    return fpga_dma_burst_write(fd, buffer, size, address);
+    return fpga_dma_burst_write(write_fd, buffer, size, address);
 #endif
 }
 
-void init_ddr_wrap();
+void hls_wait_task_complete(uint64_t ctl_reg_addr);
+void hls_peek_ocl(uint64_t addr, uint32_t *data);
+void hls_poke_ocl(uint64_t addr, uint32_t data);
+void hls_wait(uint32_t unit);
+int hls_interrupt_polling(int interrupt_number);
+
+int hls_init();
+void hls_exit();
