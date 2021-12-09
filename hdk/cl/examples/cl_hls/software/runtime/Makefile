@@ -17,7 +17,7 @@ INCLUDES = -I$(SDK_DIR)/userspace/include
 
 CC = gcc
 CXX = g++
-CFLAGS = -DCONFIG_LOGLEVEL=4 -g -Wall $(INCLUDES)
+CFLAGS = -DCONFIG_LOGLEVEL=4 -g $(INCLUDES)
 
 LDLIBS = -lfpga_mgmt
 

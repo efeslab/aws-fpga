@@ -4,8 +4,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
-#include "../minizip/zip.h"
-#include "../minizip/unzip.h"
+#include <minizip/zip.h>
+#include <minizip/unzip.h>
 
 //------------------------------------------------------------------------
 // Functions for reading a zip archive
