@@ -158,12 +158,13 @@ void do_replay_start() {
 #endif
 }
 void do_replay_stop() {
-    uint64_t rt_replay_bits =
-        rr_wait_counter_stable(RT_REPLAY_BITS_LO, RT_REPLAY_BITS_HI);
-    if (rt_replay_bits != replay_bits) {
-        log_error("runtime replay bits (%ld) != replay bits in the trace (%ld)",
+    uint64_t rt_replay_bits;
+    do {
+        rt_replay_bits =
+            rr_wait_counter_stable(RT_REPLAY_BITS_LO, RT_REPLAY_BITS_HI);
+        log_info("runtime replay bits (%ld) =?= replay bits in the trace (%ld)",
                 rt_replay_bits, replay_bits);
-    }
+    } while (rt_replay_bits != replay_bits);
     rr_dealloc_buffer(replay_buffer);
 
     if (is_validate()) {

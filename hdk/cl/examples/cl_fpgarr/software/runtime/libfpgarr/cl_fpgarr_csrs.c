@@ -34,7 +34,7 @@ uint64_t rr_wait_counter_stable(uint64_t lo_csr_idx, uint64_t hi_csr_idx) {
     rr_cfg_peek64(lo_csr_idx, hi_csr_idx, &newcnt);
     do {
         oldcnt = newcnt;
-        rr_wait(POLLING_INTERVAL);
+        rr_wait(RR_POLLING_INTERVAL);
         rr_cfg_peek64(lo_csr_idx, hi_csr_idx, &newcnt);
     } while (newcnt != oldcnt);
     return newcnt;
