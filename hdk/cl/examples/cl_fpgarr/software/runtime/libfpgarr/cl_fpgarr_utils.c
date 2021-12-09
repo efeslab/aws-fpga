@@ -103,6 +103,7 @@ void init_irq() {
     irq_buffer_size = 4096;
     irq_buffer =
         rr_alloc_setup_buffer(irq_buffer_size, INT_BUF_UPDATE);
+    memset(irq_buffer, 0, irq_buffer_size);
 }
 void destroy_irq() {
     rr_dealloc_buffer(irq_buffer);
