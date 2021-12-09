@@ -20,7 +20,8 @@ set TOP top_sp
 
 ## Replace with the name of your module
 set CL_MODULE cl_dram_dma
-
+set SYNTH_SCRIPTS ./synth_${CL_MODULE}.tcl
+set_param general.maxThreads 32
 #################################################
 ## Command-line Arguments
 #################################################
@@ -37,7 +38,7 @@ set clock_recipe_b      [lindex $argv  9]
 set clock_recipe_c      [lindex $argv 10]
 set uram_option         [lindex $argv 11]
 set notify_via_sns      [lindex $argv 12]
-set VDEFINES            [lindex $argv 13]
+set VDEFINES            [lrange $argv 13 end]
 ##################################################
 ## Flow control variables
 ##################################################
@@ -185,6 +186,10 @@ switch $strategy {
         puts "DEFAULT strategy."
         source $HDK_SHELL_DIR/build/scripts/strategy_DEFAULT.tcl
     }
+    "GEFEI" {
+        puts "GEFEI's strategy."
+        source $HDK_SHELL_DIR/build/scripts/strategy_GEFEI.tcl
+    }
     default {
         puts "$strategy is NOT a valid strategy. Defaulting to strategy DEFAULT."
         source $HDK_SHELL_DIR/build/scripts/strategy_DEFAULT.tcl
@@ -195,6 +200,10 @@ puts "AWS FPGA: ([clock format [clock seconds] -format %T]) Calling the encrypt.
 
 #Encrypt source code
 source encrypt.tcl
+
+#Include cl_fpgarr source code
+set CL_FPGARR_ROOT $::env(CL_FPGARR_ROOT)
+source ${CL_FPGARR_ROOT}/build/scripts/cl_fpgarr_src.tcl
 
 #Set the Device Type
 source $HDK_SHELL_DIR/build/scripts/device_type.tcl
@@ -218,7 +227,7 @@ set_param hd.clockRoutingWireReduction false
 ### CL XPR OOC Synthesis
 ##################################################
 if {${cl.synth}} {
-   source -notrace ./synth_${CL_MODULE}.tcl
+   source -notrace ${SYNTH_SCRIPTS}
    set synth_dcp ${timestamp}.CL.post_synth.dcp
 } else {
    open_checkpoint ../checkpoints/CL.post_synth.dcp
