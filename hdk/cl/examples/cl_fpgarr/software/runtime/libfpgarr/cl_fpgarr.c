@@ -18,6 +18,8 @@ rr_mode_t rr_mode = RR_MODE_INIT;
 
 static uint64_t buffer_size;
 static struct timespec rr_start_time;
+static uint64_t rr_user_timer_ns = 0;
+static struct timespec rr_user_start_time;
 
 int init_rr(int slot_id) {
     char *rr_mode_env = getenv("RR_MODE");
@@ -195,6 +197,7 @@ void do_post_rr() {
     timespec_sub(&rr_start_time, &rr_end_time, &elapsed_time);
     elapsed_ns = elapsed_time.tv_sec * 1000000000L + elapsed_time.tv_nsec;
     log_info("RR pre_rr->post_rr, elapsed ns: %ld", elapsed_ns);
+    log_info("RR user timer, elapsed ns: %ld", rr_user_timer_ns);
     if (is_record()) {
         do_record_stop();
     } else if (is_replay()) {
@@ -228,4 +231,17 @@ void rr_wait_irq(uint32_t irq_id) {
 #endif
     }
     irq_buffer[offset] = 0;
+}
+
+void rr_user_timer_begin() {
+    clock_gettime(CLOCK_MONOTONIC, &rr_user_start_time);
+}
+
+void rr_user_timer_end() {
+    struct timespec rr_user_end_time, elapsed_time;
+    uint64_t elapsed_ns;
+    clock_gettime(CLOCK_MONOTONIC, &rr_user_end_time);
+    timespec_sub(&rr_user_start_time, &rr_user_end_time, &elapsed_time);
+    elapsed_ns = elapsed_time.tv_sec * 1000000000L + elapsed_time.tv_nsec;
+    rr_user_timer_ns += elapsed_ns;
 }

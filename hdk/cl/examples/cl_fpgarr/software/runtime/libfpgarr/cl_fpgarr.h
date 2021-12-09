@@ -13,4 +13,7 @@ extern uint8_t is_record();
 extern uint8_t is_replay();
 extern uint8_t is_validate();
 
+extern void rr_user_timer_begin();
+extern void rr_user_timer_end();
+
 #endif // CL_FPGARR_H
