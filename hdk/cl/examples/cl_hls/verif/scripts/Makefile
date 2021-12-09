@@ -91,8 +91,9 @@ C_FILES      = $(C_TEST_NAME) $(C_SDK_USR_UTILS_DIR)/sh_dpi_tasks.c $(C_COMMON_D
 include ${CL_FPGARR_ROOT}/software/runtime/libfpgarr/Makefile.inc
 C_FILES += $(LIBFPGARR_SRC)
 VCS_OPT = -CFLAGS "-I$(LIBFPGARR_PATH)"
-VCS_OPT += -CFLAGS "-I$(XILINX_VITIS)/include"
+VCS_OPT += -CFLAGS "-I$(XILINX_HLS)/include"
 ifdef HLS_DESIGN
+  VCS_OPT += -CFLAGS "-DRR_POLLING_INTERVAL=100"
   VCS_OPT += -CFLAGS "-I$(C_SRC_DIR)/$(HLS_DESIGN)"
   VCS_OPT += -CXXFLAGS "-lminizip" -CXXFLAGS "-lz" -CXXFLAGS "-lstdc++"
   VCS_OPT += -CFLAGS "-lminizip" -CFLAGS "-lz"
