@@ -43,6 +43,7 @@
  */
 #undef CSR_POLLING
 #define RR_IRQ_POLLING
+#undef DBG_CSR_LOG
 /**
  * Fills the buffer with bytes read from urandom.
  */

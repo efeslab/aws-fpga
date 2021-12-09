@@ -190,8 +190,10 @@ void hls_wait_task_complete(uint64_t ctl_reg_addr) {
 #else
     hls_interrupt_polling(0);
 #endif
+  #ifdef DBG_CSR_LOG
     hls_peek_ocl(ctl_reg_addr, &control_reg);
     printf("control status: %x\n", control_reg);
+  #endif
 #endif
 }
 

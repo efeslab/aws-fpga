@@ -143,7 +143,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     const long input_size_per_frame = 3 * NUM_3D_TRI;
     const long output_size_per_frame = NUM_FB;
 #ifndef SV_TEST
-    const long num_of_frame = 100;
+    const long num_of_frame = 1000;
 #else
     const long num_of_frame = 1;
 #endif
@@ -200,7 +200,9 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 
     for (int i = 0; i < num_of_frame; i++) {
         hls_peek_ocl(0x00, &control_reg);
+#ifdef DBG_CSR_LOG
         printf("%d: %d --> control status: %x\n", i, 0, control_reg);
+#endif
 
         uint64_t input_addr = 0 + input_size_per_frame * sizeof(bit32) * i;
         uint64_t output_addr = MEM_16G + output_size_per_frame * sizeof(bit32) * i;
@@ -213,16 +215,22 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         hls_poke_ocl(0x20, (output_addr >> 32) & 0xffffffff);
         hls_poke_ocl(0x00, 1);
 
+#ifdef DBG_CSR_LOG
         printf("wait for completion at i=%d\n", i);
+#endif
         hls_wait_task_complete(0x00);
 
         hls_peek_ocl(0x0c, &int_status_reg);
+#ifdef DBG_CSR_LOG
         printf("%d: interrupt status: %d\n", i, int_status_reg);
+#endif
 
         hls_poke_ocl(0x00, 1 << 4); // make it continue
         hls_poke_ocl(0x0c, 1);
         hls_peek_ocl(0x0c, &int_status_reg);
+#ifdef DBG_CSR_LOG
         printf("%d: interrupt status: %d\n", i, int_status_reg);
+#endif
     }
 
     rc = do_dma_read((uint8_t*)read_buffer, total_output_size, MEM_16G, 0, slot_id);
