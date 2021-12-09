@@ -933,6 +933,7 @@ always_ff @(posedge clk)
       dbg_csr.replay_axi_total <= replay_axi_total;
    end
 
+`ifdef DEBUG_ILA
 // need debug:
 // probe 0: hi_full
 // probe 1: lo_empty
@@ -967,4 +968,5 @@ ila_inst (
    .probe11(lo_valid_satisfied),
    .probe12(rt_replay_bits)
 );
+`endif
 endmodule
