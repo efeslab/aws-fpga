@@ -52,6 +52,7 @@ all: $(ALL_HLS_DESIGN)
 	@for i in $^; do $(MAKE) HLS_DESIGN=$$i; done
 clean: $(ALL_HLS_DESIGN)
 	@for i in $^; do $(MAKE) HLS_DESIGN=$$i clean; done
+	rm *.elf
 endif
 
 check_env:
