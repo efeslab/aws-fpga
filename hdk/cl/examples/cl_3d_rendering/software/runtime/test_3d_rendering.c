@@ -39,6 +39,8 @@
 #include "cl_fpgarr.h"
 
 #define MEM_16G              (1ULL << 34)
+#undef CSR_POLLING
+#define RR_IRQ_POLLING
 
 void usage(const char* program_name);
 int dma_example_hwsw_cosim(int slot_id, size_t buffer_size);
@@ -223,11 +225,11 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     printf("Starting DDR init...\n");
     init_ddr();
     printf("Done DDR init...\n");
+#endif
     rc = init_rr(0);
     fail_on(rc, out, "init rr failed");
     do_pre_rr();
     fail_on(is_replay(), out, "Skip application code, replaying");
-#endif
 
     for (int k = 0; k < num_of_frame; k++) {
         for (int i = 0; i < NUM_3D_TRI; i++) {
@@ -278,7 +280,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         fpga_pci_poke(pci_bar_handle, 0x00, 1);
 #endif
 
-#if defined(CSR_POLLING) || defined(SV_TEST)
+#if defined(CSR_POLLING)
         control_reg = 0;
         while ((control_reg & (1 << 1)) == 0) {
 #ifdef SV_TEST
@@ -294,8 +296,12 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 #endif
         }
 #else /* CSR_POLLING */
+    #ifdef RR_IRQ_POLLING
+        rr_wait_irq(0);
+    #else
         // This function would poll the 0th interrupt
         interrupt_polling(0);
+    #endif // RR_IRQ_POLLING
 #ifdef SV_TEST
         cl_peek_ocl(0x00, &control_reg);
 #else
