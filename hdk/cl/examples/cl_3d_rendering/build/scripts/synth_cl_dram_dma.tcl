@@ -91,6 +91,10 @@ read_bd [ list \
   $HDK_SHELL_DESIGN_DIR/ip/cl_axi_interconnect/cl_axi_interconnect.bd
 ]
 
+puts "CL_FPGARR: setting up cl_fpgarr synthesis"
+# Include cl_fpgarr synthesis related scripts
+source ${CL_FPGARR_ROOT}/build/scripts/cl_fpgarr_synth.tcl
+
 puts "AWS FPGA: Reading AWS constraints";
 
 #Read all the constraints
