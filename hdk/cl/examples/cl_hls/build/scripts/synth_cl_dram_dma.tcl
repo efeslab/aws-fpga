@@ -91,6 +91,11 @@ read_bd [ list \
   $HDK_SHELL_DESIGN_DIR/ip/cl_axi_interconnect/cl_axi_interconnect.bd
 ]
 
+# Include HLS IPs if there is any
+if [file exist $CL_DIR/build/scripts/$::env(HLS_DESIGN)_ip.tcl] {
+    source $CL_DIR/build/scripts/$::env(HLS_DESIGN)_ip.tcl
+}
+
 puts "CL_FPGARR: setting up cl_fpgarr synthesis"
 # Include cl_fpgarr synthesis related scripts
 source ${CL_FPGARR_ROOT}/build/scripts/cl_fpgarr_synth.tcl
