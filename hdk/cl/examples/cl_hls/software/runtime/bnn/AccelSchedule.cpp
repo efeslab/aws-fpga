@@ -130,17 +130,21 @@ void run_accel_schedule(
   accel_wt_i = 2*MEM_1G;
   accel_kh_i = 3*MEM_1G;
 
+#ifdef DBG_CSR_LOG
   printf("accel_data_i: %lx\n", accel_data_i);
   printf("accel_data_o: %lx\n", accel_data_o);
   printf("accel_wt_i: %lx\n", accel_wt_i);
   printf("accel_kh_i: %lx\n", accel_kh_i);
   printf("input_words: %d\n", input_words);
   printf("output_words: %d\n", output_words);
+#endif
 
   rc = do_dma_write((uint8_t*)data_i, input_words * sizeof(Word), accel_data_i, 0, slot_id); 
   //rc = do_dma_write((uint8_t*)data_o, output_words * sizeof(Word), accel_data_o, 0, slot_id); 
   fail_on(rc, out, "DMA write failed");
+#ifdef DBG_CSR_LOG
   printf("accel rounds N: %d\n", N);
+#endif
 
   // Invoke accelerator once for each element in the schedule
   for (unsigned i = 0; i < N; ++i) {
@@ -155,7 +159,9 @@ void run_accel_schedule(
     do_dma_write((uint8_t*)s[i].kh, KH_WORDS * sizeof(Word), accel_kh_i, 0, slot_id);
 
     hls_peek_ocl(0x00, &control_reg);
+#ifdef DBG_CSR_LOG
     printf("control status: %x\n", control_reg);
+#endif
 
     hls_poke_ocl(0x10, accel_wt_i & 0xffffffff);
     hls_poke_ocl(0x14, (accel_wt_i >> 32) & 0xffffffff);
@@ -179,12 +185,13 @@ void run_accel_schedule(
     hls_poke_ocl(0x00, 1);
 
     hls_wait_task_complete(0x00);
-    hls_wait(100);
 
     hls_poke_ocl(0x00, 1 << 4); // make it continue
     hls_poke_ocl(0x0c, 1);
     hls_peek_ocl(0x0c, &int_status_reg);
+#ifdef DBG_CSR_LOG
     printf("interrupt status: %d\n", int_status_reg);
+#endif
 
     //top(
     //    wt_i, kh_i, data_i, data_o,

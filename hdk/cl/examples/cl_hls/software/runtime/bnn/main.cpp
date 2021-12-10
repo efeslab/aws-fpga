@@ -17,6 +17,8 @@ extern "C" {
 
 extern int main_bnn(int argc, char** argv);
 extern int main_random();
+/* use the stdout logger */
+const struct logger *logger = &logger_stdout;
 
 #if defined(SV_TEST) && defined(INT_MAIN)
 extern "C" int test_main(uint32_t *exit_code)
@@ -40,6 +42,16 @@ int main(int argc, char** argv)
   int rc = 0;
   const bool USE_BNN = getenv("USE_BNN") != NULL;
 
+  /* setup logging to print to stdout */
+  rc = log_init("test_dram_dma_hwsw_cosim");
+  fail_on(rc, out, "Unable to initialize the log.");
+  rc = log_attach(logger, NULL, 0);
+  fail_on(rc, out, "%s", "Unable to attach to the log.");
+
+  /* initialize the fpga_plat library */
+  rc = fpga_mgmt_init();
+  fail_on(rc, out, "Unable to initialize the fpga_mgmt library");
+
   // ---------------------------------------------------------------------
   // [FPGARR] Initialize RR
   // ---------------------------------------------------------------------
@@ -60,10 +72,10 @@ int main(int argc, char** argv)
     rc = main_random();
   }
 
+out:
   do_post_rr();
   hls_exit();
 
-out:
 #if !defined(SV_TEST)
   return rc;
 #elif defined(INT_MAIN)
