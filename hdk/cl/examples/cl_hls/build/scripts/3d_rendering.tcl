@@ -25,5 +25,5 @@ file copy -force $CL_DIR/design/hls_accel/3d_rendering/rendering_udiv_16ns_8ns_8
 file copy -force $CL_DIR/design/hls_accel/3d_rendering/rendering_urem_16ns_8ns_8_20_1.v $TARGET_DIR
 file copy -force $CL_DIR/design/hls_accel/3d_rendering/rendering.v $TARGET_DIR
 file copy -force $CL_DIR/design/hls_accel/3d_rendering/rendering_zculling.v $TARGET_DIR
-file copy -force $CL_DIR/design/hls_accel/3d_rendering/rendering_zculling_z_buffer_V_ram.dat $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/3d_rendering/data/rendering_zculling_z_buffer_V_ram.dat $TARGET_DIR
 file copy -force $CL_DIR/design/hls_accel/3d_rendering/rendering_zculling_z_buffer_V.v $TARGET_DIR
