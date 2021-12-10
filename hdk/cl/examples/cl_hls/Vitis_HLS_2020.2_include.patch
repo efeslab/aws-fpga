@@ -1,0 +1,124 @@
+--- a/Xilinx/Vitis_HLS/2020.2/include/mpfr.h	2021-12-04 22:26:02.262739545 -0500
++++ b/Xilinx/Vitis_HLS/2020.2/include/mpfr.h	2021-11-23 17:52:37.401463785 -0500
+@@ -37,7 +37,7 @@
+ 
+ /* Check if GMP is included, and try to include it (Works with local GMP) */
+ #ifndef __GMP_H__
+-# include "gmp.h"
++# include <gmp.h>
+ #endif
+ 
+ /* Check if stdio.h is included or if the user wants FILE */
+@@ -179,7 +179,7 @@
+ 
+ typedef __mpfr_struct mpfr_t[1];
+ typedef __mpfr_struct *mpfr_ptr;
+-typedef __gmp_const __mpfr_struct *mpfr_srcptr;
++typedef  __mpfr_struct *mpfr_srcptr;
+ 
+ /* For those who need a direct and fast access to the sign field.
+    However it is not in the API, thus use it at your own risk: it might
+@@ -200,7 +200,7 @@
+     + __GMP_ATTRIBUTE_PURE   Attribute for math functions.
+     + __GMP_NOTHROW          For C++: can't throw .
+     + __GMP_EXTERN_INLINE    Attribute for inline function.
+-    * __gmp_const            const (Supports for K&R compiler only for mpfr.h).
++    *             const (Supports for K&R compiler only for mpfr.h).
+     + __GMP_DECLSPEC_EXPORT  compiling to go into a DLL
+     + __GMP_DECLSPEC_IMPORT  compiling to go into a application
+ */
+@@ -242,8 +242,8 @@
+ extern "C" {
+ #endif
+ 
+-__MPFR_DECLSPEC __gmp_const char * mpfr_get_version _MPFR_PROTO ((void));
+-__MPFR_DECLSPEC __gmp_const char * mpfr_get_patches _MPFR_PROTO ((void));
++__MPFR_DECLSPEC  char * mpfr_get_version _MPFR_PROTO ((void));
++__MPFR_DECLSPEC  char * mpfr_get_patches _MPFR_PROTO ((void));
+ __MPFR_DECLSPEC int mpfr_buildopt_tls_p     _MPFR_PROTO ((void));
+ __MPFR_DECLSPEC int mpfr_buildopt_decimal_p _MPFR_PROTO ((void));
+ 
+@@ -258,7 +258,7 @@
+ 
+ __MPFR_DECLSPEC void mpfr_set_default_rounding_mode _MPFR_PROTO((mpfr_rnd_t));
+ __MPFR_DECLSPEC mpfr_rnd_t mpfr_get_default_rounding_mode _MPFR_PROTO((void));
+-__MPFR_DECLSPEC __gmp_const char *
++__MPFR_DECLSPEC  char *
+    mpfr_print_rnd_mode _MPFR_PROTO((mpfr_rnd_t));
+ 
+ __MPFR_DECLSPEC void mpfr_clear_flags _MPFR_PROTO ((void));
+@@ -338,9 +338,9 @@
+ __MPFR_DECLSPEC int
+   mpfr_set_q _MPFR_PROTO ((mpfr_ptr, mpq_srcptr, mpfr_rnd_t));
+ __MPFR_DECLSPEC int
+-  mpfr_set_str _MPFR_PROTO ((mpfr_ptr, __gmp_const char *, int, mpfr_rnd_t));
++  mpfr_set_str _MPFR_PROTO ((mpfr_ptr,  char *, int, mpfr_rnd_t));
+ __MPFR_DECLSPEC int
+-  mpfr_init_set_str _MPFR_PROTO ((mpfr_ptr, __gmp_const char *, int,
++  mpfr_init_set_str _MPFR_PROTO ((mpfr_ptr,  char *, int,
+                                   mpfr_rnd_t));
+ __MPFR_DECLSPEC int
+   mpfr_set4 _MPFR_PROTO ((mpfr_ptr, mpfr_srcptr, mpfr_rnd_t, int));
+@@ -412,34 +412,34 @@
+ __MPFR_DECLSPEC size_t mpfr_out_str _MPFR_PROTO ((FILE*, int, size_t,
+                                                   mpfr_srcptr, mpfr_rnd_t));
+ #define mpfr_fprintf __gmpfr_fprintf
+-__MPFR_DECLSPEC int mpfr_fprintf _MPFR_PROTO ((FILE*, __gmp_const char*,
++__MPFR_DECLSPEC int mpfr_fprintf _MPFR_PROTO ((FILE*,  char*,
+                                                ...));
+ #endif
+-__MPFR_DECLSPEC int mpfr_printf _MPFR_PROTO ((__gmp_const char*, ...));
+-__MPFR_DECLSPEC int mpfr_asprintf _MPFR_PROTO ((char**, __gmp_const char*,
++__MPFR_DECLSPEC int mpfr_printf _MPFR_PROTO (( char*, ...));
++__MPFR_DECLSPEC int mpfr_asprintf _MPFR_PROTO ((char**,  char*,
+                                                 ...));
+-__MPFR_DECLSPEC int mpfr_sprintf _MPFR_PROTO ((char*, __gmp_const char*,
++__MPFR_DECLSPEC int mpfr_sprintf _MPFR_PROTO ((char*,  char*,
+                                                ...));
+ __MPFR_DECLSPEC int mpfr_snprintf _MPFR_PROTO ((char*, size_t,
+-                                                __gmp_const char*, ...));
++                                                 char*, ...));
+ 
+ #ifdef _MPFR_H_HAVE_VA_LIST
+ #ifdef _MPFR_H_HAVE_FILE
+ #define mpfr_vfprintf __gmpfr_vfprintf
+-__MPFR_DECLSPEC int mpfr_vfprintf _MPFR_PROTO ((FILE*, __gmp_const char*,
++__MPFR_DECLSPEC int mpfr_vfprintf _MPFR_PROTO ((FILE*,  char*,
+                                                 va_list));
+ #endif /* _MPFR_H_HAVE_FILE */
+ #define mpfr_vprintf __gmpfr_vprintf
+ #define mpfr_vasprintf __gmpfr_vasprintf
+ #define mpfr_vsprintf __gmpfr_vsprintf
+ #define mpfr_vsnprintf __gmpfr_vsnprintf
+-__MPFR_DECLSPEC int mpfr_vprintf _MPFR_PROTO ((__gmp_const char*, va_list));
+-__MPFR_DECLSPEC int mpfr_vasprintf _MPFR_PROTO ((char**, __gmp_const char*,
++__MPFR_DECLSPEC int mpfr_vprintf _MPFR_PROTO (( char*, va_list));
++__MPFR_DECLSPEC int mpfr_vasprintf _MPFR_PROTO ((char**,  char*,
+                                                  va_list));
+-__MPFR_DECLSPEC int mpfr_vsprintf _MPFR_PROTO ((char*, __gmp_const char*,
++__MPFR_DECLSPEC int mpfr_vsprintf _MPFR_PROTO ((char*,  char*,
+                                                va_list));
+ __MPFR_DECLSPEC int mpfr_vsnprintf _MPFR_PROTO ((char*, size_t,
+-                                                __gmp_const char*, va_list));
++                                                 char*, va_list));
+ #endif /* _MPFR_H_HAVE_VA_LIST */
+ 
+ __MPFR_DECLSPEC int mpfr_pow _MPFR_PROTO ((mpfr_ptr, mpfr_srcptr,
+@@ -704,7 +704,7 @@
+                                            mpfr_srcptr, mpfr_rnd_t));
+ __MPFR_DECLSPEC int mpfr_fms _MPFR_PROTO ((mpfr_ptr, mpfr_srcptr, mpfr_srcptr,
+                                            mpfr_srcptr, mpfr_rnd_t));
+-__MPFR_DECLSPEC int mpfr_sum _MPFR_PROTO ((mpfr_ptr, mpfr_ptr *__gmp_const,
++__MPFR_DECLSPEC int mpfr_sum _MPFR_PROTO ((mpfr_ptr, mpfr_ptr *,
+                                            unsigned long, mpfr_rnd_t));
+ 
+ __MPFR_DECLSPEC void mpfr_free_cache _MPFR_PROTO ((void));
+@@ -712,7 +712,7 @@
+ __MPFR_DECLSPEC int  mpfr_subnormalize _MPFR_PROTO ((mpfr_ptr, int,
+                                                      mpfr_rnd_t));
+ 
+-__MPFR_DECLSPEC int  mpfr_strtofr _MPFR_PROTO ((mpfr_ptr, __gmp_const char *,
++__MPFR_DECLSPEC int  mpfr_strtofr _MPFR_PROTO ((mpfr_ptr,  char *,
+                                                 char **, int, mpfr_rnd_t));
+ 
+ __MPFR_DECLSPEC size_t mpfr_custom_get_size   _MPFR_PROTO ((mpfr_prec_t));
