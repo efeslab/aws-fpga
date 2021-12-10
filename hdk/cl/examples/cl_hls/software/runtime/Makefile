@@ -21,7 +21,7 @@ CFLAGS = -DCONFIG_LOGLEVEL=4 -g $(INCLUDES)
 
 LDLIBS = -lfpga_mgmt
 
-ALL_HLS_DESIGN = 3d_rendering bnn
+ALL_HLS_DESIGN = 3d_rendering bnn digit_recognition
 
 LIB_SRC = test_common.c
 LIB_HEADER = test_common.h

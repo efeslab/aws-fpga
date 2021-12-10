@@ -1,0 +1,14 @@
++incdir+${CL_ROOT}/design/hls_accel/digit_recognition
+${CL_ROOT}/design/hls_accel/digit_recognition/DigitRec_control_s_axi.v
+${CL_ROOT}/design/hls_accel/digit_recognition/DigitRec_gmem_m_axi.v
+${CL_ROOT}/design/hls_accel/digit_recognition/DigitRec_mul_mul_15ns_17ns_31_4_1.v
+${CL_ROOT}/design/hls_accel/digit_recognition/DigitRec_mux_104_32_1_1.v
+${CL_ROOT}/design/hls_accel/digit_recognition/DigitRec_mux_1207_32_1_1.v
+${CL_ROOT}/design/hls_accel/digit_recognition/DigitRec_mux_164_32_1_1.v
+${CL_ROOT}/design/hls_accel/digit_recognition/DigitRec_mux_32_32_1_1.v
+${CL_ROOT}/design/hls_accel/digit_recognition/DigitRec_popcount.v
+${CL_ROOT}/design/hls_accel/digit_recognition/DigitRec_results.v
+${CL_ROOT}/design/hls_accel/digit_recognition/DigitRec_test_set_V.v
+${CL_ROOT}/design/hls_accel/digit_recognition/DigitRec_training_set_V_0.v
+${CL_ROOT}/design/hls_accel/digit_recognition/DigitRec_urem_15ns_10ns_15_19_1.v
+${CL_ROOT}/design/hls_accel/digit_recognition/DigitRec.v

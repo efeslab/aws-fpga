@@ -43,27 +43,7 @@
 void usage(const char* program_name);
 int dma_example_hwsw_cosim(int slot_id, size_t buffer_size);
 
-#if !defined(SV_TEST)
-/* use the stdout logger */
-const struct logger *logger = &logger_stdout;
-#else
-# define log_error(...) printf(__VA_ARGS__); printf("\n")
-# define log_info(...) printf(__VA_ARGS__); printf("\n")
-#endif
-
-/* Main will be different for different simulators and also for C. The
- * definition is in sdk/userspace/utils/include/sh_dpi_tasks.h file */
-#if defined(SV_TEST) && defined(INT_MAIN)
-/* For cadence and questa simulators main has to return some value */
-int test_main(uint32_t *exit_code)
-
-#elif defined(SV_TEST)
-void test_main(uint32_t *exit_code)
-
-#else 
-int main(int argc, char **argv)
-
-#endif
+int hls_main(int argc, char **argv)
 {
     size_t buffer_size;
 #if defined(SV_TEST)
@@ -72,15 +52,7 @@ int main(int argc, char **argv)
     buffer_size = 1ULL << 24;
 #endif
 
-    /* The statements within SCOPE ifdef below are needed for HW/SW
-     * co-simulation with VCS */
-#if defined(SCOPE)
-    svScope scope;
-    scope = svGetScopeFromName("tb");
-    svSetScope(scope);
-#endif
-
-    int rc;
+    int rc = 0;
     int slot_id = 0;
 
 #if !defined(SV_TEST)
@@ -95,40 +67,13 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    /* setup logging to print to stdout */
-    rc = log_init("test_dram_dma_hwsw_cosim");
-    fail_on(rc, out, "Unable to initialize the log.");
-    rc = log_attach(logger, NULL, 0);
-    fail_on(rc, out, "%s", "Unable to attach to the log.");
-
-    /* initialize the fpga_plat library */
-    rc = fpga_mgmt_init();
-    fail_on(rc, out, "Unable to initialize the fpga_mgmt library");
-
 #endif
 
     rc = dma_example_hwsw_cosim(slot_id, buffer_size);
     fail_on(rc, out, "DMA example failed");
 
 out:
-
-#if !defined(SV_TEST)
     return rc;
-#else
-    if (rc != 0) {
-        printf("TEST FAILED \n");
-    }
-    else {
-        printf("TEST PASSED \n");
-    }
-    /* For cadence and questa simulators main has to return some value */
-    #ifdef INT_MAIN
-    *exit_code = 0;
-    return 0;
-    #else
-    *exit_code = 0;
-    #endif
-#endif
 }
 
 void usage(const char* program_name) {
@@ -164,20 +109,6 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
         goto out;
     }
 
-    printf("Memory has been allocated, initializing DMA and filling the buffer...\n");
-#ifdef SV_TEST
-    setup_send_rdbuf_to_c((uint8_t*)read_buffer, total_input_size);
-    printf("Starting DDR init...\n");
-    init_ddr();
-    printf("Done DDR init...\n");
-#endif
-    rc = hls_init();
-    fail_on(rc, out, "init hls failed");
-    rc = init_rr(0);
-    fail_on(rc, out, "init rr failed");
-    do_pre_rr();
-    fail_on(is_replay(), out, "Skip application code, replaying");
-
     for (int k = 0; k < num_of_frame; k++) {
         for (int i = 0; i < NUM_3D_TRI; i++) {
             write_buffer[k*NUM_3D_TRI*3 + 3*i] =
@@ -197,10 +128,9 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     rc = do_dma_write((uint8_t*)write_buffer, total_input_size, 0, 0, slot_id);
     fail_on(rc, out, "DMA write failed on DIMM 0");
 
-
     for (int i = 0; i < num_of_frame; i++) {
-        hls_peek_ocl(0x00, &control_reg);
 #ifdef DBG_CSR_LOG
+        hls_peek_ocl(0x00, &control_reg);
         printf("%d: %d --> control status: %x\n", i, 0, control_reg);
 #endif
 
@@ -220,15 +150,15 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 #endif
         hls_wait_task_complete(0x00);
 
-        hls_peek_ocl(0x0c, &int_status_reg);
 #ifdef DBG_CSR_LOG
+        hls_peek_ocl(0x0c, &int_status_reg);
         printf("%d: interrupt status: %d\n", i, int_status_reg);
 #endif
 
         hls_poke_ocl(0x00, 1 << 4); // make it continue
         hls_poke_ocl(0x0c, 1);
-        hls_peek_ocl(0x0c, &int_status_reg);
 #ifdef DBG_CSR_LOG
+        hls_peek_ocl(0x0c, &int_status_reg);
         printf("%d: interrupt status: %d\n", i, int_status_reg);
 #endif
     }
@@ -287,8 +217,6 @@ out:
     if (read_buffer != NULL) {
         free(read_buffer);
     }
-    do_post_rr();
-    hls_exit();
     /* if there is an error code, exit with status 1 */
     return (rc != 0 ? 1 : 0);
 }

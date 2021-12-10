@@ -47,32 +47,36 @@ endif
 export SIM_ROOT = $(CL_ROOT)/verif/sim/$(SIMULATOR)
 
 ifeq ($(C_TEST),test_null)
-  ifeq ($(AXI_MEMORY_MODEL), 1)
-    ifeq ($(ECC_DIRECT), 1)
-        export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv_fast_ecc_direct
-    else
-      ifeq ($(ECC_RAND), 1)
-        export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv_fast_ecc_rnd
-      else
-        ifeq ($(DDR_BKDR), 1)
-         export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv_fast_bkdr
-	else
-         export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv_fast
-	endif
-      endif
-    endif
+  ifdef HLS_DESIGN
+    export SIM_DIR = $(SIM_ROOT)/test_$(HLS_DESIGN)
   else
-   ifeq ($(ECC_DIRECT), 1)
-        export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv_ecc_direct
-    else
-      ifeq ($(ECC_RAND), 1)
-        export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv_ecc_rnd
+    ifeq ($(AXI_MEMORY_MODEL), 1)
+      ifeq ($(ECC_DIRECT), 1)
+          export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv_fast_ecc_direct
       else
-        ifeq ($(DDR_BKDR), 1)
-         export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv_bkdr
-	else
-         export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv
-	endif
+        ifeq ($(ECC_RAND), 1)
+          export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv_fast_ecc_rnd
+        else
+          ifeq ($(DDR_BKDR), 1)
+           export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv_fast_bkdr
+          else
+           export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv_fast
+          endif
+        endif
+      endif
+    else
+     ifeq ($(ECC_DIRECT), 1)
+          export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv_ecc_direct
+      else
+        ifeq ($(ECC_RAND), 1)
+          export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv_ecc_rnd
+        else
+          ifeq ($(DDR_BKDR), 1)
+           export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv_bkdr
+          else
+           export SIM_DIR = $(SIM_ROOT)/$(TEST)_sv
+          endif
+        endif
       endif
     endif
   endif

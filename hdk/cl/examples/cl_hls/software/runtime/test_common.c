@@ -139,43 +139,6 @@ out:
 }
 #endif
 
-
-#if defined(SV_TEST)
-static uint8_t *send_rdbuf_to_c_read_buffer = NULL;
-static size_t send_rdbuf_to_c_buffer_size = 0;
-
-void setup_send_rdbuf_to_c(uint8_t *read_buffer, size_t buffer_size)
-{
-    send_rdbuf_to_c_read_buffer = read_buffer;
-    send_rdbuf_to_c_buffer_size = buffer_size;
-}
-
-int send_rdbuf_to_c(char* rd_buf)
-{
-#ifndef VIVADO_SIM
-    /* Vivado does not support svGetScopeFromName */
-    svScope scope;
-    scope = svGetScopeFromName("tb");
-    svSetScope(scope);
-#endif
-    int i;
-
-    /* For Questa simulator the first 8 bytes are not transmitted correctly, so
-     * the buffer is transferred with 8 extra bytes and those bytes are removed
-     * here. Made this default for all the simulators. */
-    for (i = 0; i < send_rdbuf_to_c_buffer_size; ++i) {
-        send_rdbuf_to_c_read_buffer[i] = rd_buf[i+8];
-    }
-
-    /* end of line character is not transferered correctly. So assign that
-     * here. */
-    /*send_rdbuf_to_c_read_buffer[send_rdbuf_to_c_buffer_size - 1] = '\0';*/
-
-    return 0;
-}
-
-#endif
-
 void hls_wait_task_complete(uint64_t ctl_reg_addr) {
     uint32_t control_reg = 0;
 #ifdef CSR_POLLING
@@ -290,3 +253,94 @@ int hls_interrupt_polling(int interrupt_number) {
 out:
     return rc;
 }
+
+#if !defined(SV_TEST)
+/* use the stdout logger */
+const struct logger *logger = &logger_stdout;
+#else
+# define log_error(...) printf(__VA_ARGS__); printf("\n")
+# define log_info(...) printf(__VA_ARGS__); printf("\n")
+#endif
+
+extern int hls_main(int argc, char **argv);
+
+/* Main will be different for different simulators and also for C. The
+ * definition is in sdk/userspace/utils/include/sh_dpi_tasks.h file */
+#if defined(SV_TEST) && defined(INT_MAIN)
+/* For cadence and questa simulators main has to return some value */
+int test_main(uint32_t *exit_code)
+#elif defined(SV_TEST)
+void test_main(uint32_t *exit_code)
+#else
+int main(int argc, char **argv)
+#endif
+{
+#if defined(SV_TEST)
+    int argc = 0;
+    char *argv[2] = {"hls", NULL};
+#endif
+
+    int rc = 0;
+    /* The statements within SCOPE ifdef below are needed for HW/SW
+     * co-simulation with VCS */
+#if defined(SCOPE)
+    svScope scope;
+    scope = svGetScopeFromName("tb");
+    svSetScope(scope);
+#endif
+
+#if !defined(SV_TEST)
+    /* setup logging to print to stdout */
+    rc = log_init("test_hls");
+    fail_on(rc, out, "Unable to initialize the log.");
+    rc = log_attach(logger, NULL, 0);
+    fail_on(rc, out, "%s", "Unable to attach to the log.");
+
+    /* initialize the fpga_plat library */
+    rc = fpga_mgmt_init();
+    fail_on(rc, out, "Unable to initialize the fpga_mgmt library");
+#endif
+
+#if defined(SV_TEST)
+    // Set up DDR in simulation
+    printf("Starting DDR init...\n");
+    init_ddr();
+    printf("Done DDR init...\n");
+#endif
+
+    // Init RR
+    rc = hls_init();
+    fail_on(rc, out, "init hls failed");
+    rc = init_rr(0);
+    fail_on(rc, out, "init rr failed");
+    do_pre_rr();
+    fail_on(is_replay(), out, "Skip application code, replaying");
+
+    // Call the main function of HLS application
+    hls_main(argc, argv);
+
+out:
+    // Exit RR
+    do_post_rr();
+    hls_exit();
+
+#if !defined(SV_TEST)
+    return rc;
+#else
+    if (rc != 0) {
+        printf("TEST FAILED \n");
+    }
+    else {
+        printf("TEST PASSED \n");
+    }
+    /* For cadence and questa simulators main has to return some value */
+    #ifdef INT_MAIN
+    *exit_code = 0;
+    return 0;
+    #else
+    *exit_code = 0;
+    #endif
+#endif
+}
+
+

@@ -1,0 +1,17 @@
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/hls.vh $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_control_s_axi.v $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_gmem_m_axi.v $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_mul_mul_15ns_17ns_31_4_1.v $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_mux_104_32_1_1.v $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_mux_1207_32_1_1.v $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_mux_164_32_1_1.v $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_mux_32_32_1_1.v $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_popcount.v $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_results_ram.dat $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_results.v $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_test_set_V_ram.dat $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_test_set_V.v $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_training_set_V_0_ram.dat $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_training_set_V_0.v $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec_urem_15ns_10ns_15_19_1.v $TARGET_DIR
+file copy -force $CL_DIR/design/hls_accel/digit_recognition/DigitRec.v $TARGET_DIR

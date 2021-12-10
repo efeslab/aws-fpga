@@ -158,8 +158,8 @@ void run_accel_schedule(
     do_dma_write((uint8_t*)s[i].wt, WT_WORDS * sizeof(Word), accel_wt_i, 0, slot_id);
     do_dma_write((uint8_t*)s[i].kh, KH_WORDS * sizeof(Word), accel_kh_i, 0, slot_id);
 
-    hls_peek_ocl(0x00, &control_reg);
 #ifdef DBG_CSR_LOG
+    hls_peek_ocl(0x00, &control_reg);
     printf("control status: %x\n", control_reg);
 #endif
 
@@ -188,8 +188,8 @@ void run_accel_schedule(
 
     hls_poke_ocl(0x00, 1 << 4); // make it continue
     hls_poke_ocl(0x0c, 1);
-    hls_peek_ocl(0x0c, &int_status_reg);
 #ifdef DBG_CSR_LOG
+    hls_peek_ocl(0x0c, &int_status_reg);
     printf("interrupt status: %d\n", int_status_reg);
 #endif
 
