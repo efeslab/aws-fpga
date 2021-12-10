@@ -311,10 +311,10 @@ end
          status[chan] = tb.is_dma_to_cl_done(.chan(chan));
          #10ns;
          timeout_count++;
-      end while ((status[chan] != 1) && (timeout_count < 40000)); // UNMATCHED !!
+      end while ((status[chan] != 1) && (timeout_count < 4000)); // UNMATCHED !!
       
-      if (timeout_count >= 40000) begin
-         $display("[%t] : *** ERROR *** Timeout waiting for dma transfers to cl, cnt %ld", $realtime, timeout_count);
+      if (timeout_count >= 4000) begin
+         $display("[%t] : *** ERROR *** Timeout waiting for dma transfers to cl", $realtime);
          $display("There is likely nothing wrong, you just try to transfer too much on pcis at a time.");
          error_count++;
       end
@@ -354,10 +354,10 @@ end
          status[chan] = tb.is_dma_to_buffer_done(.chan(chan));
          #10ns;
          timeout_count++;
-      end while ((status[chan] != 1) && (timeout_count < 40000)); // UNMATCHED !!
+      end while ((status[chan] != 1) && (timeout_count < 4000)); // UNMATCHED !!
       
-      if (timeout_count >= 40000) begin
-         $display("[%t] : *** ERROR *** Timeout waiting for dma transfers from cl, cnt %ld", $realtime, timeout_count);
+      if (timeout_count >= 4000) begin
+         $display("[%t] : *** ERROR *** Timeout waiting for dma transfers from cl", $realtime);
          $display("There is likely nothing wrong, you just try to transfer too much on pcis at a time.");
          error_count++;
       end
