@@ -37,6 +37,13 @@ LIBFPGARR_OBJ = $(LIBFPGARR_SRC:.c=.o)
 CXXFLAGS = $(CFLAGS) -I$(XILINX_HLS)/include
 LDLIBS += -lminizip -lz -lcrypto
 
+#### Helper functions
+RUN_RR = sudo RR_MODE=$(1) $(2)
+RR_NONE = $(call RUN_RR, none, $(1))
+RR_RECORDV = $(call RUN_RR, recordv, $(1))
+RR_REPLAYV = $(call RUN_RR, replayv, $(1))
+LOAD_AFI_TPL = sudo fpga-load-local-image -S 0 -I $(1)
+
 ifdef HLS_DESIGN
 BIN = $(HLS_DESIGN)_hw.elf
 CFLAGS += -I$(HLS_DESIGN)
@@ -45,11 +52,24 @@ include $(HLS_DESIGN)/Makefile.inc
 all: $(BIN)
 $(BIN): $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
 	$(HLS_DESIGN_COMPILER) -o $@ $(CFLAGS) $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)$ $(LDFLAGS) $(LDLIBS)
+.PHONY: test
+LOAD_AFI = $(call LOAD_AFI_TPL, $(HLS_DESIGN_AFIG_ID))
+CMDLINE = $(HLS_DESIGN_TEST_ENV) ./$(BIN) $(HLS_DESIGN_TEST_ARGS)
+test: $(BIN)
+	$(LOAD_AFI)
+	$(call RR_NONE, $(CMDLINE)) 2>&1 | tee $(HLS_DESIGN)_none.log
+	$(LOAD_AFI)
+	$(call RR_RECORDV, $(CMDLINE)) 2>&1 | tee $(HLS_DESIGN)_recordv.log
+	$(LOAD_AFI)
+	$(call RR_REPLAYV, $(CMDLINE)) 2>&1 | tee $(HLS_DESIGN)_replayv.log
 clean:
 	rm -rf $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
 else
 all: $(ALL_HLS_DESIGN)
 	@for i in $^; do $(MAKE) HLS_DESIGN=$$i; done
+test_all: $(ALL_HLS_DESIGN)
+	# This cannot be paralleled so do not use $(MAKE)
+	@for i in $^; do make HLS_DESIGN=$$i test; done
 clean: $(ALL_HLS_DESIGN)
 	@for i in $^; do $(MAKE) HLS_DESIGN=$$i clean; done
 	rm *.elf
