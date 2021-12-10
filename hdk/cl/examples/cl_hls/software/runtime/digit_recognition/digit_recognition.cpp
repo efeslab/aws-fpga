@@ -42,7 +42,7 @@ extern "C" int hls_main(int argc, char ** argv)
   struct timeval start, end;
   int rc = 0;
   int slot_id = 0;
-  int int_status_reg;
+  uint32_t int_status_reg;
 
   // sdsoc version host code
   // allocate space for hardware function
@@ -110,7 +110,7 @@ extern "C" int hls_main(int argc, char ** argv)
   hls_poke_ocl(0x00, 1);
 
 #ifdef DBG_CSR_LOG
-  printf("wait for completion at i=%d\n", i);
+  printf("wait for completion\n");
 #endif
   hls_wait_task_complete(0x00);
 
@@ -140,7 +140,7 @@ extern "C" int hls_main(int argc, char ** argv)
   hls_poke_ocl(0x00, 1);
 
 #ifdef DBG_CSR_LOG
-  printf("wait for completion at i=%d\n", i);
+  printf("wait for completion\n");
 #endif
   hls_wait_task_complete(0x00);
 
