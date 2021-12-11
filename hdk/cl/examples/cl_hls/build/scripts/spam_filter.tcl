@@ -1,0 +1,27 @@
+set HLS_DESIGN_DIR $CL_DIR/design/hls_accel/spam_filter
+file copy -force $HLS_DESIGN_DIR/SgdLR.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_READ_TRAINING_DATA_proc.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_aesl_mux_load_4_1125_x_i8P0A_i64_i64.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_compute.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_compute_gradient_V_0.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_compute_lut_V.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_control_s_axi.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_dataflow_in_loop_TRAINING_INST.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_dataflow_in_loop_TRAINING_INST_entry6.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_dataflow_in_loop_TRAINING_INST_training_instance_V_0.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_dataflow_in_loop_TRAINING_INST_training_instance_V_0_memcore.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_dataflow_parent_loop_proc.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_fifo_w13_d2_S.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_fifo_w64_d2_S.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_fifo_w8_d2_S.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_gmem_m_axi.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_label_local_V_0.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_mul_32s_16s_44_2_1.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_mul_32s_32s_51_2_1.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_mul_mul_28s_16s_44_4_1.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/SgdLR_theta_local_V_0.v $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/data/SgdLR_compute_lut_V_rom.dat $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/data/SgdLR_dataflow_in_loop_TRAINING_INST_training_instance_V_0_memcore_ram.dat $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/data/SgdLR_label_local_V_0_ram.dat $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/data/SgdLR_theta_local_V_0_ram.dat $TARGET_DIR
+file copy -force $HLS_DESIGN_DIR/hls.vh $TARGET_DIR
