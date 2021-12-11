@@ -96,9 +96,11 @@ if [file exist $CL_DIR/build/scripts/$::env(HLS_DESIGN)_ip.tcl] {
     source $CL_DIR/build/scripts/$::env(HLS_DESIGN)_ip.tcl
 }
 
-puts "CL_FPGARR: setting up cl_fpgarr synthesis"
-# Include cl_fpgarr synthesis related scripts
-source ${CL_FPGARR_ROOT}/build/scripts/cl_fpgarr_synth.tcl
+if { [catch {puts "EXCLUDE_RR=$::env(EXCLUDE_RR)"} msg ] } {
+  puts "CL_FPGARR: setting up cl_fpgarr synthesis"
+  # Include cl_fpgarr synthesis related scripts
+  source ${CL_FPGARR_ROOT}/build/scripts/cl_fpgarr_synth.tcl
+}
 
 puts "AWS FPGA: Reading AWS constraints";
 
