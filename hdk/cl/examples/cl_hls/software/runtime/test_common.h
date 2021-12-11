@@ -70,7 +70,16 @@ static inline int do_dma_read(uint8_t *buffer, size_t size,
     uint64_t address, int channel, int slot_id)
 {
 #if defined(SV_TEST)
-    sv_fpga_start_cl_to_buffer(slot_id, channel, size, (uint64_t) buffer, address);
+    size_t transferred = 0;
+    size_t step = 8192;
+    while (transferred < size) {
+        size_t curr_size = (size - transferred);
+        if (curr_size > step) curr_size = step;
+        sv_fpga_start_cl_to_buffer(slot_id, channel, curr_size, (uint64_t) buffer, address);
+        transferred += step;
+        buffer += step;
+        address += step;
+    }
     return 0;
 #else
     return fpga_dma_burst_read(read_fd, buffer, size, address);
@@ -81,7 +90,16 @@ static inline int do_dma_write(uint8_t *buffer, size_t size,
     uint64_t address, int channel, int slot_id)
 {
 #if defined(SV_TEST)
-    sv_fpga_start_buffer_to_cl(slot_id, channel, size, (uint64_t) buffer, address);
+    size_t transferred = 0;
+    size_t step = 8192;
+    while (transferred < size) {
+        size_t curr_size = (size - transferred);
+        if (curr_size > step) curr_size = step;
+        sv_fpga_start_buffer_to_cl(slot_id, channel, curr_size, (uint64_t) buffer, address);
+        transferred += step;
+        buffer += step;
+        address += step;
+    }
     return 0;
 #else
     return fpga_dma_burst_write(write_fd, buffer, size, address);
