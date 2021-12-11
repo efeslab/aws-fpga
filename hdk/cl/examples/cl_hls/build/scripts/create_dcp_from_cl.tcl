@@ -203,7 +203,9 @@ source encrypt.tcl
 
 #Include cl_fpgarr source code
 set CL_FPGARR_ROOT $::env(CL_FPGARR_ROOT)
-source ${CL_FPGARR_ROOT}/build/scripts/cl_fpgarr_src.tcl
+if { [catch {puts "EXCLUDE_RR=$::env(EXCLUDE_RR)"} msg ] } {
+  source ${CL_FPGARR_ROOT}/build/scripts/cl_fpgarr_src.tcl
+}
 
 #Set the Device Type
 source $HDK_SHELL_DIR/build/scripts/device_type.tcl
