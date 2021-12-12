@@ -21,7 +21,7 @@ CFLAGS = -DCONFIG_LOGLEVEL=4 -g $(INCLUDES)
 
 LDLIBS = -lfpga_mgmt
 
-ALL_HLS_DESIGN = 3d_rendering bnn digit_recognition
+ALL_HLS_DESIGN = 3d_rendering bnn digit_recognition face_detection spam_filter optical_flow sssp sha256
 
 LIB_SRC = test_common.c
 LIB_HEADER = test_common.h
@@ -43,6 +43,8 @@ RR_NONE = $(call RUN_RR, none, $(1))
 RR_RECORDV = $(call RUN_RR, recordv, $(1))
 RR_REPLAYV = $(call RUN_RR, replayv, $(1))
 LOAD_AFI_TPL = sudo fpga-load-local-image -S 0 -I $(1)
+HLS_GEN_DIR=../../gen
+NUM_TEST?=1
 
 ifdef HLS_DESIGN
 BIN = $(HLS_DESIGN)_hw.elf
@@ -53,15 +55,17 @@ all: $(BIN)
 $(BIN): $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
 	$(HLS_DESIGN_COMPILER) -o $@ $(CFLAGS) $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)$ $(LDFLAGS) $(LDLIBS)
 .PHONY: test
-LOAD_AFI = $(call LOAD_AFI_TPL, $(HLS_DESIGN_AFIG_ID))
+LOAD_AFI = $(call LOAD_AFI_TPL, $(HLS_DESIGN_AGFI_ID))
 CMDLINE = $(HLS_DESIGN_TEST_ENV) ./$(BIN) $(HLS_DESIGN_TEST_ARGS)
 test: $(BIN)
-	$(LOAD_AFI)
-	$(call RR_NONE, $(CMDLINE)) 2>&1 | tee $(HLS_DESIGN)_none.log
-	$(LOAD_AFI)
-	$(call RR_RECORDV, $(CMDLINE)) 2>&1 | tee $(HLS_DESIGN)_recordv.log
-	$(LOAD_AFI)
-	$(call RR_REPLAYV, $(CMDLINE)) 2>&1 | tee $(HLS_DESIGN)_replayv.log
+	for i in seq -w 1 $(NUM_TEST); do \
+	    $(LOAD_AFI); \
+	    $(call RR_NONE, $(CMDLINE)) 2>&1 | tee $(HLS_DESIGN)_$$i_none.log; \
+	    $(LOAD_AFI); \
+	    $(call RR_RECORDV, $(CMDLINE)) 2>&1 | tee $(HLS_DESIGN)_$$i_recordv.log; \
+	    $(LOAD_AFI); \
+	    $(call RR_REPLAYV, $(CMDLINE)) 2>&1 | tee $(HLS_DESIGN)_$$i_replayv.log; \
+	done
 clean:
 	rm -rf $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
 else
