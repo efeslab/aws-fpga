@@ -24,6 +24,7 @@ extern "C" {
 }
 
 #define MEM_1G (1LL*1024LL*1024LL*1024LL)
+#define NUM_LOOP 150
 
 extern "C" int hls_main(int argc, char ** argv) 
 {
@@ -88,7 +89,7 @@ extern "C" int hls_main(int argc, char ** argv)
   const uint64_t accel_output_addr = MEM_1G;
   const uint64_t accel_output_size = MAX_HEIGHT*MAX_WIDTH*sizeof(velocity_t);
 
-  {
+  for (int i=0; i < NUM_LOOP; ++i) {
     do_dma_write((uint8_t*)frames, accel_frame_size, accel_frame_addr, 0, slot_id);
     fail_on(rc, out, "DMA write failed");
 

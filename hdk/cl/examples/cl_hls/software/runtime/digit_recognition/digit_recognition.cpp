@@ -28,6 +28,7 @@ extern "C" {
 }
 
 #define MEM_1G (1LL*1024LL*1024LL*1024LL)
+#define NUM_LOOP 1000
 
 extern "C" int hls_main(int argc, char ** argv) 
 {
@@ -88,77 +89,79 @@ extern "C" int hls_main(int argc, char ** argv)
   const uint64_t test_in_size = sizeof(WholeDigitType) * NUM_TEST;
   const uint64_t result_size = sizeof(LabelType) * NUM_TEST;
 
-  rc = do_dma_write((uint8_t*)training_in0, training_in0_size, accel_traning_in0_addr, 0, slot_id);
-  fail_on(rc, out, "DMA write failed");
-  rc = do_dma_write((uint8_t*)training_in1, training_in1_size, accel_traning_in1_addr, 0, slot_id);
-  fail_on(rc, out, "DMA write failed");
-  rc = do_dma_write((uint8_t*)test_in, test_in_size, accel_test_in_addr, 0, slot_id);
-  fail_on(rc, out, "DMA write failed");
+  for (int i=0; i < NUM_LOOP; ++i) {
+    rc = do_dma_write((uint8_t*)training_in0, training_in0_size, accel_traning_in0_addr, 0, slot_id);
+    fail_on(rc, out, "DMA write failed");
+    rc = do_dma_write((uint8_t*)training_in1, training_in1_size, accel_traning_in1_addr, 0, slot_id);
+    fail_on(rc, out, "DMA write failed");
+    rc = do_dma_write((uint8_t*)test_in, test_in_size, accel_test_in_addr, 0, slot_id);
+    fail_on(rc, out, "DMA write failed");
 
-  // run the hardware function
-  // first call: transfer data
-  //DigitRec(training_in0, test_in, result, 0);
-  hls_poke_ocl(0x04, 1); // Enable Global Interrupt
-  hls_poke_ocl(0x08, 1); // Enable ap_done Interrupt
-  hls_poke_ocl(0x10, accel_traning_in0_addr & 0xffffffff);
-  hls_poke_ocl(0x14, (accel_traning_in0_addr >> 32) & 0xffffffff);
-  hls_poke_ocl(0x1c, accel_test_in_addr & 0xffffffff);
-  hls_poke_ocl(0x20, (accel_test_in_addr >> 32) & 0xffffffff);
-  hls_poke_ocl(0x28, accel_result_addr & 0xffffffff);
-  hls_poke_ocl(0x2c, (accel_result_addr >> 32) & 0xffffffff);
-  hls_poke_ocl(0x34, 0);
-  hls_poke_ocl(0x00, 1);
-
-#ifdef DBG_CSR_LOG
-  printf("wait for completion\n");
-#endif
-  hls_wait_task_complete(0x00);
+    // run the hardware function
+    // first call: transfer data
+    //DigitRec(training_in0, test_in, result, 0);
+    hls_poke_ocl(0x04, 1); // Enable Global Interrupt
+    hls_poke_ocl(0x08, 1); // Enable ap_done Interrupt
+    hls_poke_ocl(0x10, accel_traning_in0_addr & 0xffffffff);
+    hls_poke_ocl(0x14, (accel_traning_in0_addr >> 32) & 0xffffffff);
+    hls_poke_ocl(0x1c, accel_test_in_addr & 0xffffffff);
+    hls_poke_ocl(0x20, (accel_test_in_addr >> 32) & 0xffffffff);
+    hls_poke_ocl(0x28, accel_result_addr & 0xffffffff);
+    hls_poke_ocl(0x2c, (accel_result_addr >> 32) & 0xffffffff);
+    hls_poke_ocl(0x34, 0);
+    hls_poke_ocl(0x00, 1);
 
 #ifdef DBG_CSR_LOG
-  hls_peek_ocl(0x0c, &int_status_reg);
-  printf("interrupt status: %d\n", int_status_reg);
+    printf("wait for completion\n");
 #endif
-
-  hls_poke_ocl(0x00, 1 << 4); // make it continue
-  hls_poke_ocl(0x0c, 1);
-#ifdef DBG_CSR_LOG
-  hls_peek_ocl(0x0c, &int_status_reg);
-  printf("interrupt status: %d\n", int_status_reg);
-#endif
-
-  // second call: execute
-  //DigitRec(training_in1, test_in, result, 1);
-  hls_poke_ocl(0x04, 1); // Enable Global Interrupt
-  hls_poke_ocl(0x08, 1); // Enable ap_done Interrupt
-  hls_poke_ocl(0x10, accel_traning_in1_addr & 0xffffffff);
-  hls_poke_ocl(0x14, (accel_traning_in1_addr >> 32) & 0xffffffff);
-  hls_poke_ocl(0x1c, accel_test_in_addr & 0xffffffff);
-  hls_poke_ocl(0x20, (accel_test_in_addr >> 32) & 0xffffffff);
-  hls_poke_ocl(0x28, accel_result_addr & 0xffffffff);
-  hls_poke_ocl(0x2c, (accel_result_addr >> 32) & 0xffffffff);
-  hls_poke_ocl(0x34, 1);
-  hls_poke_ocl(0x00, 1);
+    hls_wait_task_complete(0x00);
 
 #ifdef DBG_CSR_LOG
-  printf("wait for completion\n");
+    hls_peek_ocl(0x0c, &int_status_reg);
+    printf("interrupt status: %d\n", int_status_reg);
 #endif
-  hls_wait_task_complete(0x00);
+
+    hls_poke_ocl(0x00, 1 << 4); // make it continue
+    hls_poke_ocl(0x0c, 1);
+#ifdef DBG_CSR_LOG
+    hls_peek_ocl(0x0c, &int_status_reg);
+    printf("interrupt status: %d\n", int_status_reg);
+#endif
+
+    // second call: execute
+    //DigitRec(training_in1, test_in, result, 1);
+    hls_poke_ocl(0x04, 1); // Enable Global Interrupt
+    hls_poke_ocl(0x08, 1); // Enable ap_done Interrupt
+    hls_poke_ocl(0x10, accel_traning_in1_addr & 0xffffffff);
+    hls_poke_ocl(0x14, (accel_traning_in1_addr >> 32) & 0xffffffff);
+    hls_poke_ocl(0x1c, accel_test_in_addr & 0xffffffff);
+    hls_poke_ocl(0x20, (accel_test_in_addr >> 32) & 0xffffffff);
+    hls_poke_ocl(0x28, accel_result_addr & 0xffffffff);
+    hls_poke_ocl(0x2c, (accel_result_addr >> 32) & 0xffffffff);
+    hls_poke_ocl(0x34, 1);
+    hls_poke_ocl(0x00, 1);
 
 #ifdef DBG_CSR_LOG
-  hls_peek_ocl(0x0c, &int_status_reg);
-  printf("interrupt status: %d\n", int_status_reg);
+    printf("wait for completion\n");
 #endif
+    hls_wait_task_complete(0x00);
 
-  hls_poke_ocl(0x00, 1 << 4); // make it continue
-  hls_poke_ocl(0x0c, 1);
 #ifdef DBG_CSR_LOG
-  hls_peek_ocl(0x0c, &int_status_reg);
-  printf("interrupt status: %d\n", int_status_reg);
+    hls_peek_ocl(0x0c, &int_status_reg);
+    printf("interrupt status: %d\n", int_status_reg);
 #endif
 
-  do_dma_read((uint8_t*)result, result_size, accel_result_addr, 0, slot_id);
-  fail_on(rc, out, "DMA read failed");
+    hls_poke_ocl(0x00, 1 << 4); // make it continue
+    hls_poke_ocl(0x0c, 1);
+#ifdef DBG_CSR_LOG
+    hls_peek_ocl(0x0c, &int_status_reg);
+    printf("interrupt status: %d\n", int_status_reg);
+#endif
 
+    do_dma_read((uint8_t*)result, result_size, accel_result_addr, 0, slot_id);
+    fail_on(rc, out, "DMA read failed");
+
+  }
   rr_user_timer_end();
 
   // check results

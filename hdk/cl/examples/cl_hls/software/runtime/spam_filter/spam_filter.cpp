@@ -24,6 +24,7 @@ extern "C" {
 }
 
 #define MEM_1G (1LL*1024LL*1024LL*1024LL)
+#define NUM_LOOP 70
 
 extern "C" int hls_main(int argc, char *argv[]) 
 {
@@ -115,46 +116,51 @@ extern "C" int hls_main(int argc, char *argv[])
   printf("labels_for_accel_size: %d\n", labels_for_accel_size);
   printf("param_for_accel_size: %d\n", param_for_accel_size);
 
-  rc = do_dma_write((uint8_t*)data_points_for_accel, data_points_for_accel_size, data_points_for_accel_addr, 0, slot_id);
-  fail_on(rc, out, "DMA write failed");
-  printf("data points done\n");
-  rc = do_dma_write((uint8_t*)labels_for_accel, labels_for_accel_size, labels_for_accel_addr, 0, slot_id);
-  fail_on(rc, out, "DMA write failed");
-  printf("labels done\n");
-  rc = do_dma_write((uint8_t*)param_for_accel, param_for_accel_size, param_for_accel_addr, 0, slot_id);
-  fail_on(rc, out, "DMA write failed");
-  printf("param done\n");
-  
-  // run the accelerator
-  for (int epoch = 0; epoch < NUM_EPOCHS; epoch ++ )
-  {
-    printf("epoch %d...\n", epoch);
-    //SgdLR(data_points_for_accel, labels_for_accel, param_for_accel, (epoch == 0), (epoch == 4));
-    hls_poke_ocl(0x04, 1);
-    hls_poke_ocl(0x08, 1);
-    hls_poke_ocl(0x10, data_points_for_accel_addr & 0xffffffff);
-    hls_poke_ocl(0x14, (data_points_for_accel_addr >> 32) & 0xffffffff);
-    hls_poke_ocl(0x1c, labels_for_accel_addr & 0xffffffff);
-    hls_poke_ocl(0x20, (labels_for_accel_addr >> 32) & 0xffffffff);
-    hls_poke_ocl(0x28, param_for_accel_addr & 0xffffffff);
-    hls_poke_ocl(0x2c, (param_for_accel_addr >> 32) & 0xffffffff);
-    hls_poke_ocl(0x34, (epoch == 0));
-    hls_poke_ocl(0x3c, (epoch == NUM_EPOCHS - 1));
-    hls_poke_ocl(0x00, 1);
+  for (int i=0; i < NUM_LOOP; ++i) {
+    rr_user_timer_begin();
 
-    hls_wait_task_complete(0x00);
+    rc = do_dma_write((uint8_t*)data_points_for_accel, data_points_for_accel_size, data_points_for_accel_addr, 0, slot_id);
+    fail_on(rc, out, "DMA write failed");
+    printf("data points done\n");
+    rc = do_dma_write((uint8_t*)labels_for_accel, labels_for_accel_size, labels_for_accel_addr, 0, slot_id);
+    fail_on(rc, out, "DMA write failed");
+    printf("labels done\n");
+    rc = do_dma_write((uint8_t*)param_for_accel, param_for_accel_size, param_for_accel_addr, 0, slot_id);
+    fail_on(rc, out, "DMA write failed");
+    printf("param done\n");
+    
+    // run the accelerator
+    for (int epoch = 0; epoch < NUM_EPOCHS; epoch ++ )
+    {
+      printf("epoch %d...\n", epoch);
+      //SgdLR(data_points_for_accel, labels_for_accel, param_for_accel, (epoch == 0), (epoch == 4));
+      hls_poke_ocl(0x04, 1);
+      hls_poke_ocl(0x08, 1);
+      hls_poke_ocl(0x10, data_points_for_accel_addr & 0xffffffff);
+      hls_poke_ocl(0x14, (data_points_for_accel_addr >> 32) & 0xffffffff);
+      hls_poke_ocl(0x1c, labels_for_accel_addr & 0xffffffff);
+      hls_poke_ocl(0x20, (labels_for_accel_addr >> 32) & 0xffffffff);
+      hls_poke_ocl(0x28, param_for_accel_addr & 0xffffffff);
+      hls_poke_ocl(0x2c, (param_for_accel_addr >> 32) & 0xffffffff);
+      hls_poke_ocl(0x34, (epoch == 0));
+      hls_poke_ocl(0x3c, (epoch == NUM_EPOCHS - 1));
+      hls_poke_ocl(0x00, 1);
 
-    hls_poke_ocl(0x00, 1 << 4);
-    hls_poke_ocl(0x0c, 1);
+      hls_wait_task_complete(0x00);
+
+      hls_poke_ocl(0x00, 1 << 4);
+      hls_poke_ocl(0x0c, 1);
+    }
+
+    rc = do_dma_read((uint8_t*)param_for_accel, param_for_accel_size, param_for_accel_addr, 0, slot_id);
+    fail_on(rc, out, "DMA read failed");
+    
+    // reorganize the parameter vector
+    for (int i = 0; i < NUM_FEATURES / F_VECTOR_SIZE; i ++ )
+      for (int j = 0; j < F_VECTOR_SIZE; j ++ )
+        param_vector[i*F_VECTOR_SIZE+j].range(FTYPE_TWIDTH-1, 0) = param_for_accel[i].range((j+1)*FTYPE_TWIDTH-1, j*FTYPE_TWIDTH);
+    rr_user_timer_end();
   }
-
-  rc = do_dma_read((uint8_t*)param_for_accel, param_for_accel_size, param_for_accel_addr, 0, slot_id);
-  fail_on(rc, out, "DMA read failed");
-  
-  // reorganize the parameter vector
-  for (int i = 0; i < NUM_FEATURES / F_VECTOR_SIZE; i ++ )
-    for (int j = 0; j < F_VECTOR_SIZE; j ++ )
-      param_vector[i*F_VECTOR_SIZE+j].range(FTYPE_TWIDTH-1, 0) = param_for_accel[i].range((j+1)*FTYPE_TWIDTH-1, j*FTYPE_TWIDTH);
 
   // check results
   printf("Checking results:\n");
