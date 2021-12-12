@@ -1,6 +1,6 @@
 open_project -reset proj
 
-add_files bf_kernel.cl
+add_files hls/bf_kernel.cl
 
 set_top bellman_ford
 
