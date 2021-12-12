@@ -35,7 +35,7 @@ LIBFPGARR_OBJ = $(LIBFPGARR_SRC:.c=.o)
 
 # For HLS
 CXXFLAGS = $(CFLAGS) -I$(XILINX_HLS)/include
-LDLIBS += -lminizip -lz
+LDLIBS += -lminizip -lz -lcrypto
 
 #### Helper functions
 RUN_RR = sudo RR_MODE=$(1) $(2)

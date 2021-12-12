@@ -99,8 +99,8 @@ VCS_OPT += -CFLAGS "-I$(XILINX_HLS)/include"
 ifdef HLS_DESIGN
   VCS_OPT += -CFLAGS "-DRR_POLLING_INTERVAL=100"
   VCS_OPT += -CFLAGS "-I$(C_SRC_DIR)/$(HLS_DESIGN)"
-  VCS_OPT += -CXXFLAGS "-lminizip" -CXXFLAGS "-lz" -CXXFLAGS "-lstdc++"
-  VCS_OPT += -CFLAGS "-lminizip" -CFLAGS "-lz"
+  VCS_OPT += -CXXFLAGS "-lminizip" -CXXFLAGS "-lz" -CXXFLAGS "-lstdc++" -CXXFLAGS "-lcrypto"
+  VCS_OPT += -CFLAGS "-lminizip" -CFLAGS "-lz" -CFLAGS "-lcrypto"
 endif
 
 ifeq ($(XCHK), 1)
