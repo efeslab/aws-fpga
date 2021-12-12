@@ -35,7 +35,7 @@ LIBFPGARR_OBJ = $(LIBFPGARR_SRC:.c=.o)
 
 # For HLS
 CXXFLAGS = $(CFLAGS) -I$(XILINX_HLS)/include
-LDLIBS += -lminizip -lz
+LDLIBS += -lminizip -lz -lcrypto
 
 ifdef HLS_DESIGN
 BIN = $(HLS_DESIGN)_hw.elf
