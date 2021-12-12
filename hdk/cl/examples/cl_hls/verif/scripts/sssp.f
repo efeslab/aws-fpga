@@ -1,0 +1,9 @@
++incdir+${CL_ROOT}/design/hls_accel/sssp
+${CL_ROOT}/design/hls_accel/sssp/AESL_FPSim_pkg.v
+${CL_ROOT}/design/hls_accel/sssp/bellman_ford_control_s_axi.v
+${CL_ROOT}/design/hls_accel/sssp/bellman_ford_dadd_64ns_64ns_64_5_full_dsp_1.v
+${CL_ROOT}/design/hls_accel/sssp/bellman_ford_dcmp_64ns_64ns_1_2_no_dsp_1.v
+${CL_ROOT}/design/hls_accel/sssp/bellman_ford_gmem_m_axi.v
+${CL_ROOT}/design/hls_accel/sssp/bellman_ford.v
+${CL_ROOT}/design/hls_accel/sssp/ip/bellman_ford_ap_dadd_3_full_dsp_64/sim/bellman_ford_ap_dadd_3_full_dsp_64.v
+${CL_ROOT}/design/hls_accel/sssp/ip/bellman_ford_ap_dcmp_0_no_dsp_64/sim/bellman_ford_ap_dcmp_0_no_dsp_64.v
