@@ -45,7 +45,7 @@ RR_RECORDV = $(call RUN_RR,recordv,$(1))
 RR_REPLAYV = $(call RUN_RR,replayv,$(1))
 LOAD_AFI_TPL = sudo fpga-load-local-image -S 0 -I $(1)
 HLS_GEN_DIR=../../gen
-NUM_TEST?=1
+NUM_TEST?=10
 AUTOMATE_TEST_OUT_DIR?=/mnt/output
 
 ifdef HLS_DESIGN
