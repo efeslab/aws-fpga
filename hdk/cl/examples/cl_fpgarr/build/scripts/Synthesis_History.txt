@@ -1,0 +1,342 @@
+GIT_COMMIT: run-id
+interconnect_dont_touch+PIPE16+dont_touch_lib_pipe+pblock*/CL 21_09_27-210608.nohup.out
+interconnect_dont_touch+PIPE16+dont_touch_lib_pipe+pblock*/CL 21_09_28-152248.nohup.out
+21_09_28-152312.nohup.out
+interconnect_dont_touch+PIPE16+dont_touch_lib_pipe+pblock*/CL strategy=CONGESTION
+21_09_28-152316.nohup.out
+interconnect_dont_touch+PIPE16+dont_touch_lib_pipe+pblock*/CL strategy=TIMING
+
+21_09_28-163411.nohup.out
+cl_dram_dma baseline + modified pnr_constraints
+
+21_09_29-002620.nohup.out
+interconnect_dont_touch+PIPE16+dont_touch_lib_pipe+pblock*/CL + wrapper_register_slice
+
+21_09_29-034711.nohup.out
+interconnect_dont_touch+PIPE16+dont_touch_lib_pipe+no_pblock + wrapper_register_slice
+
+21_09_29-175204.nohup.out
+interconnect_dont_touch+PIPE16+dont_touch_lib_pipe+pblock*/CL + wrapper_register_slice + *SH_DDR
+
+21_09_29-222538.nohup.out
+interconnect_dont_touch+PIPE16+dont_touch_lib_pipe+pblock*/CL + wrapper_register_slice + *SH_DDR + debug_hub_*bscanid_reg[*] (sorry, this does not take effect due to an if condition)
+
+21_09_30-190548.nohup.out
+interconnect_dont_touch+PIPE16+dont_touch_lib_pipe+pblock*/CL + wrapper_register_slice + *SH_DDR + jiac_wb
+
+21_10_02-223048.nohup.out
+all_my_work+customize_merge_tree + mjc_passthrough
+
+21_10_02-223631.nohup.out
+all_my_work+customize_merge_tree + mjc_WRITEBACK_MERGE_SEL
+
+21_10_18-214702.nohup.out
+commit: 1213a0f
+
+21_11_07-004156.nohup.out
+mjc_record+gefei_replay
+
+21_11_07-150555.nohup.out
+mjc_record+gefei_replay+trace_data bucketized by AXI_WIDTH
+
+21_11_07-181349.nohup.out
+mjc_record+gefei_replay+trace_data bucketized + avoid latches
+
+21_11_07-221113.nohup.out
+commit: 59dedff
+same as previous but applied more good HDL tips
+
+21_11_08-212123.nohup.out
+commit: bad456d
+same as previous + assume length is encoded in trace
+
+21_11_08-221054.nohup.out
+commit: fa3808d
+same as previous + try to trigger fsm optimization
+
+21_11_10-012919.nohup.out
+commit: d434668
+same as previous + trigger fsm optimization + 8-bit alignment + passed testing
+
+21_11_10-034819.nohup.out
+same as previous, try again
+
+21_11_10-095939.nohup.out
+same as previous, 32-bit alignment
+
+21_11_11-171226.nohup.out
+commit: 041d3d1
+replaced transkidbuf with fifo + almful
+
+21_11_12-035136.nohup.out
+commit: 5d94945
+duplicated merge tree worker, strategy_DEFAULT
+21_11_12-035417.nohup.out
+same as previous, strategy_EXPLORE
+21_11_12-035422.nohup.out
+same as previous, strategy_TIMING
+21_11_12-035427.nohup.out
+same as previous, strategy_CONGESTION
+
+21_11_12-135716.nohup.out (DEFAULT)
+21_11_12-135711.nohup.out (CONGESTION)
+commit: 983329f
+replace transkidbuf with fifo + almful + read_balance + register merge-tree out
+
+21_11_15-005322.nohup.out (DEFAULT)
+21_11_15-005550.nohup.out (CONGESTION)
+commit: 2f79ac6
+add validate_wb_bus
+
+21_11_15-164951.nohup.out (DEFAULT)
+21_11_15-164954.nohup.out (CONGESTION)
+commit: 69d5df0
+add registers when calc rt_replay_pkt_cnt
+add registers to rr_csrs
+add registers on the output of the merge tree
+
+21_11_15-172730.nohup.out (CONGESTION)
+commit: 4984bd4
+remove all-zero alignment padding enforcement to test timing
+
+21_11_16-024501.nohup.out (CONGESTION)
+commit: b5af7c6
+tweak some parameter and introduce new trials
+
+21_11_18-052541.nohup.out (CONGESTION)
+commit: 037ad94
+replace transkidbuf with fifo+alm in replay, reduce merge tree height, mjc trace merge fix
+
+21_11_18-052740.nohup.out (CONGESTION)
+same as previous, but with param:
+parameter RECORDER_PIPE_DEPTH=4;
+parameter MERGETREE_OUT_QUEUE_NSTAGES=1;
+parameter REPLAYER_PIPE_DEPTH=4;
+parameter CSR_PIPE_DEPTH=2;
+parameter RECORD_FIFO_DEPTH=128;
+parameter REPLAY_FIFO_DEPTH=32;
+
+21_11_19-150450.nohup.out (CONGESTION)
+21_11_19-150456.nohup.out (DEFAULT)
+21_11_19-150515.nohup.out (DEFAULT+125MHz)
+21_11_20-015302.nohup.out (GEFEI)
+commit: 37df414
+tried to optimize decoder length calc
+
+21_11_23-021223.nohup.out (GEFEI)
+21_11_23-021227.nohup.out (CONGESTION)
+21_11_23-021238.nohup.out (DEFAULT+125MHz)
+commit: e67ffd6
+fix wb_XXX_inst backpressure and expose some fifo underflow/overflow to CSR
+
+21_11_23-155245.nohup.out (GEFEI)
+commit: 5ee64f5
+register reset in trace_storage
+
+21_11_24-184915.nohup.out (GEFEI)
+21_11_24-184923.nohup.out (DEFAULT+125MHz)
+commit: fb8fc93
+fix cl_tst, buffer pcimB and pcimW for interconnect, remove dont_touch
+
+21_11_26-182007.nohup.out (GEFEI)
+commit: 1f834cd
+add ready-replayer, fix hi_pad_last, reduced rt_loge_crossbar dist
+
+21_11_26-210138.nohup.out (GEFEI)
+21_11_26-214736.nohup.out (DEFAULT+125MHz)
+commit: ab9a0a9
+change to more complex ready-replayer
+
+21_11_26-215050.nohup.out (GEFEI)
+commit: 3e4202a
+may this help timing?
+
+21_11_26-231105.nohup.out (GEFEI)
+commit: dabc980
+Changed rt_loge_crossbar dist, hope it helps timing.
+
+21_11_28-224340.nohup.out (GEFEI)
+21_11_28-224336.nohup.out (DEFAULT + 125MHz)
+commit: 6f42087
+Expand to 128 CSRS to debug incomplete record trace
+
+21_11_29-000341.nohup.out (GEFEI)
+commit: 41a4731
+Fix trace_rw arvalid protocol violation
+
+21_11_29-000806.nohup.out (GEFEI)
+commit: cf6192b
+Try to synthesis rr_pcim_pchk_interconect
+NOTE: pchk failed, abandon
+
+21_11_29-152926.nohup.out (GEFEI)
+commit: b6ca3a5
+expose pcim pchk reports to csr
+
+21_11_29-201839.nohup.out (GEFEI)
+commit: 5b564fb
+Fix trace_rw arvalid, second try
+
+21_11_29-224009.nohup.out (GEFEI)
+21_11_29-224054.nohup.out (DEFAULT + 125MHz)
+commit: 57b875a
+Add dbg csr for replay
+
+21_11_30-184355.nohup.out (DEFAULT + 125MHz)
+commit: e7d9306
+Add more dbg csr for replay (hi_pad_last)
+
+21_12_01-010701.nohup.out (DEFAULT + 125MHz)
+same as previous, remove fsm_encoding annotation.
+NOTE: route failed
+
+21_12_01-044508.nohup.out (DEFAULT + 125MHz)
+commit: f027ecf
+Add ila to debug trace_split
+
+21_12_02-031044.nohup.out (DEFAULT + 125MHz)
+commit: aaf611b
+Attempt to fix the replay stall problem and updated ila to trace the entire fsm
+veriable.
+
+21_12_03-040056.nohup.out (DEFAULT + 125MHz)
+commit: 1aca9dd
+add ila to debug replay stall due to almful
+
+21_12_03-041423.nohup.out (DEFAULT + 125MHz)
+commit: b28c258
+blindly try to increase the pkt_cnt_width
+
+21_12_04-005247.nohup.out (DEFAULT + 125MHz)
+commit: ae8b4a0
+try to fix replay deadlock due to reordering (I guess it is caused by
+reordering)
+
+21_12_06-055541.nohup.out (GEFEI)
+commit: 7a57758
+disabled a lot of debug related stuff and try timing with deadlock fix.
+
+21_12_06-150521.nohup.out (GEFEI)
+same as previous, disabled more ILA instance
+
+21_12_06-221120.nohup.out (GEFEI)
+commit: e4e2189
+flop the reset of cl_csrs
+
+21_12_07-190250.nohup.out (GEFEI)
+commit: 5b92717
+test tcl synthesis scripts seperation
+
+21_12_08-144202.nohup.out (GEFEI)
+commit: 228d0c2
+dram_dma axi_mstr ira2pcim
+
+21_12_08-194502.nohup.out (GEFEI)
+app: 3d_rendering
+commit: 840f103
+3d_rendering + irq2pcim
+
+21_12_08-201237.nohup.out (125MHz)
+app: 3d_rendering
+commit: 62aff35
+fix multiple-driver critical warning and test lower freq 3d_rendering
+
+(ABORTED!)
+21_12_09-045917.nohup.out (125MHz)
+21_12_09-051835.nohup.out (GEFEI)
+app: bnn
+commit: 0546cf8
+unified synthesis/compilation framework for hls benchmarks
+
+21_12_09-060616.nohup.out (GEFEI)
+21_12_09-060626.nohup.out (125MHz)
+app: dram_dma
+commit: d787519
+disable trace_split ila
+
+21_12_09-061040.nohup.out (GEFEI)
+21_12_09-061044.nohup.out (125MHz)
+app: 3d_rendering
+commit: d787519
+disable trace_split ila
+
+21_12_09-064818.nohup.out (GEFEI)
+21_12_09-064822.nohup.out (125MHz)
+app: bnn
+commit: d787519
+disable trace_split ila
+
+21_12_09-224235.nohup.out (GEFEI)
+21_12_09-224243.nohup.out (125MHz)
+21_12_10-035942.nohup.out (GEFEI) // just want to check whether randomness affect timing
+app: digit_recognition
+commit: 45ddb2e
+first trial
+
+21_12_10-211150.nohup.out (GEFEI)
+21_12_10-211225.nohup.out (125MHz)
+app: face_detection
+commit: 617f573
+first trial
+
+21_12_10-213413.nohup.out (GEFEI)
+21_12_10-213415.nohup.out (125MHz)
+app:spam_filter
+
+21_12_11-012328.nohup.out (GEFEI)
+app: 3d_rendering
+no RR
+commit: cd4fa8c
+
+21_12_11-031345.nohup.out (GEFEI)
+app: bnn
+no RR
+
+21_12_11-035340.nohup.out (GEFEI)
+app: digit_recognition
+no RR
+
+21_12_11-042231.nohup.out (GEFEI)
+app: face_detection
+no RR (FAILED)
+
+21_12_11-051949.nohup.out (GEFEI)
+app: spam_filter
+no RR
+
+21_12_11-063946.nohup.out (GEFEI)
+app: optical_flow
+no RR
+
+21_12_11-014936.nohup.out (GEFEI)
+21_12_11-014941.nohup.out (125MHz)
+app: optical_flow
+commit: a3efbf9
+first trial
+
+21_12_11-204801.nohup.out (GEFEI)
+21_12_11-204804.nohup.out (125MHz)
+app: sssp
+commit: 
+first trial
+
+21_12_11-224222.nohup.out (GEFEI)
+app: sssp
+commit:
+no RR (OK)
+
+21_12_11-233015.nohup.out (GEFEI)
+21_12_11-233207.nohup.out (125MHz)
+app:sha256
+commit:
+first trial
+
+21_12_12-024811.nohup.out
+app:sha256
+no RR
+
+21_12_12-185349.nohup.out (GEFEI)
+21_12_12-185437.nohup.out (125MHz)
+app: mobilenet
+commit: 8e0797b
+first trial

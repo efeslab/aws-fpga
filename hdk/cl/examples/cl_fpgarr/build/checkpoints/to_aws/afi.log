@@ -1,0 +1,264 @@
+cl_fpgarr_21_11_20-015302
+{
+    "FpgaImageId": "afi-0d4d889e7dd3052c5",
+    "FpgaImageGlobalId": "agfi-046521d63d959c8ff"
+}
+
+
+21_11_19-150515.nohup.out (125MHz)
+{
+  "FpgaImageId": "afi-05c7ca631ff0e1df6",
+  "FpgaImageGlobalId": "agfi-0919b9b4c5287a5c5"
+}
+cl_fpgarr_21_11_23-021223
+Description: cl_fpgarr_21_11_23-021223 first cl_fpgarr dbg csr (strategy G)
+{
+    "FpgaImageId": "afi-0b7bc7b7c6e1069f7",
+    "FpgaImageGlobalId": "agfi-0d26f1a392a2a82e7"
+}
+cl_fpgarr_21_11_23-021227
+Description: cl_fpgarr_21_11_23-021227 first cl_fpgarr dbg csr (strategy C)
+{
+    "FpgaImageId": "afi-06befd453be2902a5",
+    "FpgaImageGlobalId": "agfi-0c0fdac881bbee9e1"
+}
+cl_fpgarr_21_11_23-021238
+Description: cl_fpgarr_21_11_23-021238 first cl_fpgarr dbg csr (125MHz)
+{
+    "FpgaImageId": "afi-054319aa8e591d6e1",
+    "FpgaImageGlobalId": "agfi-006c4469c33c3a0a2"
+}
+cl_fpgarr_21_11_23-155245
+Description: cl_fpgarr_21_11_23-155245 cl_fpgarr dbg csr + reset pipe strategy (G)
+{
+    "FpgaImageId": "afi-01b9dd4202c84cd5f",
+    "FpgaImageGlobalId": "agfi-04a3071ed066c7faf"
+}
+cl_fpgarr_21_11_23-155245
+Description: cl_fpgarr_21_11_23-155245 cl_fpgarr dbg csr + reset pipe strategy (G)
+{
+    "FpgaImageId": "afi-0a9937e6015f7d59d",
+    "FpgaImageGlobalId": "agfi-0df322a5bd0be0b5d"
+}
+cl_fpgarr_21_11_26-182007
+Description: cl_fpgarr_21_11_26-182007 cl_fpgarr ready-replayer (G)
+{
+    "FpgaImageId": "afi-08e22aa2a1daf2117",
+    "FpgaImageGlobalId": "agfi-0973c5a3ead379932"
+}
+cl_fpgarr_21_11_29-000806
+Description: cl_fpgarr_21_11_29-000806 cl_fpgarr debug csr + pchk (G)
+{
+    "FpgaImageId": "afi-08197a5bbd3609edd",
+    "FpgaImageGlobalId": "agfi-0de9f98dc1acd715e"
+}
+cl_fpgarr_21_11_29-224054
+Description: cl_fpgarr_21_11_29-224054 cl_fpgarr replay dbg csr + pchk (125 MHz)
+{
+    "FpgaImageId": "afi-050cfb627f7fa48ef",
+    "FpgaImageGlobalId": "agfi-04eb77a4f9f1fb640"
+}
+cl_fpgarr_21_11_29-224009
+Description: cl_fpgarr_21_11_29-224009 cl_fpgarr replay dbg csr + pchk (G)
+{
+    "FpgaImageId": "afi-0b94f4f54a4631bf8",
+    "FpgaImageGlobalId": "agfi-0781ea78bb9c8dc25"
+}
+cl_fpgarr_21_11_30-184355
+Description: cl_fpgarr_21_11_30-184355 cl_fpgarr replay dbg csr (hi_pad_last) (125MHz)
+{
+    "FpgaImageId": "afi-05b374555ae11b9c8",
+    "FpgaImageGlobalId": "agfi-0dd260c0cc2d9adb1"
+}
+cl_fpgarr_21_12_01-044508
+Description: cl_fpgarr_21_12_01-044508 cl_fpgarr ila for trace_split (125MHz)
+{
+    "FpgaImageId": "afi-0b7c69971f9fe7905",
+    "FpgaImageGlobalId": "agfi-02cbd23a89ae609ad"
+}
+cl_fpgarr_21_12_02-031044
+Description: cl_fpgarr_21_12_02-031044 cl_fpgarr trace_split fix trial 1 (125MHz)
+{
+    "FpgaImageId": "afi-0e4c8b2edafb0c440",
+    "FpgaImageGlobalId": "agfi-008395b9b85d97676"
+}
+cl_fpgarr_21_12_03-041423
+Description: cl_fpgarr_21_12_03-041423 cl_fpgarr replay almful stall + wider pkt_cnt_width (125MHz)
+{
+    "FpgaImageId": "afi-02b0aaebf9aa82f7e",
+    "FpgaImageGlobalId": "agfi-0760f6f73380a67a1"
+}
+cl_fpgarr_21_12_03-040056
+Description: cl_fpgarr_21_12_03-040056 cl_fpgarr replay almful stall (125MHz)
+{
+    "FpgaImageId": "afi-0be3cde942a7dcc24",
+    "FpgaImageGlobalId": "agfi-01afa231b5d5056f1"
+}
+cl_fpgarr_21_12_03-041423 (IGNORE, I uploaded a wrong version to compile)
+Description: cl_fpgarr_21_12_03-041423 cl_fpgarr replay almful stall fix trial 1 (125MHz)
+{
+    "FpgaImageId": "afi-07910b84db195b75d",
+    "FpgaImageGlobalId": "agfi-09f017c94a526f831"
+}
+cl_fpgarr_21_12_04-005247
+Description: cl_fpgarr_21_12_04-005247 cl_fpgarr replay almful stall fix trial 1 (125MHz)
+{
+    "FpgaImageId": "afi-030cbb2a45eeab393",
+    "FpgaImageGlobalId": "agfi-04c2c4a8ebeee2e9a"
+}
+3d_rendering_21_12_03-230023
+Description: 3d_rendering_21_12_03-230023 first hardware trial (125MHz)
+{
+    "FpgaImageId": "afi-0f6eb59acc425897f",
+    "FpgaImageGlobalId": "agfi-020e1f82190aea1d2"
+}
+3d_rendering_21_12_05-175750
+Description: 3d_rendering_21_12_05-175750 second hardware trial (fix CL_SH_ID) (125MHz)
+{
+    "FpgaImageId": "afi-0b9f7301a945b3f51",
+    "FpgaImageGlobalId": "agfi-05767b78e6b435d6d"
+}
+cl_fpgarr_21_12_06-055541
+Description: cl_fpgarr_21_12_06-055541 cl_fpgarr nodbg (GEFEI)
+{
+    "FpgaImageId": "afi-0425a2ebd1fd6d87c",
+    "FpgaImageGlobalId": "agfi-0ac714ece1d720931"
+}
+cl_fpgarr_21_12_08-144202
+Description: cl_fpgarr_21_12_08-144202 cl_fpgarr irq2pcim (GEFEI)
+{
+    "FpgaImageId": "afi-0a1c828d31d6e7c7e",
+    "FpgaImageGlobalId": "agfi-059782f9cb7f45488"
+}
+3d_rendering_21_12_08-201237
+Description: 3d_rendering_21_12_08-201237 3d_rendering irq2pcim (125MHz)
+{
+    "FpgaImageId": "afi-030f487b5d2b448ee",
+    "FpgaImageGlobalId": "agfi-00336f08bbc4bd143"
+}
+3d_rendering_21_12_08-194502
+Description: 3d_rendering_21_12_08-194502 3d_rendering irq2pcim (GEFEI)
+{
+    "FpgaImageId": "afi-0d1b80db1b231a0ee",
+    "FpgaImageGlobalId": "agfi-0d07911a217163e7a"
+}
+cl_fpgarr_21_12_09-060616
+Description: cl_fpgarr_21_12_09-060616 cl_fpgarr irq2pcim no ila (GEFEI)
+{
+    "FpgaImageId": "afi-0eb92125d9c3a8376",
+    "FpgaImageGlobalId": "agfi-0888d43e1d176f401"
+}
+cl_fpgarr_21_12_09-060626
+Description: cl_fpgarr_21_12_09-060626 cl_fpgarr irq2pcim no ila (125MHz)
+{
+    "FpgaImageId": "afi-0cbce3694d9471ec1",
+    "FpgaImageGlobalId": "agfi-0d04f81b0ce669886"
+}
+3d_rendering_21_12_09-061040
+Description: 3d_rendering_21_12_09-061040 3d_rendering irq2pcim no ila (GEFEI)
+{
+    "FpgaImageId": "afi-003398b28f31a08c2",
+    "FpgaImageGlobalId": "agfi-082669344f159e7e2"
+}
+3d_rendering_21_12_09-061044
+Description: 3d_rendering_21_12_09-061044 3d_rendering irq2pcim no ila (125MHz)
+{
+    "FpgaImageId": "afi-0474e7c77e1d2ea43",
+    "FpgaImageGlobalId": "agfi-016fc5e8988d24326"
+}
+bnn_21_12_09-064818
+Description: bnn_21_12_09-064818 irq2pcim no ila (GEFEI)
+{
+    "FpgaImageId": "afi-00370e9272437a3ba",
+    "FpgaImageGlobalId": "agfi-086d13dc83211ccf8"
+}
+bnn_21_12_09-064822
+Description: bnn_21_12_09-064822 irq2pcim no ila (125MHz)
+{
+    "FpgaImageId": "afi-0d70dfad137b1680d",
+    "FpgaImageGlobalId": "agfi-09774d2a6b8fc7825"
+}
+digit_recognition_21_12_09-224243
+Description: digit_recognition_21_12_09-224243 first trial (125MHz)
+{
+    "FpgaImageId": "afi-0ebf8b70d9427b93e",
+    "FpgaImageGlobalId": "agfi-002abdd0d53b7f8bd"
+}
+digit_recognition_21_12_09-224235
+Description: digit_recognition_21_12_09-224235 first trial (GEFEI)
+{
+    "FpgaImageId": "afi-03fe5363af5e6ae82",
+    "FpgaImageGlobalId": "agfi-02d2dd1132b270c78"
+}
+face_detection_21_12_10-211225
+Description: face_detection_21_12_10-211225 first trial (125MHz)
+{
+    "FpgaImageId": "afi-05bfd99928d380fe3",
+    "FpgaImageGlobalId": "agfi-0b3f42b9650e8be71"
+}
+spam_filter_21_12_10-213415
+Description: spam_filter_21_12_10-213415 first trial (125MHz)
+{
+    "FpgaImageId": "afi-0c9aedf0be351f476",
+    "FpgaImageGlobalId": "agfi-0be767ea7d6c2a450"
+}
+spam_filter_21_12_10-213413
+Description: spam_filter_21_12_10-213413 first trial (GEFEI)
+{
+    "FpgaImageId": "afi-08abbc4404692d461",
+    "FpgaImageGlobalId": "agfi-0fb2e2bed55b7be5d"
+}
+sssp_21_12_11-204804
+Description: sssp_21_12_11-204804 first trial (125MHz)
+{
+    "FpgaImageId": "afi-02dd35f6ff4ce2516",
+    "FpgaImageGlobalId": "agfi-010f826918d7acbc4"
+}
+optical_flow_21_12_11-014941
+Description: optical_flow_21_12_11-014941 first trial (125MHz)
+{
+    "FpgaImageId": "afi-06430b3a085515f84",
+    "FpgaImageGlobalId": "agfi-018b5f77920eed7d5"
+}
+optical_flow_21_12_11-014936
+Description: optical_flow_21_12_11-014936 first trial (GEFEI)
+{
+    "FpgaImageId": "afi-018b3ec1d2e7560ec",
+    "FpgaImageGlobalId": "agfi-03629fe568c643658"
+}
+face_detection_21_12_10-211150
+Description: face_detection_21_12_10-211150 first trial (GEFEI)
+{
+    "FpgaImageId": "afi-0d0ce619b5f692045",
+    "FpgaImageGlobalId": "agfi-02317232bb9c25452"
+}
+sssp_21_12_11-204801
+Description: sssp_21_12_11-204801 first trial (GEFEI)
+{
+    "FpgaImageId": "afi-03c8768814459dc32",
+    "FpgaImageGlobalId": "agfi-0b34daa1fcbd3cffc"
+}
+sha256_21_12_11-233207
+Description: sha256_21_12_11-233207 first trial (125MHz)
+{
+    "FpgaImageId": "afi-0fdd41a1f3efe813c",
+    "FpgaImageGlobalId": "agfi-0569332f5e87f0d18"
+}
+sha256_21_12_11-233015
+Description: sha256_21_12_11-233015 first trial (GEFEI)
+{
+    "FpgaImageId": "afi-04baabf90d5218866",
+    "FpgaImageGlobalId": "agfi-03d5146ed193d1562"
+}
+mobilenet_21_12_12-185437
+Description: mobilenet_21_12_12-185437 first trial (125MHz)
+{
+    "FpgaImageId": "afi-0bc88baa451f31581",
+    "FpgaImageGlobalId": "agfi-05179e33748d3c076"
+}
+mobilenet_21_12_12-185349
+Description: mobilenet_21_12_12-185349 first trial (GEFEI)
+{
+    "FpgaImageId": "afi-014eda5df8eda0ad8",
+    "FpgaImageGlobalId": "agfi-0d8b993b935da4d0d"
+}
