@@ -11,7 +11,9 @@
 #include "cl_fpgarr_buscfg.hpp"
 #include "cl_fpgarr_utils.hpp"
 #define PACKET_ALIGNMENT 8
+// max length of channel name
 #define NAME_MAX_LEN "7"
+// max length of the property name
 #define PROPNAME_MAX_LEN "10"
 #define LUBITS_DIST_MAX_DIGITS "7"
 
@@ -113,14 +115,17 @@ class Decoder {
     }
   }
 
-  void gen_report(FILE *fp) {
-    dump_parsed_text(fp);
-    fputc('\n', fp);
+  void gen_report(FILE *fp, bool verbose=false) {
+    if (verbose) {
+      dump_parsed_text(fp);
+      fputc('\n', fp);
+    }
     dump_statistics(fp);
   }
 
   // return true: equal, false: not equal
-  bool gen_compare_report(FILE *fp, Decoder<BUSCFG> &other) {
+  bool gen_compare_report(FILE *fp, Decoder<BUSCFG> &other,
+                          bool verbose = false) {
     size_t hb_mismatch_cnt = 0;
     size_t violation_cnt = 0;
     size_t content_mismatch_cnt = 0;
@@ -156,12 +161,14 @@ class Decoder {
       for (int i = 0; i < cha->cnt; ++i) {
         // compare packet content
         if (!cha->comparePkt(i, chb)) {
-          fprintf(fp, "Channel %s packet[%d] content mismatch:\n", cha->name,
-                  i);
-          fprintf(fp, "From trace file %s, ", filepath);
-          cha->printPkt(fp, i);
-          fprintf(fp, "From trace file %s, ", other.filepath);
-          chb->printPkt(fp, i);
+          if (verbose) {
+            fprintf(fp, "Channel %s packet[%d] content mismatch:\n", cha->name,
+                    i);
+            fprintf(fp, "From trace file %s, ", filepath);
+            cha->printPkt(fp, i);
+            fprintf(fp, "From trace file %s, ", other.filepath);
+            chb->printPkt(fp, i);
+          }
           ++content_mismatch_cnt;
         }
         // compare the happen-before
@@ -194,18 +201,20 @@ class Decoder {
           ++violation_cnt;
           violation = true;
         }
-        if (mismatch)
-          fprintf(fp, "Channel %s packet[%d] happen-before mismatch:\n",
-                  cha->name, i);
-        if (violation)
-          fprintf(fp, "Channel %s packet[%d] happen-before violation:\n",
-                  cha->name, i);
-        if (mismatch || violation) {
-          print_header_loge_names(fp);
-          fprintf(fp, "From trace file %s:\n", filepath);
-          print_loge_cnt(fp, cha->loge_cnt_id_vec[i]);
-          fprintf(fp, "From trace file %s:\n", other.filepath);
-          other.print_loge_cnt(fp, chb->loge_cnt_id_vec[i]);
+        if (verbose) {
+          if (mismatch)
+            fprintf(fp, "Channel %s packet[%d] happen-before mismatch:\n",
+                    cha->name, i);
+          if (violation)
+            fprintf(fp, "Channel %s packet[%d] happen-before violation:\n",
+                    cha->name, i);
+          if (mismatch || violation) {
+            print_header_loge_names(fp);
+            fprintf(fp, "From trace file %s:\n", filepath);
+            print_loge_cnt(fp, cha->loge_cnt_id_vec[i]);
+            fprintf(fp, "From trace file %s:\n", other.filepath);
+            other.print_loge_cnt(fp, chb->loge_cnt_id_vec[i]);
+          }
         }
       }
       pkt_cnt += cha->cnt;

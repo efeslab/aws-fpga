@@ -51,4 +51,14 @@ inline void bitscpy(uint8_t *(&src), uint8_t &srcoff, uint8_t *(&dst),
     }
   }
 }
+
+struct argoptions_t {
+  enum {CFG_UNKNOWN, CFG_RECORD, CFG_VERIF} cfg_type = CFG_UNKNOWN;
+  enum {OP_UNKNOWN, OP_ANLYS, OP_COMP} op_type = OP_UNKNOWN;
+  bool isVerbose = false;
+  union {
+    const char *anlys_filepath;
+    const char *comp_filepaths[2] = {nullptr, nullptr};
+  };
+};
 #endif // CL_FPGARR_UTILS_H
