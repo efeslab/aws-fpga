@@ -149,9 +149,6 @@ logic fifo_pop;
 // transactions finished in each channel (count the 1s) before the start of the
 // logb_{valid, data} in the out.data.
 logic [in.LOGE_CHANNEL_CNT-1:0] loge_valid_out;
-// loge_valid_overwrite is asserted if the incoming loge_valid will overwrite
-// loge_valid_out, so we need to generate a new logging unit
-logic [in.LOGE_CHANNEL_CNT-1:0] loge_valid_overwrite;
 logic new_pkt_for_loge;
 
 // buf loge_valid if there is no valid logb to send
@@ -179,8 +176,22 @@ else
          no_loge_overwrite: assert(!loge_valid_out[i]);
       end
 
+`ifdef ENABLE_HBENCODER_LOGE_COALESCING
+// loge_valid_overwrite is asserted if the incoming loge_valid will overwrite
+// loge_valid_out, so we need to generate a new logging unit
+// Note that this can reduce the trace size since ChannelA finishes packet X and
+// Channel B finishing packet Y can be coalesced to one logging unit. But it
+// also loses the ability to distinguish whether packet X finishes before or
+// after packet Y.
+logic [in.LOGE_CHANNEL_CNT-1:0] loge_valid_overwrite;
 assign loge_valid_overwrite = in.loge_valid & loge_valid_out;
 assign new_pkt_for_loge = |loge_valid_overwrite;
+`else
+// does not sacrifice any loge<->loge happens-before information.
+// Create a new packet if the incoming log and the buffered log both have some
+// loge_valid
+assign new_pkt_for_loge = |in.loge_valid & |loge_valid_out;
+`endif
 // sanity check for loge_valid_overwrite
 always_ff @(posedge clk)
    if (rstn && !in.plogb.any_valid)
