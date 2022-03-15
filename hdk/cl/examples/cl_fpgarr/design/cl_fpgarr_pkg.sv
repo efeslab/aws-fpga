@@ -49,6 +49,11 @@
                      input bid, bresp, bvalid, output bready,
                      output arid, araddr, arlen, arsize, arvalid, input arready,
                      input rid, rdata, rresp, rlast, rvalid, output rready);
+      modport ro     (input awid, awaddr, awlen, awsize, awvalid, awready,
+                            wid, wdata, wstrb, wlast, wvalid, wready,
+                            bid, bresp, bvalid, bready,
+                            arid, araddr, arlen, arsize, arvalid, arready,
+                            rid, rdata, rresp, rlast, rvalid, rready);
    endinterface
 
    interface rr_axi_lite_bus_t;
@@ -86,6 +91,11 @@
                          input bresp, bvalid, output bready,
                          output araddr, arvalid, input arready,
                          input rdata, rresp, rvalid, output rready);
+      modport ro     (input awaddr, awvalid, awready,
+                            wdata, wstrb, wvalid, wready,
+                            bresp, bvalid, bready,
+                            araddr, arvalid, arready,
+                            rdata, rresp, rvalid, rready);
    endinterface
 
    // rr_logging_bus_t holds the unpacked logb_data

@@ -1,3 +1,5 @@
+`include "cl_fpgarr_types.svh"
+`include "cl_fpgarr_defs.svh"
 // This module is for the crossbar connection across different AXI(L) interfaces
 // during replay. The crossbar needs to consider SLR crossing and add proper
 // delays between certain interfaces.
@@ -43,4 +45,30 @@ generate
           .out_bus(rt_loge_out[t][s]));
     end
 endgenerate
+endmodule
+
+module rr_axi_rt_loge #(
+  parameter int LOGE_PER_AXI
+) (
+  rr_axi_bus_t.ro in,
+  output logic [LOGE_PER_AXI-1:0] o_rt_loge_valid
+);
+assign o_rt_loge_valid[LOGE_AW] = in.awvalid && in.awready;
+assign o_rt_loge_valid[LOGE_W] = in.wvalid && in.wready;
+assign o_rt_loge_valid[LOGE_AR] = in.arvalid && in.arready;
+assign o_rt_loge_valid[LOGE_B] = in.bvalid && in.bready;
+assign o_rt_loge_valid[LOGE_R] = in.rvalid && in.rready;
+endmodule
+
+module rr_axil_rt_loge #(
+  parameter int LOGE_PER_AXI
+) (
+  rr_axi_lite_bus_t.ro in,
+  output logic [LOGE_PER_AXI-1:0] o_rt_loge_valid
+);
+assign o_rt_loge_valid[LOGE_AW] = in.awvalid && in.awready;
+assign o_rt_loge_valid[LOGE_W] = in.wvalid && in.wready;
+assign o_rt_loge_valid[LOGE_AR] = in.arvalid && in.arready;
+assign o_rt_loge_valid[LOGE_B] = in.bvalid && in.bready;
+assign o_rt_loge_valid[LOGE_R] = in.rvalid && in.rready;
 endmodule

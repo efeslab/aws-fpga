@@ -283,7 +283,6 @@ module axi_mstr_replayer #(
    input sync_rst_n,
    rr_replay_bus_t.C rbus,
    rr_axi_bus_t.slave outM,
-   output logic [LOGE_PER_AXI-1:0] o_rt_loge_valid,
    input logic [NUM_INTERFACES-1:0] [LOGE_PER_AXI-1:0] i_rt_loge_valid,
    output logic fifo_overflow,
    output logic fifo_underflow
@@ -345,7 +344,6 @@ axichannel_valid_replayer #(
    .fifo_overflow(fifo_overflow_ch[LOGB_AW]),
    .fifo_underflow(fifo_underflow_ch[LOGB_AW])
 );
-assign o_rt_loge_valid[LOGE_AW] = outM.awvalid && outM.awready;
 
 // W  Channel
 axichannel_valid_replayer #(
@@ -367,7 +365,6 @@ axichannel_valid_replayer #(
    .fifo_overflow(fifo_overflow_ch[LOGB_W]),
    .fifo_underflow(fifo_underflow_ch[LOGB_W])
 );
-assign o_rt_loge_valid[LOGE_W] = outM.wvalid && outM.wready;
 
 // AR Channel
 axichannel_valid_replayer #(
@@ -389,7 +386,6 @@ axichannel_valid_replayer #(
    .fifo_overflow(fifo_overflow_ch[LOGB_AR]),
    .fifo_underflow(fifo_underflow_ch[LOGB_AR])
 );
-assign o_rt_loge_valid[LOGE_AR] = outM.arvalid && outM.arready;
 
 // Ready signal replay
 // B  Channel
@@ -414,8 +410,6 @@ axichannel_ready_replayer #(
    .fifo_overflow(rdyrply_fifo_overflow),
    .fifo_underflow(rdyrply_fifo_underflow)
 );
-assign o_rt_loge_valid[LOGE_B] = outM.bvalid && outM.bready;
-assign o_rt_loge_valid[LOGE_R] = outM.rvalid && outM.rready;
 endmodule
 
 module axi_slv_replayer #(
@@ -430,7 +424,6 @@ module axi_slv_replayer #(
    input sync_rst_n,
    rr_replay_bus_t.C rbus,
    rr_axi_bus_t.master outS,
-   output logic [LOGE_PER_AXI-1:0] o_rt_loge_valid,
    input logic [NUM_INTERFACES-1:0] [LOGE_PER_AXI-1:0] i_rt_loge_valid,
    output logic fifo_overflow,
    output logic fifo_underflow
@@ -493,9 +486,6 @@ axichannel_ready_replayer #(
    .fifo_overflow(rdyrply_fifo_overflow),
    .fifo_underflow(rdyrply_fifo_underflow)
 );
-assign o_rt_loge_valid[LOGE_AW] = outS.awvalid && outS.awready;
-assign o_rt_loge_valid[LOGE_W] = outS.wvalid && outS.wready;
-assign o_rt_loge_valid[LOGE_AR] = outS.arvalid && outS.arready;
 
 // B  Channel
 axichannel_valid_replayer #(
@@ -517,7 +507,6 @@ axichannel_valid_replayer #(
    .fifo_overflow(fifo_overflow_ch[LOGB_B]),
    .fifo_underflow(fifo_underflow_ch[LOGB_B])
 );
-assign o_rt_loge_valid[LOGE_B] = outS.bvalid && outS.bready;
 
 // R  Channel
 axichannel_valid_replayer #(
@@ -539,5 +528,4 @@ axichannel_valid_replayer #(
    .fifo_overflow(fifo_overflow_ch[LOGB_R]),
    .fifo_underflow(fifo_underflow_ch[LOGB_R])
 );
-assign o_rt_loge_valid[LOGE_R] = outS.rvalid && outS.rready;
 endmodule

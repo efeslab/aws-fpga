@@ -390,7 +390,6 @@ axi_slv_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, PCIM,
   .clk(clk), .sync_rst_n(rstn),
   .rbus(rr_pcim_replay_bus),
   .outS(pcim_replay_axi_bus),
-  .o_rt_loge_valid(rt_loge_valid_agg[PCIM]),
   .i_rt_loge_valid(rt_loge_valid_dist[PCIM]),
   .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.pcim_replayer),
   .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.pcim_replayer)
@@ -403,7 +402,6 @@ axi_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, PCIS,
   .clk(clk), .sync_rst_n(rstn),
   .rbus(rr_dma_pcis_replay_bus),
   .outM(pcis_replay_axi_bus),
-  .o_rt_loge_valid(rt_loge_valid_agg[PCIS]),
   .i_rt_loge_valid(rt_loge_valid_dist[PCIS]),
   .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.pcis_replayer),
   .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.pcis_replayer)
@@ -415,7 +413,6 @@ axil_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, SDA)
   .clk(clk), .sync_rst_n(rstn),
   .rbus(rr_sda_replay_bus),
   .outM(sda_replay_axil_bus),
-  .o_rt_loge_valid(rt_loge_valid_agg[SDA]),
   .i_rt_loge_valid(rt_loge_valid_dist[SDA]),
   .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.sda_replayer),
   .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.sda_replayer)
@@ -427,7 +424,6 @@ axil_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, OCL)
   .clk(clk), .sync_rst_n(rstn),
   .rbus(rr_ocl_replay_bus),
   .outM(ocl_replay_axil_bus),
-  .o_rt_loge_valid(rt_loge_valid_agg[OCL]),
   .i_rt_loge_valid(rt_loge_valid_dist[OCL]),
   .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.ocl_replayer),
   .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.ocl_replayer)
@@ -439,12 +435,52 @@ axil_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, BAR1)
   .clk(clk), .sync_rst_n(rstn),
   .rbus(rr_bar1_replay_bus),
   .outM(bar1_replay_axil_bus),
-  .o_rt_loge_valid(rt_loge_valid_agg[BAR1]),
   .i_rt_loge_valid(rt_loge_valid_dist[BAR1]),
   .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.bar1_replayer),
   .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.bar1_replayer)
 );
 // the distribution crossbar
+//`define RT_LOGE_FROM_REPLAY
+rr_axi_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_pcim (
+  `ifdef RT_LOGE_FROM_REPLAY
+  .in(pcim_replay_axi_bus),
+  `else
+  .in(rr_irq_pcim_bus),
+  `endif
+  .o_rt_loge_valid(rt_loge_valid_agg[PCIM])
+);
+rr_axi_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_pcis (
+  `ifdef RT_LOGE_FROM_REPLAY
+  .in(pcis_replay_axi_bus),
+  `else
+  .in(rr_dma_pcis_bus),
+  `endif
+  .o_rt_loge_valid(rt_loge_valid_agg[PCIS])
+);
+rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_sda (
+  `ifdef RT_LOGE_FROM_REPLAY
+  .in(sda_replay_axil_bus),
+  `else
+  .in(rr_sda_bus),
+  `endif
+  .o_rt_loge_valid(rt_loge_valid_agg[SDA])
+);
+rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_ocl (
+  `ifdef RT_LOGE_FROM_REPLAY
+  .in(ocl_replay_axil_bus),
+  `else
+  .in(rr_ocl_bus),
+  `endif
+  .o_rt_loge_valid(rt_loge_valid_agg[OCL])
+);
+rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_bar1 (
+  `ifdef RT_LOGE_FROM_REPLAY
+  .in(bar1_replay_axil_bus),
+  `else
+  .in(rr_bar1_bus),
+  `endif
+  .o_rt_loge_valid(rt_loge_valid_agg[BAR1])
+);
 rr_rt_loge_crossbar #(
   .LOGE_PER_INTERFACE(LOGE_PER_AXI),
   .NUM_INTERFACES(AWSF1_NUM_INTERFACES),
