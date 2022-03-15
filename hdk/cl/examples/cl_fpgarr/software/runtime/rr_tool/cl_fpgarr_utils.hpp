@@ -60,5 +60,11 @@ struct argoptions_t {
     const char *anlys_filepath;
     const char *comp_filepaths[2] = {nullptr, nullptr};
   };
+  bool enableHBVer2 = false;
 };
+
+const char *input_interfaces[] = {"pcis", "sda", "ocl", "bar1"};
+const char *output_interfaces[] = {"pcim"};
+const char *send_channels[] = {"AW", "W", "AR"};
+const char *recv_channels[] = {"B", "R"};
 #endif // CL_FPGARR_UTILS_H

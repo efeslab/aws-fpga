@@ -14,7 +14,7 @@
   #ifndef RR_POLLING_INTERVAL
     #define RR_POLLING_INTERVAL 5
   #endif
-#endif
+#endif // SV_TEST
 #define BUFFER_ALIGNMENT 4096
 #define TRACE_LEN_BYTES 8
 

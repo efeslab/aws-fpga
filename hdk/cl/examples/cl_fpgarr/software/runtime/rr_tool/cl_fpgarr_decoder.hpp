@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
+#include <algorithm>
 
 #include "cl_fpgarr_buscfg.hpp"
 #include "cl_fpgarr_utils.hpp"
@@ -16,22 +17,60 @@
 // max length of the property name
 #define PROPNAME_MAX_LEN "10"
 #define LUBITS_DIST_MAX_DIGITS "7"
+#define ARRAY_LEN(x) (sizeof(x)/sizeof(x[0]))
 
 using namespace std;
 
 struct ChannelTraceBase {
   int cnt = 0;  // packet counter of current channel
-  vector<size_t> loge_cnt_id_vec;
+  // id refering to vector clock that is defined between logb and loge
+  vector<size_t> logb_loge_cnt_id_vec;
+  // id refering to vector clock that is defined between loge and loge
+  vector<size_t> loge_loge_cnt_id_vec;
   const char *name;
+  bool isInput; // whether this channel is an input channel from Shell to APP
 
-  ChannelTraceBase(const char *_name) : name(_name) {}
+  static bool findStringInArray(const char *s, size_t slen, const char *arr[],
+                                size_t arrlen) {
+    for (size_t i = 0; i < arrlen; ++i) {
+      if (strncmp(s, arr[i], std::min(slen, std::strlen(arr[i]))) == 0)
+        return true;
+    }
+    return false;
+  }
+  ChannelTraceBase(const char *_name) : name(_name) {
+    size_t intf_len = std::strchr(_name, '_') - _name;
+    size_t ch_len = std::strlen(_name) - intf_len - 1;
+    const char *intf_name = _name;
+    const char *ch_name = _name + intf_len + 1;
+    bool isInputInterface = findStringInArray(
+        intf_name, intf_len, input_interfaces, ARRAY_LEN(input_interfaces));
+    bool isOutputInterface = findStringInArray(
+        intf_name, intf_len, output_interfaces, ARRAY_LEN(output_interfaces));
+    bool isSendChannel = findStringInArray(ch_name, ch_len, send_channels,
+                                           ARRAY_LEN(send_channels));
+    bool isRecvChannel = findStringInArray(ch_name, ch_len, recv_channels,
+                                           ARRAY_LEN(recv_channels));
+    assert((isInputInterface || isOutputInterface) && "Invalid intf name");
+    assert((isSendChannel || isRecvChannel) && "Invalid channel name");
+    // four cases:
+    // send channel from input interface: input channel
+    // recv channel from output interface: input channel
+    // recv channel from input interface: output channel
+    // send channel from output interface: output channel
+    isInput = !(isInputInterface ^ isSendChannel);
+  }
   // p is a pointer to the byte that contains valid data
   // off is the offset (0~7) meaning valid data starts from which bit in that
   // byte
   // both `p` and `off` will be updated to represent the remaining valid data
   // upon return
-  // Assumption: loge_valid has been updated before calling this parseOnePkt
+  // loge_cnt_id is the index of the corresponding loge vector clock for this
+  // packet.
   virtual void parseOnePkt(uint8_t *(&p), uint8_t &off, size_t loge_cnt_id) = 0;
+  void finishOnePkt(size_t loge_cnt_id) {
+    loge_loge_cnt_id_vec.push_back(loge_cnt_id);
+  }
   virtual void printPkt(FILE *fp, size_t i,
                         const char *suffix = "\n") const = 0;
   virtual bool comparePkt(size_t pktid,
@@ -66,7 +105,7 @@ struct ChannelTrace : public ChannelTraceBase {
     uint8_t doff = 0;
     bitscpy(p, off, d, doff, wb);
     data.push_back(pkt);
-    this->loge_cnt_id_vec.push_back(loge_cnt_id);
+    this->logb_loge_cnt_id_vec.push_back(loge_cnt_id);
     ++(this->cnt);
   }
 
@@ -123,9 +162,12 @@ class Decoder {
     dump_statistics(fp);
   }
 
+  // enableHBVer2: enable the second definition of happens-before for output
+  // channels. i.e. the transaction end-end definition. The Version 1 HB
+  // definition is only defined by transaction start-end.
   // return true: equal, false: not equal
   bool gen_compare_report(FILE *fp, Decoder<BUSCFG> &other,
-                          bool verbose = false) {
+                          bool verbose = false, bool enableHBVer2 = false) {
     size_t hb_mismatch_cnt = 0;
     size_t violation_cnt = 0;
     size_t content_mismatch_cnt = 0;
@@ -185,8 +227,26 @@ class Decoder {
         // (i.e. For each packet from current channel
         // in each trace, do they have the same number of packets finish before
         // the start of current packet?)
-        loge_cnt_t loge_cnt_a = loge_cnt_vec[cha->loge_cnt_id_vec[i]];
-        loge_cnt_t loge_cnt_b = other.loge_cnt_vec[chb->loge_cnt_id_vec[i]];
+        size_t loge_cnt_vec_idx_a, loge_cnt_vec_idx_b;
+        const char *HBVer_str;
+        if (enableHBVer2) {
+          assert(cha->isInput == chb->isInput && "Input/Output definition mismatches");
+          if (cha->isInput) {
+            loge_cnt_vec_idx_a = cha->logb_loge_cnt_id_vec[i];
+            loge_cnt_vec_idx_b = chb->logb_loge_cnt_id_vec[i];
+            HBVer_str = "Start-End";
+          } else {
+            loge_cnt_vec_idx_a = cha->loge_loge_cnt_id_vec[i];
+            loge_cnt_vec_idx_b = chb->loge_loge_cnt_id_vec[i];
+            HBVer_str = "End-End";
+          }
+        } else {
+          loge_cnt_vec_idx_a = cha->logb_loge_cnt_id_vec[i];
+          loge_cnt_vec_idx_b = chb->logb_loge_cnt_id_vec[i];
+            HBVer_str = "Start-End";
+        }
+        loge_cnt_t loge_cnt_a = loge_cnt_vec[loge_cnt_vec_idx_a];
+        loge_cnt_t loge_cnt_b = other.loge_cnt_vec[loge_cnt_vec_idx_b];
         bool mismatch = false;
         bool violation = false;
         if (loge_cnt_a == loge_cnt_b) {
@@ -203,17 +263,17 @@ class Decoder {
         }
         if (verbose) {
           if (mismatch)
-            fprintf(fp, "Channel %s packet[%d] happen-before mismatch:\n",
-                    cha->name, i);
+            fprintf(fp, "Channel %s packet[%d] happen-before[%s] mismatch:\n",
+                    cha->name, i, HBVer_str);
           if (violation)
-            fprintf(fp, "Channel %s packet[%d] happen-before violation:\n",
-                    cha->name, i);
+            fprintf(fp, "Channel %s packet[%d] happen-before[%s] violation:\n",
+                    cha->name, i, HBVer_str);
           if (mismatch || violation) {
             print_header_loge_names(fp);
             fprintf(fp, "From trace file %s:\n", filepath);
-            print_loge_cnt(fp, cha->loge_cnt_id_vec[i]);
+            print_loge_cnt(fp, loge_cnt_vec_idx_a);
             fprintf(fp, "From trace file %s:\n", other.filepath);
-            other.print_loge_cnt(fp, chb->loge_cnt_id_vec[i]);
+            other.print_loge_cnt(fp, loge_cnt_vec_idx_b);
           }
         }
       }
@@ -271,7 +331,13 @@ class Decoder {
   Statistics stat;
 
  private:
+  // this is for all LOGB channels, channels that may start new transactions
   std::array<ChannelTraceBase *, BUSCFG::LOGB_CNT> channels;
+  // this is a mapping from loge entries to the corresponding logb channel, if
+  // the loge channel may start new transactions as well.
+  // valid value is [0..BUSCFG::LOGB_CNT)
+  static constexpr size_t loge2logb_INVALID = BUSCFG::LOGB_CNT;
+  std::array<size_t, BUSCFG::LOGE_CNT> loge2logb_map;
   FILE *fp = nullptr;
   const char *filepath = nullptr;
   trace_size_t trace_bits;
@@ -281,14 +347,24 @@ class Decoder {
   loge_cnt_t cur_loge_cnt = {};
   // the (finished) packet counter of all channels when a packet comes
   vector<loge_cnt_t> loge_cnt_vec;
-  // logb_valid_vec contains logb_valid of all logging units in the trace
+  // logb_valid_vec[i] contains the logb_valid of logging_unit[i] in the trace
   vector<bitset<BUSCFG::LOGB_CNT>> logb_valid_vec;
+  // loge_valid_vec[i] contains the loge_valid of logging_unit[i] in the trace
+  vector<bitset<BUSCFG::LOGE_CNT>> loge_valid_vec;
   vector<size_t> start_off;
   vector<size_t> pktsize_vec;
 
   constexpr void channels_init() {
     constexpr_for<0, BUSCFG::LOGB_CNT, 1>([&](auto i) {
       channels[i] = new ChannelTrace<BUSCFG::CW[i]>(BUSCFG::LOGB_NAMES[i]);
+    });
+    // map loge entries to matching logb channels based on channel names
+    constexpr_for<0, BUSCFG::LOGE_CNT, 1>([&](auto i) {
+      loge2logb_map[i] = loge2logb_INVALID;
+      constexpr_for<0, BUSCFG::LOGB_CNT, 1>([&](auto j){
+        if (strcmp(BUSCFG::LOGB_NAMES[j], BUSCFG::LOGE_NAMES[i]) == 0)
+          loge2logb_map[i] = j;
+      });
     });
   }
 
@@ -335,12 +411,12 @@ class Decoder {
       // aligned to PACKET_ALIGNMENT
       pktsize_t alignment_padding_size =
           pktsize - BUSCFG::OFFSET_WIDTH - BUSCFG::LOGB_CNT - BUSCFG::LOGE_CNT;
-      update_loge_cnt(loge_valid);
-      bitset<BUSCFG::LOGB_CNT> logb_valid_bset;
 
       // pktbits is in terms of bits, not aligned to PACKET_ALIGNMENT
       pktsize_t pktbits =
           BUSCFG::OFFSET_WIDTH + BUSCFG::LOGB_CNT + BUSCFG::LOGE_CNT;
+      // processing logb
+      bitset<BUSCFG::LOGB_CNT> logb_valid_bset;
       for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
         if (logb_valid & (0x1 << i)) {
           ensureValidBits(BUSCFG::CW[i]);
@@ -351,7 +427,33 @@ class Decoder {
         }
       }
       logb_valid_vec.push_back(logb_valid_bset);
-      if (logb_valid_bset.any()) loge_cnt_vec.push_back(cur_loge_cnt);
+      // processing loge
+      bitset<BUSCFG::LOGE_CNT> loge_valid_bset;
+      bool loge_matches_logb = false;
+      for (uint8_t i = 0; i < BUSCFG::LOGE_CNT; ++i) {
+        if (loge_valid & (0x1 << i)) {
+          loge_valid_bset.set(i);
+          if (loge2logb_map[i] != loge2logb_INVALID) {
+            channels[loge2logb_map[i]]->finishOnePkt(loge_cnt_vec.size());
+            loge_matches_logb = true;
+          }
+        }
+      }
+      loge_valid_vec.push_back(loge_valid_bset);
+      // maintain loge vector clock
+      if (logb_valid_bset.any() || loge_matches_logb) {
+        // only commit the loge vector clock if the vector clock from previous
+        // logging units is referenced in the above channel packet processing,
+        // which is:
+        //  1. at least one new transaction started on LOGB channels
+        //  OR
+        //  2. at least one transaction ended on LOGB channels
+        loge_cnt_vec.push_back(cur_loge_cnt);
+      }
+      // note that the logb and loge processed above only refer to the vector
+      // clock excluding this logging unit's loge_valid.
+      // We update loge_valid after a packet is processed.
+      update_loge_cnt(loge_valid);
       assert(alignment_padding_size < 8);
       uint8_t eat_padding = getNbits<uint8_t>(alignment_padding_size);
       parsed_bits += pktsize;
@@ -361,6 +463,9 @@ class Decoder {
       assert(pktbits < Statistics::maxLUBits);
       stat.update_LU_dist(pktbits);
     }
+    // commit the dangling loge vector clock even if it is not going to be
+    // referenced. This is to get access to the total loge packet counter.
+    loge_cnt_vec.push_back(cur_loge_cnt);
   }
 
   void print_loge_cnt(FILE *fp, size_t loge_cnt_id) {
@@ -384,11 +489,17 @@ class Decoder {
     fputs("###############################################\n", fp);
     // header for LOGE
     print_header_loge_names(fp);
+    // per-channel finished packet counter
     array<size_t, BUSCFG::LOGB_CNT> channel_idx = {};
+    array<size_t, BUSCFG::LOGE_CNT> loge_cnt = {};
     size_t pkt_id = 0;
     size_t loge_cnt_id = 0;
     size_t pktsize_vec_acc = 0;
-    for (auto bset : logb_valid_vec) {
+    auto logb_bset_it = logb_valid_vec.begin();
+    auto loge_bset_it = loge_valid_vec.begin();
+    assert(logb_valid_vec.size() == loge_valid_vec.size());
+    for (; logb_bset_it != logb_valid_vec.end();
+         ++logb_bset_it, ++loge_bset_it) {
       fprintf(fp,
               "file_off %ldB, trace_off %ldB, pktsize_vec_acc %ld (%ldB), "
               "pktsize_vec %ld(%ldB), loge_cnt_id %ld\n",
@@ -396,15 +507,45 @@ class Decoder {
               pktsize_vec_acc, pktsize_vec_acc / 8, pktsize_vec[pkt_id],
               pktsize_vec[pkt_id] / 8, pkt_id);
       pktsize_vec_acc += pktsize_vec[pkt_id];
-      if (bset.any()) {
-        for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
-          if (bset.test(i)) {
-            channels[i]->printPkt(fp, channel_idx[i]);
-            assert(channels[i]->loge_cnt_id_vec[channel_idx[i]] == loge_cnt_id);
-            ++channel_idx[i];
+      assert(logb_bset_it->any() || loge_bset_it->any());
+      // process loge first because they represent the ending of packets sent
+      // before this cycle
+      bool loge_matches_logb = false;
+      if (loge_bset_it->any()) {
+        for (uint8_t i = 0; i < BUSCFG::LOGE_CNT; ++i) {
+          if (loge_bset_it->test(i)) {
+            fprintf(fp, "%" NAME_MAX_LEN "s packet[%ld] ends\n", BUSCFG::LOGE_NAMES[i], loge_cnt[i]);
+            ++loge_cnt[i];
+          }
+          if (loge_bset_it->test(i) &&
+              (loge2logb_map[i] != loge2logb_INVALID)) {
+            size_t loge_idx = loge2logb_map[i];
+            loge_matches_logb = true;
+            assert(channels[loge_idx]
+                       ->loge_loge_cnt_id_vec[channel_idx[loge_idx]] ==
+                   loge_cnt_id);
+            // only advance per-channel packet counter after that packet is
+            // finished
+            // Important assumption: one channel cannot start the next packet
+            // without finishing the previous packet
+            ++channel_idx[loge_idx];
           }
         }
+      }
+      if (logb_bset_it->any()) {
+        for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
+          if (logb_bset_it->test(i)) {
+            channels[i]->printPkt(fp, channel_idx[i]);
+            assert(channels[i]->logb_loge_cnt_id_vec[channel_idx[i]] ==
+                   loge_cnt_id);
+          }
+        }
+      }
+      if (logb_bset_it->any() || loge_bset_it->any()) {
         print_loge_cnt(fp, loge_cnt_id);
+      }
+      if (logb_bset_it->any() || loge_matches_logb) {
+        // refer to the corresponding logic in parse_trace()
         ++loge_cnt_id;
       }
       ++pkt_id;
@@ -441,9 +582,25 @@ class Decoder {
     }
     fputc('\n', fp);
     fputs("----------------------------------------------------------\n", fp);
+    // LOGB customized properties
     fprintf(fp, "%" PROPNAME_MAX_LEN "s| ", "logb_cnt");
     for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
       fprintf(fp, "%" NAME_MAX_LEN "d| ", channels[i]->cnt);
+    }
+    fputc('\n', fp);
+
+    fputs("## per loge\n", fp);
+    fprintf(fp, "%" PROPNAME_MAX_LEN "s| ", "Prop");
+    // header for LOGB
+    for (uint8_t i = 0; i < BUSCFG::LOGE_CNT; ++i) {
+      fprintf(fp, "%" NAME_MAX_LEN "s| ", BUSCFG::LOGE_NAMES[i]);
+    }
+    fputc('\n', fp);
+    fputs("----------------------------------------------------------\n", fp);
+    // LOGE customized properties
+    fprintf(fp, "%" PROPNAME_MAX_LEN "s| ", "loge_cnt");
+    for (uint8_t i = 0; i < BUSCFG::LOGE_CNT; ++i) {
+      fprintf(fp, "%" NAME_MAX_LEN "d| ", loge_cnt_vec.back()[i]);
     }
     fputc('\n', fp);
   }

@@ -1,6 +1,7 @@
 #include "cl_fpgarr_decoder.hpp"
 #include <unistd.h>
 #include <stdlib.h>
+#include <getopt.h>
 
 void print_help() {
   puts("rr_tool: [options] cfg_type cmd xxx.dump ...\n");
@@ -22,7 +23,8 @@ int DecoderCmdExec(const argoptions_t &options) {
     case argoptions_t::OP_COMP: {
       Decoder<BUSCFG> d1(options.comp_filepaths[0]);
       Decoder<BUSCFG> d2(options.comp_filepaths[1]);
-      rc = (d1.gen_compare_report(stdout, d2, options.isVerbose) != true);
+      rc = (d1.gen_compare_report(stdout, d2, options.isVerbose,
+                                  options.enableHBVer2) != true);
       break;
     }
     default:
@@ -32,9 +34,17 @@ int DecoderCmdExec(const argoptions_t &options) {
 }
 
 #define GETOPT_STRING "rva:c:d"
+enum optEnum {
+  OPT_HBVER2 = 0x100, // random value as the base to avoid ascii
+};
+static struct option long_options[] = {
+  {"hbver2", no_argument, 0, OPT_HBVER2},
+  {0, 0, 0, 0}
+};
 void parse_args(int argc, char *const argv[], argoptions_t *options) {
   int opt;
-  while ((opt = getopt(argc, argv, GETOPT_STRING)) != -1) {
+  while ((opt = getopt_long(argc, argv, GETOPT_STRING, long_options, NULL)) !=
+         -1) {
     switch (opt) {
       case 'r':
         options->cfg_type = argoptions_t::CFG_RECORD;
@@ -55,6 +65,9 @@ void parse_args(int argc, char *const argv[], argoptions_t *options) {
         break;
       case 'd':
         options->isVerbose = true;
+        break;
+      case OPT_HBVER2:
+        options->enableHBVer2 = true;
         break;
       default:
         print_help();
