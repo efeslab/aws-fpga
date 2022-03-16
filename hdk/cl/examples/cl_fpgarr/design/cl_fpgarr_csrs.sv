@@ -311,7 +311,9 @@ module rr_csrs #(
     assign rr_mode_csr_o = '{
         recordEn: csrs[RR_MODE][0],
         replayEn: csrs[RR_MODE][1],
-        outputValidateEn: csrs[RR_MODE][2]
+        outputValidateEn: csrs[RR_MODE][2],
+        enable_PCIM_B_buffer: csrs[RR_MODE][3],
+        enable_PCIM_workaround: csrs[RR_MODE][4]
     };
     lib_pipe #(
         .WIDTH($bits(rr_mode_csr_t)),

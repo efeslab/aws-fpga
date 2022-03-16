@@ -35,6 +35,8 @@ module axi_recorder #(
    rr_axi_bus_t.slave S,       // a master intf drived by an external slave
    rr_logging_bus_t.P log_M2S, // AW, W, AR
    rr_logging_bus_t.P log_S2M, // R, B
+   input logic [ENABLE_B_BUFFER-1:0] enable_B_buffer,
+   input logic [IS_CL_PCIM-1:0] enable_PCIM_workaround,
    output logic [ENABLE_B_BUFFER-1:0] B_fifo_almful,
    output logic [ENABLE_B_BUFFER-1:0] B_fifo_overflow,
    output logic [ENABLE_B_BUFFER-1:0] B_fifo_underflow
@@ -111,8 +113,10 @@ if (IS_CL_PCIM) begin : cl_pcim_gen
          if (M.wvalid && M.wready)
             aw_sub_w_cnt = aw_sub_w_cnt - 1;
       end
-   assign AW_logb_almful_imme = (aw_sub_w_cnt >= 0) && nonPCIM_logb_almful;
-   assign W_logb_almful_imme = (aw_sub_w_cnt <= 0) && nonPCIM_logb_almful;
+   assign AW_logb_almful_imme =
+      (aw_sub_w_cnt >= 0) && nonPCIM_logb_almful && enable_PCIM_workaround;
+   assign W_logb_almful_imme =
+      (aw_sub_w_cnt <= 0) && nonPCIM_logb_almful && enable_PCIM_workaround;
 end
 else begin : no_cl_pcim_gen
    assign PCIM_logb_almful = nonPCIM_logb_almful;
@@ -195,9 +199,13 @@ logic S_bvalid;
 logic S_bready;
 logic [$bits(S.bid)-1:0] S_bid;
 logic [$bits(S.bresp)-1:0] S_bresp;
-if (ENABLE_B_BUFFER) begin : enable_B_buffer
+if (ENABLE_B_BUFFER) begin : B_buffer_gen
    localparam B_BUF_SIZE = 64;
    logic fifo_full;
+   logic fifo_bvalid;
+   logic fifo_bready;
+   logic [$bits(S.bid)-1:0] fifo_bid;
+   logic [$bits(S.bresp)-1:0] fifo_bresp;
    xpm_fifo_sync_wrapper #(
       .WIDTH(AXI_RR_B_WIDTH),
       .DEPTH(B_BUF_SIZE),
@@ -206,10 +214,10 @@ if (ENABLE_B_BUFFER) begin : enable_B_buffer
    ) B_fifo_buf (
       .clk(clk), .rst(!sync_rst_n),
       .din(axi_rr_B_t'{S.bid, S.bresp}),
-      .wr_en(S.bvalid && S.bready),
-      .dout(axi_rr_B_t'{S_bid, S_bresp}),
-      .rd_en(S_bvalid && S_bready),
-      .dout_valid(S_bvalid),
+      .wr_en(enable_B_buffer && S.bvalid && S.bready),
+      .dout(axi_rr_B_t'{fifo_bid, fifo_bresp}),
+      .rd_en(enable_B_buffer && fifo_bvalid && S_bready),
+      .dout_valid(fifo_bvalid),
       .full(fifo_full),
       .almful_hi(B_buf_almful),
       .almful_lo(/*not used*/),
@@ -217,7 +225,10 @@ if (ENABLE_B_BUFFER) begin : enable_B_buffer
       .overflow(B_fifo_overflow),
       .underflow(B_fifo_underflow)
    );
-   assign S.bready = !fifo_full;
+   assign S_bvalid = enable_B_buffer? fifo_bvalid : S.bvalid;
+   assign S.bready = enable_B_buffer? !fifo_full : S_bready;
+   assign S_bid = enable_B_buffer? fifo_bid : S.bid;
+   assign S_bresp = enable_B_buffer? fifo_bresp : S.bresp;
    assign B_fifo_almful = B_buf_almful;
 end
 else begin : no_B_buffer

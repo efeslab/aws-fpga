@@ -29,14 +29,22 @@ int init_rr(int slot_id) {
     }
     if (strcmp(rr_mode_env, "record") == 0) {
         rr_mode.recordEn = 1;
+        rr_mode.enable_PCIM_B_buffer = 1;
+        rr_mode.enable_PCIM_workaround = 1;
     } else if (strcmp(rr_mode_env, "recordv") == 0) {
         rr_mode.recordEn = 1;
         rr_mode.outputValidateEn = 1;
+        rr_mode.enable_PCIM_B_buffer = 1;
+        rr_mode.enable_PCIM_workaround = 1;
     } else if (strcmp(rr_mode_env, "replay") == 0) {
         rr_mode.replayEn = 1;
+        rr_mode.enable_PCIM_B_buffer = 0;
+        rr_mode.enable_PCIM_workaround = 0;
     } else if (strcmp(rr_mode_env, "replayv") == 0) {
         rr_mode.replayEn = 1;
         rr_mode.outputValidateEn = 1;
+        rr_mode.enable_PCIM_B_buffer = 0;
+        rr_mode.enable_PCIM_workaround = 0;
     } else if (strcmp(rr_mode_env, "none") == 0) {
         rr_mode.recordEn = 0;
         rr_mode.replayEn = 0;

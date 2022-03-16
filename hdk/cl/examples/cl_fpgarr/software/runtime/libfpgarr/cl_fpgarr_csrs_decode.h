@@ -6,10 +6,12 @@
  */
 typedef union {
     struct {
-        uint8_t recordEn : 1;          // bit 0
-        uint8_t replayEn : 1;          // bit 1
-        uint8_t outputValidateEn : 1;  // bit 2
-        uint32_t unused : 29;
+        uint8_t recordEn : 1;               // bit 0
+        uint8_t replayEn : 1;               // bit 1
+        uint8_t outputValidateEn : 1;       // bit 2
+        uint8_t enable_PCIM_B_buffer : 1;   // bit 3
+        uint8_t enable_PCIM_workaround : 1; // bit 4
+        uint32_t unused : 26;
     } __attribute__((packed));
     uint32_t val;
 } rr_mode_t;

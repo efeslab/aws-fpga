@@ -300,9 +300,16 @@ typedef struct packed {
 // rr_mode_csr_t is a interpretation of the RR_MODE csr
 // NOTE: do not forget to sync with the cl_fpgarr.{c,h} (the software lib)
 typedef struct packed {
-  logic outputValidateEn;     // bit 2
-  logic replayEn;             // bit 1
-  logic recordEn;             // bit 0
+  // both enable_PCIM_workaround and enable_PCIM_B_buffer are expected to be
+  // true when this tool is recording the first trace (instead of replaying)
+  // However, they are configurable through CSR for easy testing/debugging.
+  // balance the AW/W when the writeback buffer is almost full
+  logic enable_PCIM_workaround; // bit 4
+  // buffer a certain amount of B transactions to avoid interconnect deadlock
+  logic enable_PCIM_B_buffer;   // bit 3
+  logic outputValidateEn;       // bit 2
+  logic replayEn;               // bit 1
+  logic recordEn;               // bit 0
 } rr_mode_csr_t;
 
 typedef struct packed {

@@ -160,6 +160,8 @@ axi_recorder #(
   .M(rr_irq_pcim_bus),
   .log_M2S(rr_pcim_CL2SH_logging_bus),
   .log_S2M(rr_pcim_SH2CL_logging_bus),
+  .enable_B_buffer(rr_mode_csr.enable_PCIM_B_buffer),
+  .enable_PCIM_workaround(rr_mode_csr.enable_PCIM_workaround),
   .B_fifo_almful(rr_state_csr_next.rt.almful.pcimB_buf),
   .B_fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.pcimB_buf),
   .B_fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.pcimB_buf)

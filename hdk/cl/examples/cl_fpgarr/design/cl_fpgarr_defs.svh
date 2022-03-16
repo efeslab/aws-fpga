@@ -262,7 +262,7 @@ endfunction
 // ALWAYS update (increase) this RR_CSR_VERSION_INT after making changes to CSR
 // address allocation
 // format: YYYY_MM_DD_HH
-parameter int RR_CSR_VERSION_INT = 2021120605;
+parameter int RR_CSR_VERSION_INT = 2022031604;
 ////////////////////////////////////////////////////////////////////////////////
 // Debug CSR configurations
 `undef DEBUG_RECORD_CSR

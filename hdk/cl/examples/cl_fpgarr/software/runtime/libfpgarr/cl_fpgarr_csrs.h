@@ -14,7 +14,7 @@ extern pci_bar_handle_t pci_bar1_handle;
 #include "cl_fpgarr_utils.h"
 
 #define CL_FPGARR_CSR_BASE 0x100000
-#define RR_CSR_VERSION_INT 2021120605
+#define RR_CSR_VERSION_INT 2022031604
 // DEBUG CSR config
 #undef DEBUG_RECORD_CSR
 #undef DEBUG_PCHK_CSR
