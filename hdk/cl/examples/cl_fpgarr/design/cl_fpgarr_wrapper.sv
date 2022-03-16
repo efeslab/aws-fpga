@@ -178,6 +178,10 @@ axi_recorder dma_pcis_bus_recorder (
   .log_S2M(rr_dma_pcis_CL2SH_logging_bus),
   .B_fifo_almful(), .B_fifo_overflow(), .B_fifo_underflow() // not used
 );
+valid_ready_dbg_cnt pcis_dbg_AR(clk, rstn,
+  rr_dma_pcis_record_bus.arvalid, rr_dma_pcis_record_bus.arready);
+valid_ready_dbg_cnt pcis_dbg_R(clk, rstn,
+  rr_dma_pcis_record_bus.rvalid, rr_dma_pcis_record_bus.rready);
 ////////////////////////////////////////////////////////////////////////////////
 // LOG AXIL bus
 ////////////////////////////////////////////////////////////////////////////////

@@ -292,3 +292,19 @@ always_ff @(posedge clk)
          b_cnt <= b_cnt + 1;
    end
 endmodule
+
+module valid_ready_dbg_cnt #(
+   parameter int CNTWIDTH=64
+) (
+   input clk,
+   input rstn,
+   input logic valid,
+   input logic ready
+);
+logic [CNTWIDTH-1:0] cnt;
+always_ff @(posedge clk)
+   if (!rstn)
+      cnt <= 0;
+   else if (valid && ready)
+      cnt <= cnt + 1;
+endmodule
