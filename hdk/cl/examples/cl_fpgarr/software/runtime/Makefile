@@ -45,3 +45,26 @@ check_env:
 ifndef SDK_DIR
     $(error SDK_DIR is undefined. Try "source sdk_setup.sh" to set the software environment)
 endif
+
+RUN_RR = sudo RR_MODE=$(1) $(2)
+RR_NONE = $(call RUN_RR,none,$(1))
+RR_RECORDV = $(call RUN_RR,recordv,$(1))
+RR_REPLAYV = $(call RUN_RR,replayv,$(1))
+# 250MHz
+LOAD_AFI = sudo fpga-load-local-image -S 0 -I agfi-0888d43e1d176f401
+NUM_TEST?=10
+AUTOMATE_TEST_OUT_DIR?=/mnt/output
+BIN=test_dram_dma
+CMDLINE=./$(BIN) -S 0
+RR_TOOL=${CL_FPGARR_ROOT}/software/runtime/rr_tool/rr_tool.opt.elf
+test: $(BIN)
+	for i in `seq -w 1 $(NUM_TEST)`; do \
+	    $(LOAD_AFI); \
+	    $(call RR_NONE, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_none.log; \
+	    $(LOAD_AFI); \
+	    $(call RR_RECORDV, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_recordv.log; \
+	    $(LOAD_AFI); \
+	    $(call RR_REPLAYV, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_replayv.log; \
+	    $(RR_TOOL) v c validate_record.dump validate_replay.dump > $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_diff.txt; \
+	done
+clean:

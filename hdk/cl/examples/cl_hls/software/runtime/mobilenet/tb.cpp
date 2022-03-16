@@ -11,6 +11,7 @@ extern "C" {
 }
 
 #define MEM_1G (1LL*1024LL*1024LL*1024LL)
+#define NUM_LOOP 1000
 
 float image[3][160][320];
 
@@ -197,55 +198,57 @@ int test_one_frame( char* filename )
     const uint64_t DDR_buf_size = 36*16*22*42*sizeof(FIX_FM);
     const uint64_t predict_box_size = 5*sizeof(float);
 
-    rc = do_dma_write((uint8_t*)fix_image_raw_pad, fix_image_raw_pad_size, fix_image_raw_pad_addr, 0, slot_id);
-    fail_on(rc, out, "DMA write failed");
-    rc = do_dma_write((uint8_t*)fix_conv_weight_1x1_all, fix_conv_weight_1x1_all_size, fix_conv_weight_1x1_all_addr, 0, slot_id);
-    fail_on(rc, out, "DMA write failed");
-    rc = do_dma_write((uint8_t*)fix_conv_weight_3x3_all, fix_conv_weight_3x3_all_size, fix_conv_weight_3x3_all_addr, 0, slot_id);
-    fail_on(rc, out, "DMA write failed");
-    rc = do_dma_write((uint8_t*)fix_bias_all, fix_bias_all_size, fix_bias_all_addr, 0, slot_id);
-    fail_on(rc, out, "DMA write failed");
+    for (int i=0; i < NUM_LOOP; ++i) {
+	rc = do_dma_write((uint8_t*)fix_image_raw_pad, fix_image_raw_pad_size, fix_image_raw_pad_addr, 0, slot_id);
+	fail_on(rc, out, "DMA write failed");
+	rc = do_dma_write((uint8_t*)fix_conv_weight_1x1_all, fix_conv_weight_1x1_all_size, fix_conv_weight_1x1_all_addr, 0, slot_id);
+	fail_on(rc, out, "DMA write failed");
+	rc = do_dma_write((uint8_t*)fix_conv_weight_3x3_all, fix_conv_weight_3x3_all_size, fix_conv_weight_3x3_all_addr, 0, slot_id);
+	fail_on(rc, out, "DMA write failed");
+	rc = do_dma_write((uint8_t*)fix_bias_all, fix_bias_all_size, fix_bias_all_addr, 0, slot_id);
+	fail_on(rc, out, "DMA write failed");
 
-    // mobilenet(fix_image_raw_pad,
-    // 		fix_conv_weight_1x1_all,
-    // 		fix_conv_weight_3x3_all,
-	// 		fix_bias_all,
-	// 		DDR_pool_3_out_PL,
-	// 		DDR_pool_6_out_PL,
-	// 		DDR_buf,
-	// 		predict_box);
+	// mobilenet(fix_image_raw_pad,
+	// 		fix_conv_weight_1x1_all,
+	// 		fix_conv_weight_3x3_all,
+	    // 		fix_bias_all,
+	    // 		DDR_pool_3_out_PL,
+	    // 		DDR_pool_6_out_PL,
+	    // 		DDR_buf,
+	    // 		predict_box);
 
-    // Only need to write once
-    hls_poke_ocl(0x04, 1);
-    hls_poke_ocl(0x08, 1);
+	// Only need to write once
+	hls_poke_ocl(0x04, 1);
+	hls_poke_ocl(0x08, 1);
 
-    // Update for each image
-    hls_poke_ocl64(0x10, fix_image_raw_pad_addr);
+	// Update for each image
+	hls_poke_ocl64(0x10, fix_image_raw_pad_addr);
 
-    // Update for each model
-    hls_poke_ocl64(0x1c, fix_conv_weight_1x1_all_addr);
-    hls_poke_ocl64(0x28, fix_conv_weight_3x3_all_addr);
-    hls_poke_ocl64(0x34, fix_bias_all_addr);
+	// Update for each model
+	hls_poke_ocl64(0x1c, fix_conv_weight_1x1_all_addr);
+	hls_poke_ocl64(0x28, fix_conv_weight_3x3_all_addr);
+	hls_poke_ocl64(0x34, fix_bias_all_addr);
 
-    // Only need to write once
-    hls_poke_ocl64(0x40, DDR_pool_3_out_PL_addr);
-    hls_poke_ocl64(0x4c, DDR_pool_6_out_PL_addr);
-    hls_poke_ocl64(0x58, DDR_buf_addr);
+	// Only need to write once
+	hls_poke_ocl64(0x40, DDR_pool_3_out_PL_addr);
+	hls_poke_ocl64(0x4c, DDR_pool_6_out_PL_addr);
+	hls_poke_ocl64(0x58, DDR_buf_addr);
 
-    // Update for each image
-    hls_poke_ocl64(0x64, predict_box_addr);
+	// Update for each image
+	hls_poke_ocl64(0x64, predict_box_addr);
 
-    // Run the accelerator
-    hls_poke_ocl(0x00, 1);
+	// Run the accelerator
+	hls_poke_ocl(0x00, 1);
 
-    hls_wait_task_complete(0x00);
+	hls_wait_task_complete(0x00);
 
-    // Write after each task
-    hls_poke_ocl(0x00, 1 << 4);
-    hls_poke_ocl(0x0c, 1);
+	// Write after each task
+	hls_poke_ocl(0x00, 1 << 4);
+	hls_poke_ocl(0x0c, 1);
 
-    rc = do_dma_read((uint8_t*)predict_box, predict_box_size, predict_box_addr, 0, slot_id);
-    fail_on(rc, out, "DMA read failed");
+	rc = do_dma_read((uint8_t*)predict_box, predict_box_size, predict_box_addr, 0, slot_id);
+	fail_on(rc, out, "DMA read failed");
+    }
 
 out:
 
