@@ -440,45 +440,24 @@ axil_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, BAR1)
   .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.bar1_replayer)
 );
 // the distribution crossbar
-//`define RT_LOGE_FROM_REPLAY
 rr_axi_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_pcim (
-  `ifdef RT_LOGE_FROM_REPLAY
-  .in(pcim_replay_axi_bus),
-  `else
   .in(rr_irq_pcim_bus),
-  `endif
   .o_rt_loge_valid(rt_loge_valid_agg[PCIM])
 );
 rr_axi_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_pcis (
-  `ifdef RT_LOGE_FROM_REPLAY
-  .in(pcis_replay_axi_bus),
-  `else
   .in(rr_dma_pcis_bus),
-  `endif
   .o_rt_loge_valid(rt_loge_valid_agg[PCIS])
 );
 rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_sda (
-  `ifdef RT_LOGE_FROM_REPLAY
-  .in(sda_replay_axil_bus),
-  `else
   .in(rr_sda_bus),
-  `endif
   .o_rt_loge_valid(rt_loge_valid_agg[SDA])
 );
 rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_ocl (
-  `ifdef RT_LOGE_FROM_REPLAY
-  .in(ocl_replay_axil_bus),
-  `else
   .in(rr_ocl_bus),
-  `endif
   .o_rt_loge_valid(rt_loge_valid_agg[OCL])
 );
 rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_bar1 (
-  `ifdef RT_LOGE_FROM_REPLAY
-  .in(bar1_replay_axil_bus),
-  `else
   .in(rr_bar1_bus),
-  `endif
   .o_rt_loge_valid(rt_loge_valid_agg[BAR1])
 );
 rr_rt_loge_crossbar #(
