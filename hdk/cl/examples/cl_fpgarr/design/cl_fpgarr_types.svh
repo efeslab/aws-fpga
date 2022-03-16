@@ -300,45 +300,45 @@ typedef struct packed {
 // rr_mode_csr_t is a interpretation of the RR_MODE csr
 // NOTE: do not forget to sync with the cl_fpgarr.{c,h} (the software lib)
 typedef struct packed {
-  logic recordEn;             // bit 0
-  logic replayEn;             // bit 1
   logic outputValidateEn;     // bit 2
+  logic replayEn;             // bit 1
+  logic recordEn;             // bit 0
 } rr_mode_csr_t;
 
 typedef struct packed {
   struct packed {
     struct packed {
-      logic wb_record_inst;    // bit 0
-      logic pcim_replayer;     // bit 1
-      logic pcis_replayer;     // bit 2
-      logic sda_replayer;      // bit 3
-      logic ocl_replayer;      // bit 4
-      logic bar1_replayer;     // bit 5
-      logic wb_validate_inst;  // bit 6
-      logic pcimB_buf;         // bit 7
+      logic wb_record_inst;         // bit 39
+      logic pcim_replayer;          // bit 38
+      logic pcis_replayer;          // bit 37
+      logic sda_replayer;           // bit 36
+      logic ocl_replayer;           // bit 35
+      logic bar1_replayer;          // bit 34
+      logic wb_validate_inst;       // bit 33
+      logic pcimB_buf;              // bit 32
     } xpm_overflow;
     struct packed {
-      logic wb_record_inst;    // bit 8
-      logic pcim_replayer;     // bit 9
-      logic pcis_replayer;     // bit 10
-      logic sda_replayer;      // bit 11
-      logic ocl_replayer;      // bit 12
-      logic bar1_replayer;     // bit 13
-      logic wb_validate_inst;  // bit 14
-      logic pcimB_buf;         // bit 15
+      logic wb_record_inst;         // bit 31
+      logic pcim_replayer;          // bit 30
+      logic pcis_replayer;          // bit 29
+      logic sda_replayer;           // bit 28
+      logic ocl_replayer;           // bit 27
+      logic bar1_replayer;          // bit 26
+      logic wb_validate_inst;       // bit 25
+      logic pcimB_buf;              // bit 24
     } xpm_underflow;
   } oneoff;
   struct packed {
     struct packed {
-      logic wb_record_hi;      // bit 16
-      logic wb_record_lo;      // bit 17
-      logic wb_validate_hi;    // bit 18
-      logic wb_validate_lo;    // bit 19
-      logic pcimB_buf;         // bit 20
+      logic wb_record_hi;           // bit 23
+      logic wb_record_lo;           // bit 22
+      logic wb_validate_hi;         // bit 21
+      logic wb_validate_lo;         // bit 20
+      logic pcimB_buf;              // bit 19
       struct packed {
-        logic [13:0] almful;   // bit 21-34
-        logic [4:0] rdyrply_almful; // bit 35-40
-      } replay_bus;
+        logic [13:0] almful;        // bit 5-18
+        logic [4:0] rdyrply_almful; // bit 0-4
+      } replay_bus; // end is 0-40
     } almful;
   } rt;
 } rr_state_csr_t;
