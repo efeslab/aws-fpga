@@ -67,3 +67,12 @@ Note2: Unverified temporary Timing Hack
 
 // Hack1: Copy the do_not_touch from other axi interconnect intances.
 // Hack2: Change PIPE_DEPTH from 4 to 16.
+
+Note3: knobes you can tweak (which imply tradeoffs in the FPGARR design)
+ENABLE_HBENCODER_LOGE_COALESCING: trade-off trace size with happens-before fidelity
+
+DEBUG related knobes:
+DEBUG_ILA: For synthesis, enable ILA related debugging circuits
+DEBUG_MERGE_TREE_STRUCTURE: Generate channel informations in simulation, which
+can be futher processed by the treegen.py to generate cpp headers for the trace
+decoder implementation.

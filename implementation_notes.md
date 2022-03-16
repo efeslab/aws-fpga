@@ -15,3 +15,6 @@
 5. When update the userspace tool, remember to execute
    `sdk/userspace/mkall_fpga_mgmt_tools.sh` then
    `sdk/userspace/install_fpga_mgmt_tools.sh`
+6. How to syntesize HLS benchmarks:
+   `HLS_DESIGN=face_detection ./aws_build_dcp_from_cl.sh`
+7. `dram_dma` simulation: `make AXI_MEMORY_MODEL=1 VCS=1 C_TEST=test_dram_dma_hwsw_cosim RR_MODE=none/record(v)/replay(v) /compile/run`
