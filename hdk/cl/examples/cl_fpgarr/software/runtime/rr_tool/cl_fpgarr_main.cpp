@@ -5,7 +5,9 @@
 
 void print_help() {
   puts("rr_tool: [options] cfg_type cmd xxx.dump ...\n");
-  puts("options: -d for dump/verbose\n");
+  puts("options:\n"
+      "\t -d for dump/verbose\n"
+      "\t --hbver2 to enable the end-end definiton of happens-before");
   puts("cfg_type ([-r|-v]) : -r for record_bus_t, -v for validate_bus_t\n");
   puts("cmd ([-a FILE|-c FILE1 -c FILE2]) : -a for analyse (take one file), "
       "-c for compare (take two files)\n");
