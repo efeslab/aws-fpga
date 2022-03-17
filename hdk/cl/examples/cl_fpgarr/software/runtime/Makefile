@@ -27,7 +27,7 @@ include ${CL_FPGARR_ROOT}/software/runtime/libfpgarr/Makefile.inc
 CFLAGS += -I$(LIBFPGARR_PATH)
 
 
-all: test_dram_dma check_env retention cosim $(BIN)
+all: test_dram_dma check_env retention
 
 test_dram_dma: $(OBJ) $(LIBFPGARR_ALL_FILES)
 	$(CC) $(CFLAGS) -o test_dram_dma test_dram_dma.o test_dram_dma_common.o $(LIBFPGARR_SRC) $(LDFLAGS) $(LDLIBS)
@@ -51,7 +51,7 @@ RR_NONE = $(call RUN_RR,none,$(1))
 RR_RECORDV = $(call RUN_RR,recordv,$(1))
 RR_REPLAYV = $(call RUN_RR,replayv,$(1))
 # 250MHz
-LOAD_AFI = sudo fpga-load-local-image -S 0 -I agfi-0888d43e1d176f401
+LOAD_AFI = sudo fpga-load-local-image -S 0 -I agfi-00e0065e59eec807f
 NUM_TEST?=10
 AUTOMATE_TEST_OUT_DIR?=/mnt/output
 BIN=test_dram_dma
@@ -65,6 +65,9 @@ test: $(BIN)
 	    $(call RR_RECORDV, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_recordv.log; \
 	    $(LOAD_AFI); \
 	    $(call RR_REPLAYV, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_replayv.log; \
-	    $(RR_TOOL) v c validate_record.dump validate_replay.dump > $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_diff.txt; \
+	    $(RR_TOOL) -v --hbver2 -c validate_record.dump -c validate_replay.dump >$(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_diff.txt 2>&1; \
+	    for dump in record.dump validate_record.dump validate_replay.dump; do \
+	      mv $${dump} $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_$${dump}; \
+	    done \
 	done
 clean:

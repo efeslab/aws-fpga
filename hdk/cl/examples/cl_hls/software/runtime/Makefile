@@ -67,7 +67,10 @@ test: $(BIN)
 	    $(call RR_RECORDV, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(HLS_DESIGN)_$${i}_recordv.log; \
 	    $(LOAD_AFI); \
 	    $(call RR_REPLAYV, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(HLS_DESIGN)_$${i}_replayv.log; \
-	    $(RR_TOOL) v c validate_record.dump validate_replay.dump > $(AUTOMATE_TEST_OUT_DIR)/$(HLS_DESIGN)_$${i}_diff.txt; \
+	    $(RR_TOOL) -v --hbver2 -c validate_record.dump -c validate_replay.dump > $(AUTOMATE_TEST_OUT_DIR)/$(HLS_DESIGN)_$${i}_diff.txt 2>&1; \
+	    for dump in record.dump validate_record.dump validate_replay.dump; do \
+	      mv $${dump} ${AUTOMATE_TEST_OUT_DIR}/$(BIN)_$${i}_$${dump}; \
+	    done \
 	done
 clean:
 	rm -rf $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
