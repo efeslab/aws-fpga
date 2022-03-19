@@ -466,6 +466,13 @@ class Decoder {
     // commit the dangling loge vector clock even if it is not going to be
     // referenced. This is to get access to the total loge packet counter.
     loge_cnt_vec.push_back(cur_loge_cnt);
+    for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
+      if (channels[i]->logb_loge_cnt_id_vec.size() > channels[i]->loge_loge_cnt_id_vec.size()) {
+        // trace ends but some packets do not finish, this happens because the
+        // happens-before encoder still caches the last loge
+        channels[i]->finishOnePkt(loge_cnt_vec.size());
+      }
+    }
   }
 
   void print_loge_cnt(FILE *fp, size_t loge_cnt_id) {
