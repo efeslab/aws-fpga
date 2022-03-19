@@ -262,3 +262,63 @@ Description: mobilenet_21_12_12-185349 first trial (GEFEI)
     "FpgaImageId": "afi-014eda5df8eda0ad8",
     "FpgaImageGlobalId": "agfi-0d8b993b935da4d0d"
 }
+cl_fpgarr_22_03_16-045258
+Description: cl_fpgarr_22_03_16-045258 cl_fpgarr dram_dma flex PCIM workaround and APP-side rt_loge (GEFEI)
+{
+    "FpgaImageId": "afi-05e72b716bbde062b",
+    "FpgaImageGlobalId": "agfi-00e0065e59eec807f"
+}
+3d_rendering_22_03_17-205701
+Description: 3d_rendering_22_03_17-205701 3d_rendering flex PCIM workaround and APP-side rt_loge (GEFEI)
+{
+    "FpgaImageId": "afi-07c8545f32df89aca",
+    "FpgaImageGlobalId": "agfi-044d05ee4f9e9c30c"
+}
+bnn_22_03_16-210531
+Description: bnn_22_03_16-210531 3d_rendering flex PCIM workaround and APP-side rt_loge (GEFEI)
+{
+    "FpgaImageId": "afi-0f04bd04d99784b81",
+    "FpgaImageGlobalId": "agfi-02e458f6091feb765"
+}
+digit_recognition_22_03_16-211232
+Description: digit_recognition_22_03_16-211232 3d_rendering flex PCIM workaround and APP-side rt_loge (GEFEI)
+{
+    "FpgaImageId": "afi-072064f1055a73c44",
+    "FpgaImageGlobalId": "agfi-016836152205503ce"
+}
+face_detection_22_03_16-211934
+Description: face_detection_22_03_16-211934 3d_rendering flex PCIM workaround and APP-side rt_loge (GEFEI)
+{
+    "FpgaImageId": "afi-05d27576b6954eae5",
+    "FpgaImageGlobalId": "agfi-0f12cdbb0bedf6e83"
+}
+spam_filter_22_03_16-212635
+Description: spam_filter_22_03_16-212635 3d_rendering flex PCIM workaround and APP-side rt_loge (GEFEI)
+{
+    "FpgaImageId": "afi-0aa4eb6cdf2427276",
+    "FpgaImageGlobalId": "agfi-04b4e2a68d529e8ae"
+}
+optical_flow_22_03_17-020330
+Description: optical_flow_22_03_17-020330 3d_rendering flex PCIM workaround and APP-side rt_loge (GEFEI)
+{
+    "FpgaImageId": "afi-0464568d07f822bb9",
+    "FpgaImageGlobalId": "agfi-0d6707a35ffc1d470"
+}
+sssp_22_03_17-021031
+Description: sssp_22_03_17-021031 3d_rendering flex PCIM workaround and APP-side rt_loge (GEFEI)
+{
+    "FpgaImageId": "afi-01ffc6e0a9edede68",
+    "FpgaImageGlobalId": "agfi-0c4bd9790744ee60e"
+}
+sha256_22_03_17-021732
+Description: sha256_22_03_17-021732 3d_rendering flex PCIM workaround and APP-side rt_loge (GEFEI)
+{
+    "FpgaImageId": "afi-01af10fb39dac80d2",
+    "FpgaImageGlobalId": "agfi-090eff61ead0140e0"
+}
+mobilenet_22_03_17-022433
+Description: mobilenet_22_03_17-022433 3d_rendering flex PCIM workaround and APP-side rt_loge (GEFEI)
+{
+    "FpgaImageId": "afi-073be447716c88e38",
+    "FpgaImageGlobalId": "agfi-0c5fcc4a1d01a671a"
+}

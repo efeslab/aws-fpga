@@ -340,3 +340,30 @@ no RR
 app: mobilenet
 commit: 8e0797b
 first trial
+
+22_03_16-045258.nohup.out (GEFEI)
+app: dram
+commit: 73aecdd
+add configurable PCIM workaround and app-side rt_loge
+
+22_03_17-205701.nohup.out (GEFEI)
+app: 3d_rendering
+commit: 3df42e1
+app configurable PCIM workaround and app-side rt_loge. For HLS apps
+
+22_03_16-210531.nohup.out (GEFEI)
+app: bnn
+22_03_16-211232.nohup.out (GEFEI)
+app: digit_recognition
+22_03_16-211934.nohup.out (GEFEI)
+app: face_detection
+22_03_16-212635.nohup.out (GEFEI)
+app: spam_filter
+22_03_17-020330.nohup.out (GEFEI)
+app: optical_flow
+22_03_17-021031.nohup.out (GEFEI)
+app: sssp
+22_03_17-021732.nohup.out (GEFEI)
+app: sha256
+22_03_17-022433.nohup.out (GEFEI)
+app: mobilenet
