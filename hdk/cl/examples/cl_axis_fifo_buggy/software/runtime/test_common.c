@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -37,6 +38,7 @@
 #endif
 
 #include "test_common.h"
+#include <utils/log.h>
 
 
 static const uint16_t AMZ_PCI_VENDOR_ID = 0x1D0F; /* Amazon PCI Vendor ID */
@@ -348,25 +350,99 @@ out:
 #else
 #define BUFFERSIZE (1024*1024*128)
 #endif
-
+#define OCL_INJECT_CNT (65)
+#define OCL_INJECT_SIZE (sizeof(uint32_t) * OCL_INJECT_CNT)
+#define READBACK_SIZE (OCL_INJECT_SIZE + BUFFERSIZE)
+#define REPORT_LIMIT (200)
+typedef enum {
+  APP_CSR_DDR_WAIT_CYC = 0,
+  APP_CSR_DONE,
+  APP_CSR_INJECT,
+  APP_CSR_ALLOW_DDR_W
+} app_csr_idx_t;
+#define APP_CSR_ADDR(idx) (0x4 * idx)
+typedef struct {
+  pthread_t tid;
+} ocl_thread_info_t;
+void *ocl_thread_start(void *);
 int axis_fifo_main(int argc, char *argv[]) {
+  // pcis_mem are all even
   uint32_t *pcis_mem = malloc(BUFFERSIZE);
   fail_on(pcis_mem == NULL, out, "allocate pcis_mem failed");
-  uint32_t *readback_mem = malloc(BUFFERSIZE);
-  fail_on(readback_mem == NULL, out, "allocate readback_mem failed");
   for (uint64_t i = 0; i < BUFFERSIZE/sizeof(uint32_t); ++i) {
-    pcis_mem[i] = i;
+    pcis_mem[i] = 2*i;
   }
-  //fill_buffer_urandom(pcis_mem, BUFFERSIZE);
   int rc;
+  // ocl thread
+  pthread_t ocl_tid;
+  void *ocl_ret;
+#ifdef SV_TEST
+  ocl_thread_start(NULL);
+  // force fifo to fill up to trigger the bug
+  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1);
+#else
+  // on real hardware, poke ocl in a new thread would trigger the bug
+  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1); //
+  rc = pthread_create(&ocl_tid, NULL, &ocl_thread_start, NULL);
+  fail_on(rc, out, "failed to create ocl pthread");
+#endif
+  // continue doing pcis dma write
   rc = do_dma_write(pcis_mem, BUFFERSIZE, 0, 0, slot_id);
   fail_on(rc, out, "DMA write failed");
-  rc = do_dma_read(readback_mem, BUFFERSIZE, 0, 0, slot_id);
+  // sync and notify the FPGA job is fully submitted
+#ifdef SV_TEST
+  // skip
+#else
+  pthread_join(ocl_tid, &ocl_ret);
+#endif
+  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_DONE), 1);
+  // wait for completion (irq)
+  rr_wait_irq(0);
+  // read back and check
+  uint32_t *readback_mem = malloc(READBACK_SIZE);
+  fail_on(readback_mem == NULL, out, "allocate readback_mem failed");
+  memset(readback_mem, 0, READBACK_SIZE);
+  rc = do_dma_read(readback_mem, READBACK_SIZE, 0, 0, slot_id);
   fail_on(rc, out, "DMA read failed");
-  rc = buffer_compare(pcis_mem, readback_mem, BUFFERSIZE);
-  fail_on(rc, out, "compare failed");
+  size_t differences = 0;
+  size_t reported_differences = 0;
+  size_t even_next = 0;
+  size_t odd_next = 1;
+  for (size_t i=0; i < READBACK_SIZE/sizeof(uint32_t); ++i) {
+    uint32_t n = readback_mem[i];
+    if (n % 2) {
+      // odd, from ocl
+      if (odd_next != n) {
+        if (reported_differences < REPORT_LIMIT) {
+          printf("ocl next %d != expected %d\n", n, odd_next);
+          reported_differences++;
+        }
+        differences++;
+      } else
+        odd_next += 2;
+    } else {
+      // even from pcis
+      if (even_next != n) {
+        if (reported_differences < REPORT_LIMIT) {
+          printf("pcis next %d != expected %d\n", n, even_next);
+          reported_differences++;
+        }
+        differences++;
+      } else
+        even_next += 2;
+    }
+  }
+  printf("differences: %d places, odd_next %d, even_next %d\n",
+      differences, odd_next, even_next);
   out:
   free(pcis_mem);
   free(readback_mem);
   return 0;
+}
+void *ocl_thread_start(void *arg) {
+  // ocl are all odd
+  for (size_t i = 0; i < OCL_INJECT_CNT; ++i) {
+    hls_poke_ocl(APP_CSR_ADDR(APP_CSR_INJECT), 2 * i + 1);
+  }
+  return NULL;
 }

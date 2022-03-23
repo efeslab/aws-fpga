@@ -17,6 +17,7 @@
 
 #pragma once
 
+#define CONFIG_LOGLEVEL 4
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -37,7 +38,6 @@
 # include "fpga_dma.h"
 # include <utils/lcd.h>
 #endif
-
 /*
  * MACRO Configuration
  */

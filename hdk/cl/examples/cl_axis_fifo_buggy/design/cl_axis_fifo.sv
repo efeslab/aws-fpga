@@ -279,7 +279,9 @@ axis_app #(
   .clk(clk), .rstn(sync_rst_n),
   .pcis_write_bus(pcis_write_bus),
   .sh_ocl_bus(cl_axil_slv_bus),
-  .ddr_mstr_bus(cl_axi_mstr_bus)
+  .ddr_mstr_bus(cl_axi_mstr_bus),
+  .irq_req(cl_sh_apppf_irq_req[0]),
+  .irq_ack(sh_cl_apppf_irq_ack[0])
 );
 
 ///////////////////////////////////////////////////////////////////////

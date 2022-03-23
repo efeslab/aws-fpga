@@ -1,3 +1,9 @@
+typedef struct packed {
+    logic [31:0] ddr_wait_cyc;
+    logic allow_ddr_w;
+    logic app_done;
+} axis_app_csrs_t;
+
 module axis_app #(
     parameter ADDR_WIDTH,
     parameter DATA_WIDTH
@@ -6,43 +12,78 @@ module axis_app #(
     input wire rstn,
     axi_bus_W_t.master pcis_write_bus,
     axi_lite_bus_t.master sh_ocl_bus,
-    axi_bus_t.slave ddr_mstr_bus
+    axi_bus_t.slave ddr_mstr_bus,
+    output logic irq_req,
+    input logic irq_ack
 );
 
 //// pcis write to axis
-axis_bus_t #(.DATA_WIDTH(DATA_WIDTH), .USER_WIDTH(0)) axis_in();
-axis_bus_t #(.DATA_WIDTH(DATA_WIDTH), .USER_WIDTH(0)) axis_out();
-axi_bus_W_t ddr_w_bus();
+axis_bus_t #(.DATA_WIDTH(DATA_WIDTH), .USER_WIDTH(1)) axis_pcis();
+axis_bus_t #(.DATA_WIDTH(DATA_WIDTH), .USER_WIDTH(1)) axis_ocl();
+axis_bus_t #(.DATA_WIDTH(DATA_WIDTH), .USER_WIDTH(1)) axis_fifo_in();
+axis_bus_t #(.DATA_WIDTH(DATA_WIDTH), .USER_WIDTH(1)) axis_fifo_out();
+
+// counter unit is 32bit, one 512-bit axi transaction is 16 unit
+logic [31:0] pcis_w_cnt;
+logic [31:0] ocl_w_cnt;
+logic [31:0] ddr_w_cnt;
+
 pcis_w_to_axis pcis2axis_inst(
     .clk(clk), .rstn(rstn),
     .pcis_write_bus(pcis_write_bus),
-    .axis(axis_in)
+    .axis(axis_pcis)
 );
+axis_app_csrs_t csrs;
+ocl_csr ocl_csr_inst(
+    .clk(clk), .rstn(rstn),
+    .sh_ocl_bus(sh_ocl_bus),
+    .axis(axis_ocl),
+    .ddr_wait_cyc(/*not used YET TODO*/),
+    .ocl_w_cnt(ocl_w_cnt),
+    .csrs(csrs)
+);
+axis_mstr_arbiter2 axis_arb_inst(
+    .clk(clk), .rstn(rstn),
+    .axisA(axis_ocl), .axisB(axis_pcis), .axisO(axis_fifo_in)
+);
+
+logic status_empty;
 axis_fifo_wrapper #(
     .ADDR_WIDTH(ADDR_WIDTH),
     .DATA_WIDTH(DATA_WIDTH),
     .USER_WIDTH(1)
 ) axis_fifo_inst (
     .clk(clk), .rst(!rstn),
-    .s_axis_tdata(axis_in.tdata),
-    .s_axis_tvalid(axis_in.tvalid),
-    .s_axis_tready(axis_in.tready),
-    .s_axis_tlast(axis_in.tlast),
-    .s_axis_tuser(axis_in.tuser),
-    .m_axis_tdata(axis_out.tdata),
-    .m_axis_tvalid(axis_out.tvalid),
-    .m_axis_tready(axis_out.tready),
-    .m_axis_tlast(axis_out.tlast),
-    .m_axis_tuser(axis_out.tuser),
+    .s_axis_tdata(axis_fifo_in.tdata),
+    .s_axis_tkeep(axis_fifo_in.tkeep),
+    .s_axis_tvalid(axis_fifo_in.tvalid),
+    .s_axis_tready(axis_fifo_in.tready),
+    .s_axis_tlast(axis_fifo_in.tlast),
+    .s_axis_tuser(axis_fifo_in.tuser),
+    .m_axis_tdata(axis_fifo_out.tdata),
+    .m_axis_tkeep(axis_fifo_out.tkeep),
+    .m_axis_tvalid(axis_fifo_out.tvalid),
+    .m_axis_tready(axis_fifo_out.tready),
+    .m_axis_tlast(axis_fifo_out.tlast),
+    .m_axis_tuser(axis_fifo_out.tuser),
     .status_overflow(),
     .status_bad_frame(),
-    .status_good_frame()
+    .status_good_frame(),
+    .status_empty(status_empty)
 );
-
-axis_to_ddr_w axis2ddrw_inst(
+logic flush;
+assign flush = csrs.app_done &&
+                 !axis_pcis.tvalid &&
+                 !axis_ocl.tvalid &&
+                 status_empty &&
+                 !axis_fifo_out.tvalid;
+axi_bus_W_t ddr_w_bus();
+axis_to_ddr_w #(DATA_WIDTH) axis2ddrw_inst(
     .clk(clk), .rstn(rstn),
-    .axis(axis_out),
-    .ddr_w_bus(ddr_w_bus)
+    .axis(axis_fifo_out),
+    .ddr_w_bus(ddr_w_bus),
+    .csrs(csrs),
+    .flush(flush)
 );
 
 // disable read of the ddr_mstr_bus
@@ -64,13 +105,29 @@ assign ddr_w_bus.wready = ddr_mstr_bus.wready;
 assign ddr_w_bus.bvalid = ddr_mstr_bus.bvalid;
 assign ddr_w_bus.bid = ddr_mstr_bus.bid[5:0];
 assign ddr_mstr_bus.bready = ddr_w_bus.bready;
-//// sh_ocl_bus
-// TODO disable everything
-assign sh_ocl_bus.awready = 1;
-assign sh_ocl_bus.wready = 1;
-assign sh_ocl_bus.bvalid = 0;
-assign sh_ocl_bus.arready = 1;
-assign sh_ocl_bus.rvalid = 0;
+//// handle done logic
+// maintain counter
+always_ff @(posedge clk)
+    if (!rstn) begin
+        pcis_w_cnt <= 0;
+        ddr_w_cnt <= 0;
+    end
+    else begin
+        if (pcis_write_bus.wvalid && pcis_write_bus.wready)
+            pcis_w_cnt <= pcis_w_cnt + 16;
+        if (ddr_w_bus.wvalid && ddr_w_bus.wready)
+            ddr_w_cnt <= ddr_w_cnt + 16;
+    end
+// set interrupt
+logic irq_requested = 0, irq_requested_past = 0;
+always_ff @(posedge clk)
+    if (!rstn)
+        irq_requested <= 0;
+    else if (flush && ddr_w_cnt >= pcis_w_cnt + ocl_w_cnt)
+        irq_requested <= 1;
+always_ff @(posedge clk)
+    irq_requested_past <= irq_requested;
+assign irq_req = !irq_requested_past && irq_requested;
 endmodule
 
 module pcis_w_to_axis (
@@ -126,6 +183,7 @@ always_ff @(posedge clk)
     else if (W_state == TRANS && axis.tvalid && axis.tready)
         burst_idx <= burst_idx + 1;
 assign axis.tdata = buf_wdata[burst_idx * axis.DATA_WIDTH +: axis.DATA_WIDTH];
+assign axis.tkeep = {axis.KEEP_WIDTH{1'b1}};
 assign axis.tlast = (burst_idx == (AXIS_BURST-1))? buf_wlast : 0;
 assign axis.tuser = 0;
 assign axis.tvalid = (W_state == TRANS);
@@ -177,22 +235,29 @@ assign pcis_write_bus.bvalid = (AW_state == AW_SENDB);
 assign pcis_write_bus.bresp = 0; // OK
 endmodule
 
-module axis_to_ddr_w (
+module axis_to_ddr_w #(
+    parameter AXIS_DATA_WIDTH
+) (
     input wire clk,
     input wire rstn,
     axis_bus_t.master axis,
-    axi_bus_W_t.slave ddr_w_bus
+    axi_bus_W_t.slave ddr_w_bus,
+    input axis_app_csrs_t csrs,
+    input logic flush
 );
 // do not care write responses
 assign ddr_w_bus.bready = 1;
 
+if (AXIS_DATA_WIDTH != axis.DATA_WIDTH)
+    $error("AXIS_DATA_WIDTH mismatches, param %d, intf %d",
+        AXIS_DATA_WIDTH, axis.DATA_WIDTH);
 localparam WDATA_WIDTH = 512;
-localparam AXIS_BURST = WDATA_WIDTH / axis.DATA_WIDTH;
+localparam AXIS_BURST = WDATA_WIDTH / AXIS_DATA_WIDTH;
 logic [$clog2(AXIS_BURST)-1:0] burst_idx;
 logic [511:0] ddr_wdata = 0;
 logic [63:0] ddr_base_addr = 0;
 
-typedef enum {WAIT_AW, WAIT_W} state_t;
+typedef enum {WAIT_AW, WAIT_W, IDLE} state_t;
 state_t state, state_next;
 always_comb
     case (state)
@@ -203,15 +268,25 @@ always_comb
                 state_next = WAIT_AW;
         WAIT_W:
             if (ddr_w_bus.wvalid && ddr_w_bus.wready)
-                state_next = WAIT_AW;
+                if (flush)
+                    state_next = IDLE;
+                else
+                    state_next = WAIT_AW;
             else
                 state_next = WAIT_W;
+        IDLE:
+            if (flush)
+                state_next = IDLE;
+            else if (csrs.allow_ddr_w)
+                state_next = WAIT_AW;
+            else
+                state_next = IDLE;
         default:
             state_next = state;
     endcase
 always_ff @(posedge clk)
     if (!rstn)
-        state <= WAIT_AW;
+        state <= IDLE;
     else
         state <= state_next;
 //// axis, ignore tkeep, tlast, tuser
@@ -237,15 +312,229 @@ always_ff @(posedge clk)
     else if (ddr_w_bus.awvalid && ddr_w_bus.awready)
         ddr_base_addr <= ddr_base_addr + WDATA_WIDTH / 8;
 assign ddr_w_bus.awaddr = ddr_base_addr;
+
 // W
+logic flush_handled;
 always_ff @(posedge clk)
-    if (!rstn)
+    if (!rstn) begin
         ddr_w_bus.wvalid <= 0;
+        flush_handled <= 0;
+    end
     else if (burst_idx == (AXIS_BURST-1) && axis.tvalid && axis.tready)
         ddr_w_bus.wvalid <= 1;
-    else if (state == WAIT_W && state_next == WAIT_AW)
+    else if (flush && !flush_handled) begin
+        ddr_w_bus.wvalid <= 1;
+        flush_handled <= 1;
+    end
+    else if (state == WAIT_W && state_next != WAIT_W)
         ddr_w_bus.wvalid <= 0;
 assign ddr_w_bus.wstrb = 64'hffffffffffffffff;
 assign ddr_w_bus.wlast = 1;
 assign ddr_w_bus.wdata = ddr_wdata;
+endmodule
+
+module ocl_csr (
+    input wire clk,
+    input wire rstn,
+    axi_lite_bus_t.master sh_ocl_bus,
+    axis_bus_t.slave axis,
+    output logic [31:0] ddr_wait_cyc,
+    output logic [31:0] ocl_w_cnt,
+    output axis_app_csrs_t csrs
+);
+//// ocl read always return zero
+typedef enum {R_IDLE, R_RESP} R_state_t;
+R_state_t Rstate, Rstate_next;
+always_comb
+    case (Rstate)
+        R_IDLE:
+            if (sh_ocl_bus.arvalid && sh_ocl_bus.arready)
+                Rstate_next = R_RESP;
+            else
+                Rstate_next = R_IDLE;
+        R_RESP:
+            if (sh_ocl_bus.rvalid && sh_ocl_bus.rready)
+                Rstate_next = R_IDLE;
+            else
+                Rstate_next = R_RESP;
+        default:
+            Rstate_next = Rstate;
+    endcase
+always_ff @(posedge clk)
+    if (!rstn)
+        Rstate <= R_IDLE;
+    else
+        Rstate <= Rstate_next;
+assign sh_ocl_bus.arready = (Rstate == R_IDLE);
+assign sh_ocl_bus.rvalid = (Rstate == R_RESP);
+assign sh_ocl_bus.rdata = 0;
+assign sh_ocl_bus.rresp = 0; // OK
+
+//// ocl write
+typedef enum {W_IDLE, W_WAIT_W, W_AXIS, W_RESP} W_state_t;
+W_state_t Wstate, Wstate_next;
+logic awaddr_need_axis;
+logic [31:0] buf_awaddr;
+logic [31:0] buf_wdata;
+always_comb
+    case (Wstate)
+        W_IDLE:
+            if (sh_ocl_bus.awvalid && sh_ocl_bus.awready)
+                Wstate_next = W_WAIT_W;
+            else
+                Wstate_next = W_IDLE;
+        W_WAIT_W:
+            if (sh_ocl_bus.wvalid && sh_ocl_bus.wready)
+                if (awaddr_need_axis)
+                    Wstate_next = W_AXIS;
+                else
+                    Wstate_next = W_RESP;
+            else
+                Wstate_next = W_WAIT_W;
+        W_AXIS:
+            if (axis.tvalid && axis.tready)
+                Wstate_next = W_RESP;
+            else
+                Wstate_next = W_AXIS;
+        W_RESP:
+            if (sh_ocl_bus.bvalid && sh_ocl_bus.bready)
+                Wstate_next = W_IDLE;
+            else
+                Wstate_next = W_RESP;
+        default:
+            Wstate_next = Wstate;
+    endcase
+always_ff @(posedge clk)
+    if (!rstn)
+        Wstate <= W_IDLE;
+    else
+        Wstate <= Wstate_next;
+assign sh_ocl_bus.awready = (Wstate == W_IDLE);
+assign sh_ocl_bus.wready = (Wstate == W_WAIT_W);
+assign sh_ocl_bus.bvalid = (Wstate == W_RESP);
+assign sh_ocl_bus.bresp = 0; // OK
+assign axis.tdata = buf_wdata;
+assign axis.tkeep = {axis.KEEP_WIDTH{1'b1}};
+assign axis.tlast = 1;
+assign axis.tuser = 0;
+assign axis.tvalid = (Wstate == W_AXIS);
+// csr address parsing
+typedef enum {
+    DDR_WAIT_CYC = 0,
+    DONE,
+    INJECT,
+    ALLOW_DDR_W,
+    TOTAL_CSR_NUM
+} csr_t;
+`define CSR_ADDR(idx) (idx << 2)
+always_ff @(posedge clk)
+    if (!rstn)
+        buf_awaddr <= 0;
+    else if (sh_ocl_bus.awvalid && sh_ocl_bus.awready) begin
+        buf_awaddr <= sh_ocl_bus.awaddr;
+        awaddr_need_axis <= (sh_ocl_bus.awaddr == `CSR_ADDR(INJECT));
+    end
+always_ff @(posedge clk)
+    if (!rstn) begin
+        csrs.ddr_wait_cyc <= 0;
+        csrs.app_done <= 0;
+        csrs.allow_ddr_w <= 0;
+        ocl_w_cnt <= 0;
+        buf_wdata <= 0;
+    end
+    else if (sh_ocl_bus.wvalid && sh_ocl_bus.wready)
+        case (buf_awaddr)
+            `CSR_ADDR(DDR_WAIT_CYC):
+                csrs.ddr_wait_cyc <= sh_ocl_bus.wdata;
+            `CSR_ADDR(DONE):
+                csrs.app_done <= 1;
+            `CSR_ADDR(ALLOW_DDR_W):
+                csrs.allow_ddr_w <= 1;
+            `CSR_ADDR(INJECT): begin
+                ocl_w_cnt <= ocl_w_cnt + 1;
+                buf_wdata <= sh_ocl_bus.wdata;
+             end
+        endcase
+endmodule
+
+// arbiter two axis with respect to their `tlast`
+// axisA has a higher priority than axisB
+module axis_mstr_arbiter2 (
+    input wire clk,
+    input wire rstn,
+    axis_bus_t.master axisA,
+    axis_bus_t.master axisB,
+    axis_bus_t.slave axisO
+);
+if (axisA.DATA_WIDTH != axisB.DATA_WIDTH ||
+    axisA.DATA_WIDTH != axisO.DATA_WIDTH)
+    $error("DATA_WIDTH mismtaches, axisA %d, axisB %d, axisO %d",
+        axisA.DATA_WIDTH, axisB.DATA_WIDTH, axisO.DATA_WIDTH);
+if (axisA.USER_WIDTH != axisB.USER_WIDTH ||
+    axisA.USER_WIDTH != axisO.USER_WIDTH)
+    $error("USER_WIDTH mismatches, axisA %d, axisB %d, axisO %d",
+        axisA.USER_WIDTH, axisB.USER_WIDTH, axisO.USER_WIDTH);
+typedef enum {IDLE, FWDA, FWDB} state_t;
+// IDLE -> tvalid && tready && !tlast -> FWDA/FWDB
+//      -> else -> IDLE
+state_t state, state_next;
+// fowarding state transition
+always_comb
+    case (state)
+        IDLE:
+            if (axisO.tvalid && axisO.tready && !axisO.tlast)
+                if (axisA.tvalid)
+                    state_next = FWDA;
+                else
+                    state_next = FWDB;
+            else
+                state_next = IDLE;
+        FWDA:
+            if (axisO.tvalid && axisO.tready && axisO.tlast)
+                state_next = IDLE;
+            else
+                state_next = FWDA;
+        FWDB:
+            if (axisO.tvalid && axisO.tready && axisO.tlast)
+                state_next = IDLE;
+            else
+                state_next = FWDB;
+        default:
+            state_next = state;
+    endcase
+always_ff @(posedge clk)
+    if (!rstn)
+        state <= IDLE;
+    else
+        state <= state_next;
+`define ASSIGN_AXIS(from, to)                       \
+    to.tvalid = from.tvalid;                        \
+    to.tdata = from.tdata;                          \
+    to.tkeep = from.tkeep;                          \
+    to.tlast = from.tlast;                          \
+    to.tuser = from.tuser;                          \
+    from.tready = to.tready
+always_comb
+    case (state)
+        IDLE:
+            if (axisA.tvalid) begin
+                `ASSIGN_AXIS(axisA, axisO);
+                axisB.tready = 0;
+            end else begin
+                `ASSIGN_AXIS(axisB, axisO);
+                axisA.tready = 0;
+            end
+        FWDA: begin
+            `ASSIGN_AXIS(axisA, axisO);
+            axisB.tready = 0;
+        end
+        FWDB: begin
+            `ASSIGN_AXIS(axisB, axisO);
+            axisA.tready = 0;
+        end
+        default: begin
+            `ASSIGN_AXIS(axisA, axisO);
+            axisB.tready = 0;
+        end
+    endcase
 endmodule
