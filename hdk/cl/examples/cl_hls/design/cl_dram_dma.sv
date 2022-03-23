@@ -72,7 +72,6 @@ axi_bus_t lcl_cl_sh_ddrd();
 axi_bus_t cl_sh_ddr_bus();
 
 axi_bus_t sh_cl_dma_pcis_bus();
-axi_bus_t cl_sh_pcim_bus();
 
 axi_lite_bus_t sh_ocl_bus();
 axi_lite_bus_t cl_axil_slv_bus();
