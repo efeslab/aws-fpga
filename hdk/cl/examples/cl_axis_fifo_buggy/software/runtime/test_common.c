@@ -387,7 +387,7 @@ int axis_fifo_main(int argc, char *argv[]) {
   fail_on(rc, out, "failed to create ocl pthread");
 #endif
   // continue doing pcis dma write
-  rc = do_dma_write(pcis_mem, BUFFERSIZE, 0, 0, slot_id);
+  rc = do_dma_write((uint8_t*)pcis_mem, BUFFERSIZE, 0, 0, slot_id);
   fail_on(rc, out, "DMA write failed");
   // sync and notify the FPGA job is fully submitted
 #ifdef SV_TEST
@@ -402,12 +402,12 @@ int axis_fifo_main(int argc, char *argv[]) {
   uint32_t *readback_mem = malloc(READBACK_SIZE);
   fail_on(readback_mem == NULL, out, "allocate readback_mem failed");
   memset(readback_mem, 0, READBACK_SIZE);
-  rc = do_dma_read(readback_mem, READBACK_SIZE, 0, 0, slot_id);
+  rc = do_dma_read((uint8_t*)readback_mem, READBACK_SIZE, 0, 0, slot_id);
   fail_on(rc, out, "DMA read failed");
   size_t differences = 0;
   size_t reported_differences = 0;
-  size_t even_next = 0;
-  size_t odd_next = 1;
+  uint32_t even_next = 0;
+  uint32_t odd_next = 1;
   for (size_t i=0; i < READBACK_SIZE/sizeof(uint32_t); ++i) {
     uint32_t n = readback_mem[i];
     if (n % 2) {
@@ -432,7 +432,7 @@ int axis_fifo_main(int argc, char *argv[]) {
         even_next += 2;
     }
   }
-  printf("differences: %d places, odd_next %d, even_next %d\n",
+  printf("differences: %ld places, odd_next %d, even_next %d\n",
       differences, odd_next, even_next);
   out:
   free(pcis_mem);

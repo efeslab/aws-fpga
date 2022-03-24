@@ -36,7 +36,7 @@ RR_TOOL=${CL_FPGARR_ROOT}/software/runtime/rr_tool/rr_tool.opt.elf
 
 # For HLS
 CXXFLAGS = $(CFLAGS) -I$(XILINX_HLS)/include
-LDLIBS += -lminizip -lz -lcrypto
+LDLIBS += -lpthread
 
 #### Helper functions
 RUN_RR = sudo RR_MODE=$(1) $(2)
@@ -48,17 +48,14 @@ HLS_GEN_DIR=../../gen
 NUM_TEST?=10
 AUTOMATE_TEST_OUT_DIR?=/mnt/output
 
-ifdef HLS_DESIGN
-BIN = $(HLS_DESIGN)_hw.elf
-CFLAGS += -I$(HLS_DESIGN)
-CXXFLAGS += -I$(HLS_DESIGN)
-include $(HLS_DESIGN)/Makefile.inc
+BIN=axis_fifo_hw.elf
+APP_AGFI_ID=agfi-0b8859973daac7576
 all: $(BIN)
-$(BIN): $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
-	$(HLS_DESIGN_COMPILER) -o $@ $(CFLAGS) $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)$ $(LDFLAGS) $(LDLIBS)
+$(BIN): $(LIBFPGARR_OBJ) $(LIB_OBJ)
+	$(CC) -o $@ $(CFLAGS) $(LIBFPGARR_OBJ) $(LIB_OBJ)$ $(LDFLAGS) $(LDLIBS)
 .PHONY: test
-LOAD_AFI = $(call LOAD_AFI_TPL, $(HLS_DESIGN_AGFI_ID))
-CMDLINE = $(HLS_DESIGN_TEST_ENV) ./$(BIN) $(HLS_DESIGN_TEST_ARGS)
+LOAD_AFI = $(call LOAD_AFI_TPL, $(APP_AGFI_ID))
+CMDLINE = ./$(BIN)
 test: $(BIN)
 	for i in `seq -w 1 $(NUM_TEST)`; do \
 	    $(LOAD_AFI); \
@@ -73,17 +70,7 @@ test: $(BIN)
 	    done \
 	done
 clean:
-	rm -rf $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
-else
-all: $(ALL_HLS_DESIGN)
-	@for i in $^; do $(MAKE) HLS_DESIGN=$$i; done
-test_all: $(ALL_HLS_DESIGN)
-	# This cannot be paralleled so do not use $(MAKE)
-	@for i in $^; do make HLS_DESIGN=$$i test; done
-clean: $(ALL_HLS_DESIGN)
-	@for i in $^; do $(MAKE) HLS_DESIGN=$$i clean; done
-	rm *.elf
-endif
+	rm -rf *.elf $(LIBFPGARR_OBJ) $(LIB_OBJ)
 
 check_env:
 ifndef SDK_DIR
