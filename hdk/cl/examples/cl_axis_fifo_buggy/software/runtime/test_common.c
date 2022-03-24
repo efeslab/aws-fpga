@@ -359,7 +359,8 @@ typedef enum {
   APP_CSR_DDR_WAIT_CYC = 0,
   APP_CSR_DONE,
   APP_CSR_INJECT,
-  APP_CSR_ALLOW_DDR_W
+  APP_CSR_ALLOW_DDR_W,
+  APP_CSR_ALLOW_DDR_W_INTVL, // 0 is disable
 } app_csr_idx_t;
 #define APP_CSR_ADDR(idx) (0x4 * idx)
 typedef struct {
@@ -380,7 +381,8 @@ int axis_fifo_main(int argc, char *argv[]) {
 #ifdef SV_TEST
   ocl_thread_start(NULL);
   // force fifo to fill up to trigger the bug
-  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1);
+  //hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1);
+  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W_INTVL), 4000);
 #else
   // on real hardware, poke ocl in a new thread would trigger the bug
   hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1); //
