@@ -145,7 +145,6 @@ logic [$clog2(AXIS_BURST)-1:0] burst_idx;
 typedef enum {IDLE, TRANS} W_state_t;
 W_state_t W_state, W_state_next;
 logic [511:0] buf_wdata = 512'h0;
-logic buf_wlast = 0;
 
 // W_state transition
 always_comb
@@ -173,7 +172,6 @@ always_ff @(posedge clk)
 always_ff @(posedge clk)
     if ((W_state == IDLE) && (W_state_next == TRANS)) begin
         buf_wdata <= pcis_write_bus.wdata;
-        buf_wlast <= pcis_write_bus.wlast;
     end
 
 // axis
@@ -184,7 +182,7 @@ always_ff @(posedge clk)
         burst_idx <= burst_idx + 1;
 assign axis.tdata = buf_wdata[burst_idx * axis.DATA_WIDTH +: axis.DATA_WIDTH];
 assign axis.tkeep = {axis.KEEP_WIDTH{1'b1}};
-assign axis.tlast = (burst_idx == (AXIS_BURST-1))? buf_wlast : 0;
+assign axis.tlast = (burst_idx == (AXIS_BURST-1))? 1 : 0;
 assign axis.tuser = 0;
 assign axis.tvalid = (W_state == TRANS);
 

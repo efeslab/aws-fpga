@@ -354,6 +354,7 @@ out:
 #define OCL_INJECT_SIZE (sizeof(uint32_t) * OCL_INJECT_CNT)
 #define READBACK_SIZE (OCL_INJECT_SIZE + BUFFERSIZE)
 #define REPORT_LIMIT (200)
+#define BUFFER_ALIGNMENT (4096)
 typedef enum {
   APP_CSR_DDR_WAIT_CYC = 0,
   APP_CSR_DONE,
@@ -367,7 +368,7 @@ typedef struct {
 void *ocl_thread_start(void *);
 int axis_fifo_main(int argc, char *argv[]) {
   // pcis_mem are all even
-  uint32_t *pcis_mem = malloc(BUFFERSIZE);
+  uint32_t *pcis_mem = aligned_alloc(BUFFER_ALIGNMENT, BUFFERSIZE);
   fail_on(pcis_mem == NULL, out, "allocate pcis_mem failed");
   for (uint64_t i = 0; i < BUFFERSIZE/sizeof(uint32_t); ++i) {
     pcis_mem[i] = 2*i;
@@ -399,7 +400,7 @@ int axis_fifo_main(int argc, char *argv[]) {
   // wait for completion (irq)
   rr_wait_irq(0);
   // read back and check
-  uint32_t *readback_mem = malloc(READBACK_SIZE);
+  uint32_t *readback_mem = aligned_alloc(BUFFER_ALIGNMENT, READBACK_SIZE);
   fail_on(readback_mem == NULL, out, "allocate readback_mem failed");
   memset(readback_mem, 0, READBACK_SIZE);
   rc = do_dma_read((uint8_t*)readback_mem, READBACK_SIZE, 0, 0, slot_id);
