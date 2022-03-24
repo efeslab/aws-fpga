@@ -22,7 +22,7 @@ module cl_axis_fifo #(parameter NUM_DDR=4)
 
 `include "cl_common_defines.vh"      // CL Defines for all examples
 `include "cl_id_defines.vh"          // Defines for ID0 and ID1 (PCI ID's)
-`include "cl_dram_dma_defines.vh"
+`include "cl_axis_fifo_defines.vh"
 
 // TIE OFF ALL UNUSED INTERFACES
 // Including all the unused interface to tie off
