@@ -123,11 +123,24 @@ logic irq_requested = 0, irq_requested_past = 0;
 always_ff @(posedge clk)
     if (!rstn)
         irq_requested <= 0;
-    else if (flush && ddr_w_cnt >= pcis_w_cnt + ocl_w_cnt)
+    else if (flush && !ddr_w_bus.awvalid && !ddr_w_bus.wvalid)
         irq_requested <= 1;
 always_ff @(posedge clk)
     irq_requested_past <= irq_requested;
 assign irq_req = !irq_requested_past && irq_requested;
+/////// debug related
+logic [31:0] axis_fifo_out_cnt;
+logic [31:0] axis_fifo_in_cnt;
+always_ff @(posedge clk)
+    if (!rstn) begin
+        axis_fifo_in_cnt <= 0;
+        axis_fifo_out_cnt <= 0;
+    end else begin
+        if (axis_fifo_in.tvalid && axis_fifo_in.tready)
+            axis_fifo_in_cnt <= axis_fifo_in_cnt + 1;
+        if (axis_fifo_out.tvalid && axis_fifo_out.tready)
+            axis_fifo_out_cnt <= axis_fifo_out_cnt + 1;
+    end
 endmodule
 
 module pcis_w_to_axis (
@@ -255,6 +268,12 @@ logic [$clog2(AXIS_BURST)-1:0] burst_idx;
 logic [511:0] ddr_wdata = 0;
 logic [63:0] ddr_base_addr = 0;
 
+//
+// IDLE --allow_ddr_w-->WAIT_AW----->WAIT_W
+//  ⌃                                  |
+//  |                                  |
+//  *-------flush/!allow_ddr_w---------*
+//
 typedef enum {WAIT_AW, WAIT_W, IDLE} state_t;
 state_t state, state_next;
 always_comb
@@ -266,7 +285,7 @@ always_comb
                 state_next = WAIT_AW;
         WAIT_W:
             if (ddr_w_bus.wvalid && ddr_w_bus.wready)
-                if (flush)
+                if (flush || !csrs.allow_ddr_w)
                     state_next = IDLE;
                 else
                     state_next = WAIT_AW;
@@ -422,6 +441,7 @@ typedef enum {
     DONE,
     INJECT,
     ALLOW_DDR_W,
+    ALLOW_DDR_W_INTVL, // 0 is disable
     TOTAL_CSR_NUM
 } csr_t;
 `define CSR_ADDR(idx) (idx << 2)
@@ -432,6 +452,8 @@ always_ff @(posedge clk)
         buf_awaddr <= sh_ocl_bus.awaddr;
         awaddr_need_axis <= (sh_ocl_bus.awaddr == `CSR_ADDR(INJECT));
     end
+logic [31:0] allow_ddr_w_intvl_csr;
+logic [31:0] allow_ddr_w_intvl_clkcnt = 0;
 always_ff @(posedge clk)
     if (!rstn) begin
         csrs.ddr_wait_cyc <= 0;
@@ -447,12 +469,26 @@ always_ff @(posedge clk)
             `CSR_ADDR(DONE):
                 csrs.app_done <= 1;
             `CSR_ADDR(ALLOW_DDR_W):
-                csrs.allow_ddr_w <= 1;
+                csrs.allow_ddr_w <= sh_ocl_bus.wdata[0];
+            `CSR_ADDR(ALLOW_DDR_W_INTVL):
+                allow_ddr_w_intvl_csr <= sh_ocl_bus.wdata;
             `CSR_ADDR(INJECT): begin
                 ocl_w_cnt <= ocl_w_cnt + 1;
                 buf_wdata <= sh_ocl_bus.wdata;
              end
         endcase
+    else if ((allow_ddr_w_intvl_csr != 0) &&
+             (allow_ddr_w_intvl_csr == allow_ddr_w_intvl_clkcnt))
+        // flip csrs_allow_ddr_w
+        csrs.allow_ddr_w <= !csrs.allow_ddr_w;
+
+always_ff @(posedge clk)
+    if (!rstn)
+        allow_ddr_w_intvl_clkcnt <= 0;
+    else if (allow_ddr_w_intvl_clkcnt >= allow_ddr_w_intvl_csr)
+        allow_ddr_w_intvl_clkcnt <= 0;
+    else
+        allow_ddr_w_intvl_clkcnt <= allow_ddr_w_intvl_clkcnt + 1;
 endmodule
 
 // arbiter two axis with respect to their `tlast`
