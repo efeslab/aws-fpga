@@ -40,6 +40,7 @@ file copy -force $CL_DIR/design/cl_id_defines.vh                   $TARGET_DIR
 file copy -force $CL_DIR/design/cl_axis_fifo_pkg.sv                $TARGET_DIR
 file copy -force $CL_DIR/design/cl_axis_fifo.sv                    $TARGET_DIR
 file copy -force $CL_DIR/design/axis_app.sv                        $TARGET_DIR
+file copy -force $CL_DIR/design/axis_fifo_wrapper_losscheck.sv     $TARGET_DIR
 file copy -force $CL_DIR/design/axis_fifo_wrapper.sv               $TARGET_DIR
 file copy -force $CL_DIR/design/axis_fifo.v                        $TARGET_DIR
 file copy -force $CL_DIR/design/cl_dma_pcis_slv.sv                 $TARGET_DIR

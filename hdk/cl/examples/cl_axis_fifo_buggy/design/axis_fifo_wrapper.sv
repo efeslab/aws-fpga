@@ -1,5 +1,5 @@
 module axis_fifo_wrapper #(
-    parameter ADDR_WIDTH = 6,
+    parameter ADDR_WIDTH = 10,
     parameter DATA_WIDTH = 32,
     parameter USER_WIDTH = 1,
     parameter KEEP_WIDTH = (DATA_WIDTH/8)
