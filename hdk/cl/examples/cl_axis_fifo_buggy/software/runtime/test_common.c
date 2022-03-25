@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <assert.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -381,8 +382,9 @@ int axis_fifo_main(int argc, char *argv[]) {
 #ifdef SV_TEST
   ocl_thread_start(NULL);
   // force fifo to fill up to trigger the bug
-  //hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1);
-  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W_INTVL), 4000);
+  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1);
+  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_DDR_WAIT_CYC), 10);
+  //hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W_INTVL), 4000);
 #else
   // on real hardware, poke ocl in a new thread would trigger the bug
   hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1); //
@@ -407,36 +409,44 @@ int axis_fifo_main(int argc, char *argv[]) {
   memset(readback_mem, 0, READBACK_SIZE);
   rc = do_dma_read((uint8_t*)readback_mem, READBACK_SIZE, 0, 0, slot_id);
   fail_on(rc, out, "DMA read failed");
-  size_t differences = 0;
-  size_t reported_differences = 0;
-  uint32_t even_next = 0;
-  uint32_t odd_next = 1;
-  for (size_t i=0; i < READBACK_SIZE/sizeof(uint32_t); ++i) {
+  size_t unexpected = 0, minus1_counter = 0, oob_counter = 0;
+
+  uint32_t *counters = aligned_alloc(BUFFER_ALIGNMENT, 2*BUFFERSIZE);
+  for (size_t i = 0; i < 2*BUFFERSIZE/sizeof(uint32_t); ++i) {
+    counters[i] = 0;
+  }
+  for (size_t i = 0; i < READBACK_SIZE/sizeof(uint32_t); ++i) {
     uint32_t n = readback_mem[i];
-    if (n % 2) {
-      // odd, from ocl
-      if (odd_next != n) {
-        if (reported_differences < REPORT_LIMIT) {
-          printf("ocl next %d != expected %d\n", n, odd_next);
-          reported_differences++;
-        }
-        differences++;
-      } else
-        odd_next += 2;
+    printf("%d\n", n);
+    if (0 <= n && n < 2*BUFFERSIZE/sizeof(uint32_t)) {
+      counters[n]++;
+    } else if (n == -1) {
+      minus1_counter++;
     } else {
-      // even from pcis
-      if (even_next != n) {
-        if (reported_differences < REPORT_LIMIT) {
-          printf("pcis next %d != expected %d\n", n, even_next);
-          reported_differences++;
-        }
-        differences++;
-      } else
-        even_next += 2;
+      oob_counter++;
     }
   }
-  printf("differences: %ld places, odd_next %d, even_next %d\n",
-      differences, odd_next, even_next);
+  for (size_t i = 0; i < 2*BUFFERSIZE/sizeof(uint32_t); ++i) {
+    if (i % 2) {
+      // odd, from ocl
+      if (i < 2 * OCL_INJECT_CNT + 1) {
+        if (counters[i] != 1) {
+          printf("ocl %d expected 1 got %d\n", i, counters[i]);
+          unexpected++;
+        }
+      } else {
+        continue;
+      }
+    } else {
+      if (counters[i] != 1) {
+        printf("pcis %d expected 1 got %d\n", i, counters[i]);
+        unexpected++;
+      }
+    }
+  }
+
+  printf("total: %ld, unexpected: %ld places, -1: %ld places, oob: %ld places\n",
+          BUFFERSIZE/sizeof(uint32_t) + OCL_INJECT_CNT, unexpected, minus1_counter, oob_counter);
   out:
   free(pcis_mem);
   free(readback_mem);

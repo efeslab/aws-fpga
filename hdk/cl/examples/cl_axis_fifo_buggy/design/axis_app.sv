@@ -48,10 +48,15 @@ axis_mstr_arbiter2 axis_arb_inst(
 );
 
 logic status_empty;
+`ifdef LOSSCHECK
+axis_fifo_wrapper_losscheck #(
+    .ASSERT_ON(1)
+`else
 axis_fifo_wrapper #(
     .ADDR_WIDTH(ADDR_WIDTH),
     .DATA_WIDTH(DATA_WIDTH),
     .USER_WIDTH(1)
+`endif
 ) axis_fifo_inst (
     .clk(clk), .rst(!rstn),
     .s_axis_tdata(axis_fifo_in.tdata),
@@ -276,6 +281,7 @@ logic [63:0] ddr_base_addr = 0;
 //
 typedef enum {WAIT_AW, WAIT_W, IDLE} state_t;
 state_t state, state_next;
+logic flush_handled;
 always_comb
     case (state)
         WAIT_AW:
@@ -285,7 +291,7 @@ always_comb
                 state_next = WAIT_AW;
         WAIT_W:
             if (ddr_w_bus.wvalid && ddr_w_bus.wready)
-                if (flush || !csrs.allow_ddr_w)
+                if ((flush && flush_handled) || !csrs.allow_ddr_w)
                     state_next = IDLE;
                 else
                     state_next = WAIT_AW;
@@ -306,8 +312,28 @@ always_ff @(posedge clk)
         state <= IDLE;
     else
         state <= state_next;
+
+logic tready_prepare;
+logic [15:0] tready_prepare_counter;
+assign tready_prepare = (state == WAIT_W);
+assign axis.tready = tready_prepare && tready_prepare_counter == 0;
+
+always_ff @(posedge clk) begin
+    if (!rstn) begin
+        tready_prepare_counter <= 0;
+    end else begin
+        if (axis.tready && axis.tvalid) begin
+            tready_prepare_counter <= csrs.ddr_wait_cyc;
+        end else if (tready_prepare && axis.tvalid) begin
+            tready_prepare_counter <= tready_prepare_counter - 1;
+        end else begin
+            tready_prepare_counter <= csrs.ddr_wait_cyc;
+        end
+    end
+end
+
 //// axis, ignore tkeep, tlast, tuser
-assign axis.tready = (state == WAIT_W);
+//assign axis.tready = (state == WAIT_W);
 always_ff @(posedge clk)
     if (!rstn) begin
         burst_idx <= 0;
@@ -331,7 +357,6 @@ always_ff @(posedge clk)
 assign ddr_w_bus.awaddr = ddr_base_addr;
 
 // W
-logic flush_handled;
 always_ff @(posedge clk)
     if (!rstn) begin
         ddr_w_bus.wvalid <= 0;
@@ -340,7 +365,7 @@ always_ff @(posedge clk)
     else if (burst_idx == (AXIS_BURST-1) && axis.tvalid && axis.tready)
         ddr_w_bus.wvalid <= 1;
     else if (flush && !flush_handled) begin
-        ddr_w_bus.wvalid <= 1;
+        ddr_w_bus.wvalid <= (burst_idx != 0);
         flush_handled <= 1;
     end
     else if (state == WAIT_W && state_next != WAIT_W)

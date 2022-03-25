@@ -86,6 +86,11 @@ read_ip [ list \
   $HDK_SHELL_DESIGN_DIR/ip/vio_0/vio_0.xci
 ]
 
+#Read ILA IP
+read_ip [ list \
+  $CL_DIR/design/ip/ila_losscheck/ila_losscheck.xci
+]
+
 # Additional IP's that might be needed if using the DDR
 read_bd [ list \
   $HDK_SHELL_DESIGN_DIR/ip/cl_axi_interconnect/cl_axi_interconnect.bd

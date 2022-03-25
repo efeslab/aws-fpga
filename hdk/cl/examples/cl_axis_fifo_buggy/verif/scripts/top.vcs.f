@@ -62,8 +62,10 @@ ${CL_ROOT}/design/cl_dma_pcis_slv.sv
 ${CL_ROOT}/design/axis_app.sv
 ${CL_ROOT}/design/axis_fifo.v
 ${CL_ROOT}/design/axis_fifo_wrapper.sv
+${CL_ROOT}/design/axis_fifo_wrapper_losscheck.sv
 ${CL_ROOT}/design/cl_axis_fifo.sv
 ${CL_ROOT}/design/cl_ocl_slv_reg.sv
+${CL_ROOT}/design/ip/ila_losscheck/sim/ila_losscheck.v
 
 -f ${CL_FPGARR_ROOT}/verif/scripts/cl_fpgarr_sim.f
 
@@ -72,3 +74,4 @@ ${TEST_NAME}
 
 +define+DEBUG_INTERCONNECT
 +define+SIMULATION_AVOID_X
++define+LOSSCHECK
