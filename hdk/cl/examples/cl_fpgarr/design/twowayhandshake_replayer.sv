@@ -71,28 +71,32 @@ module twowayhandshake_replayer #(
 typedef enum logic [1:0] { EMPTY, BUSY, FULL } FSM_t;
 FSM_t state;
 FSM_t state_next;
-logic r_logb_valid;
+// loge_valid-only packets are aggregated and not buffered at all
+// only logb_valid will be buffered together with their corresponding
+// vector clock (i.e. loge_cnt)
 logic [DATA_WIDTH-1:0] r_logb_data;
-logic [LOGE_CHANNEL_CNT-1:0] r_loge_valid;
+logic [PKT_CNT_WIDTH-1:0] r_loge_cnt [LOGE_CHANNEL_CNT-1:0];
 // registered output
-logic o_logb_valid;
 logic [DATA_WIDTH-1:0] o_logb_data;
-logic [LOGE_CHANNEL_CNT-1:0] o_loge_valid;
+logic [PKT_CNT_WIDTH-1:0] o_loge_cnt [LOGE_CHANNEL_CNT-1:0];
+logic [PKT_CNT_WIDTH-1:0] o_loge_cnt_next [LOGE_CHANNEL_CNT-1:0];
 
-always @(posedge clk)
-if (!rstn)
-  state <= EMPTY;
-else
-  state <= state_next;
-
-logic insert_replay;
-assign insert_replay = in_valid && in_ready;
-logic remove_replay, remove_logb_done, remove_loge_done;
-// finish replay a logb (need to wait for CL)
-assign remove_logb_done = out_valid && out_ready;
-// no logb to replay, just track the loge (1 cycle, fast path)
-assign remove_loge_done = (state != EMPTY) && !o_logb_valid;
-assign remove_replay = remove_logb_done || remove_loge_done;
+logic insert_replay, remove_replay;
+assign insert_replay = in_valid && in_ready && logb_valid;
+assign remove_replay = out_valid && out_ready;
+////////////////////////////////////////////////////////////////////////////////
+// Vector clock forward declarement
+// loge_cnt aggregates all incoming loge_valid (i.e. the replay packet counter)
+// rt_loge_cnt aggregates all incoming real-time loge_valid (i.e. runtime packet
+// counter)
+// Only allow replay a valid if runtime packet counter >= replay packet counter
+// In the following state machine, only logb_valid (a transaction begin/valid
+// to replay) will be buffered. All loge_valid will be consumed immediately.
+////////////////////////////////////////////////////////////////////////////////
+logic [PKT_CNT_WIDTH-1:0] rt_loge_cnt [LOGE_CHANNEL_CNT-1:0];
+wire [PKT_CNT_WIDTH-1:0] rt_loge_cnt_next [LOGE_CHANNEL_CNT-1:0];
+logic [PKT_CNT_WIDTH-1:0] loge_cnt [LOGE_CHANNEL_CNT-1:0];
+wire [PKT_CNT_WIDTH-1:0] loge_cnt_next [LOGE_CHANNEL_CNT-1:0];
 
 always_comb
   case (state)
@@ -121,65 +125,66 @@ always_comb
     default:
       state_next = state;
   endcase
+always @(posedge clk)
+if (!rstn)
+  state <= EMPTY;
+else
+  state <= state_next;
 
-// register buffer for replay_data
+// register buffer for logb replay_data
 always @(posedge clk)
 if (!rstn) begin
-  r_logb_valid <= 0;
   r_logb_data <= 0;
-  r_loge_valid <= 0;
+  for (int i=0; i < LOGE_CHANNEL_CNT; i=i+1)
+    r_loge_cnt[i] <= 0;
 end
 else if ((state == BUSY) && (state_next == FULL)) begin
-  r_logb_valid <= logb_valid;
   r_logb_data <= logb_data;
-  r_loge_valid <= loge_valid;
+  for (int i=0; i < LOGE_CHANNEL_CNT; i=i+1)
+    r_loge_cnt[i] <= loge_cnt_next[i];
 end
 
 // output register
 always @(posedge clk)
 if (!rstn) begin
   o_logb_data <= 0;
-  o_loge_valid <= 0;
 end
 else if (state_next == BUSY)  begin
   if (state == FULL) begin
     o_logb_data <= r_logb_data;
-    o_loge_valid <= r_loge_valid;
   end
   else if (insert_replay) begin // shifting from load or flow
     o_logb_data <= logb_data;
-    o_loge_valid <= loge_valid;
   end
 end
-//// logb_valid is special, I need o_logb_valid_next to generate out_valid
-logic o_logb_valid_next;
-always_comb
-  if (state_next == BUSY)
-    if (state == FULL)
-      o_logb_valid_next = r_logb_valid;
-    else if (insert_replay)
-      o_logb_valid_next = logb_valid;
+// calculate o_loge_cnt_next in a special way to improve timing
+// i.e. to calculate the ok_to_replay_next, thus out_valid
+for (genvar i=0; i < LOGE_CHANNEL_CNT; i=i+1) begin: o_loge_cnt_gen
+  always_comb
+    if (state_next == BUSY) begin
+      if (state == FULL)
+        o_loge_cnt_next[i] = r_loge_cnt[i];
+      else if (insert_replay)
+        o_loge_cnt_next[i] = loge_cnt_next[i];
+      else
+        o_loge_cnt_next[i] = o_loge_cnt[i];
+    end
     else
-      o_logb_valid_next = o_logb_valid;
-  else
-      o_logb_valid_next = o_logb_valid;
-always_ff @(posedge clk)
-  if (!rstn)
-    o_logb_valid <= 0;
-  else
-    o_logb_valid <= o_logb_valid_next;
+      o_loge_cnt_next[i] = o_loge_cnt[i];
+  always_ff @(posedge clk)
+    if (!rstn)
+        o_loge_cnt[i] <= 0;
+    else
+        o_loge_cnt[i] <= o_loge_cnt_next[i];
+end
 
 ////////////////////////////////////////////////////////////////////////////////
 // Happen-before enforcement:
 // Only allow replay if runtime packet counter >= replay packet counter
 ////////////////////////////////////////////////////////////////////////////////
 // rt_sub_loge_cnt maintains the value of
-// "runtime packet counter - replay packet counter" without considering what is
-// going to be put in the output registers
-// rt_sub_loge_cnt_next maintains similar thing but takes the output register
-// into consideration.
-// Such design is to decouple the packet counter calculation from output and
-// register the `out_valid` to improve timing.
+// "runtime packet counter - replay packet counter"
+// The design mainly aims to register the `out_valid`, thus improve timing.
 //
 // It is OK to replay if runtime packet counter >= replay packet counter:
 // In an unpacked logging bus, when logb_valid and loge_valid happen at the same
@@ -189,52 +194,81 @@ always_ff @(posedge clk)
 // bus, the loge_valid is counted towards to the replay packet counter of the
 // logb_valid at the same cycle. This is to only encode loge_valid when there
 // are some logb_valid to record.
-logic [PKT_CNT_WIDTH-1:0] rt_sub_loge_cnt [LOGE_CHANNEL_CNT-1:0];
-logic [PKT_CNT_WIDTH-1:0] rt_sub_loge_cnt_next [LOGE_CHANNEL_CNT-1:0];
-logic [LOGE_CHANNEL_CNT-1:0] rt_sub_loge_cnt_sign;
-generate
-for (genvar i=0; i < LOGE_CHANNEL_CNT; i=i+1) begin: rt_sub_loge_gen
-  always_comb
-    if (state_next == BUSY) begin
-      if (state == FULL) begin
-        rt_sub_loge_cnt_next[i] = rt_sub_loge_cnt[i] + rt_loge_valid[i] - r_loge_valid[i];
-      end
-      else if (insert_replay) begin
-        rt_sub_loge_cnt_next[i] = rt_sub_loge_cnt[i] + rt_loge_valid[i] - loge_valid[i];
-      end
-      else
-        rt_sub_loge_cnt_next[i] = rt_sub_loge_cnt[i] + rt_loge_valid[i];
-    end
-    else
-      rt_sub_loge_cnt_next[i] = rt_sub_loge_cnt[i] + rt_loge_valid[i];
+
+// Maintain runtime packet counter
+for (genvar i=0; i < LOGE_CHANNEL_CNT; i=i+1) begin: rt_loge_cnt_gen
+  assign rt_loge_cnt_next[i] = rt_loge_cnt[i] + rt_loge_valid[i];
   always_ff @(posedge clk)
     if (!rstn)
-      rt_sub_loge_cnt[i] <= 0;
+      rt_loge_cnt[i] <= 0;
     else
-      rt_sub_loge_cnt[i] <= rt_sub_loge_cnt_next[i];
-  // sign is 0 --> runtime cnt - replay cnt is positive or zero,
-  // runtime cnt >= replay cnt, thus OK to replay
-  // else, should wait for the happen-before to be enforced
-  assign rt_sub_loge_cnt_sign[i] = rt_sub_loge_cnt_next[i][PKT_CNT_WIDTH-1];
+      rt_loge_cnt[i] <= rt_loge_cnt_next[i];
 end
+
+// Maintain replay packet counter
+genvar i;
+generate
+  for (i=0; i < LOGE_CHANNEL_CNT; i=i+1)
+    assign loge_cnt_next[i] = loge_cnt[i] + loge_valid[i];
 endgenerate
-assign ok_to_replay = !(|rt_sub_loge_cnt_sign);
+always @(posedge clk)
+  if (!rstn) begin
+    for (int i=0; i < LOGE_CHANNEL_CNT; i=i+1)
+      loge_cnt[i] <= 0;
+  end
+  else begin
+    // aggregate the vector clock right after taking in any replay packet
+    if (in_valid && in_ready)
+      for (int i=0; i < LOGE_CHANNEL_CNT; i=i+1)
+        loge_cnt[i] <= loge_cnt_next[i];
+  end
+wire [PKT_CNT_WIDTH-1:0] o_loge_cnt_neg [LOGE_CHANNEL_CNT-1:0];
+wire [PKT_CNT_WIDTH-1:0] rt_sub_loge_cnt [LOGE_CHANNEL_CNT-1:0];
+logic [LOGE_CHANNEL_CNT-1:0] rt_sub_loge_cnt_sign;
+`ifdef FORMAL
+wire [LOGE_CHANNEL_CNT-1:0] test_sub_equal;
+`endif
+
+// calculate ok_to_replay_next for the out_valid, xxx_next is to improve timing
+logic ok_to_replay_next;
+generate
+  for (genvar i=0; i < LOGE_CHANNEL_CNT; i=i+1) begin
+    assign o_loge_cnt_neg[i] = ~o_loge_cnt_next[i] + PKT_CNT_WIDTH'(1);
+    assign rt_sub_loge_cnt[i] = rt_loge_cnt_next[i] + o_loge_cnt_neg[i];
+    `ifdef FORMAL
+    assign test_sub_equal[i] = (rt_loge_cnt_next[i] - o_loge_cnt_next[i]) == rt_sub_loge_cnt[i];
+    `endif
+    // sign is 0 --> runtime cnt - replay cnt is positive or zero,
+    // runtime cnt >= replay cnt, thus OK to replay
+    // else, should wait for the happen-before to be enforced
+    assign rt_sub_loge_cnt_sign[i] = rt_sub_loge_cnt[i][PKT_CNT_WIDTH-1];
+  end
+endgenerate
+assign ok_to_replay_next = !(|rt_sub_loge_cnt_sign);
 
 ////////////////////////////////////////////////////////////////////////////////
 // The replay logic
 ////////////////////////////////////////////////////////////////////////////////
-// do something about ok_to_replay
+// I want out_valid to be a simple register (not a wire) because it will be used
+// in the application with high fan-outs.
+// Its most complex dependency is the `ok_to_replay`, which is a wire-or over
+// many addition exprs.
+// To register out_valid, I need to pervasively tract the XXX_next version of
+// its dependencies.
 always_ff @(posedge clk)
   if (!rstn)
     out_valid <= 0;
+  else if (out_valid && !out_ready)
+    // do nothing, keep the out_valid high
+    // This is to buffer historical vector clock decision.
+    // once a transaction to replay can be replay, then use this register and
+    // ignore vector clocks (because they may overflow due to loge_valid
+    // aggregation)
+    ;
   else
-    out_valid <= (state_next != EMPTY) && o_logb_valid_next && ok_to_replay;
+    out_valid <= (state_next != EMPTY) && ok_to_replay_next;
 assign out_data = o_logb_data;
-always @(posedge clk)
-if (!rstn)
-  in_ready <= 0;
-else
-  in_ready <= (state_next != FULL);
+assign in_ready = (state != FULL) || !logb_valid;
 
 `ifdef FORMAL
   `ifdef TWOWAYHANDSHAKE_REPLAYER_SELF
@@ -324,36 +358,24 @@ else
         input_inorder: `ASSUME(logb_data == in_logb_cnt);
       if (out_valid)
         output_inorder: `ASSERT(out_data == out_cnt);
-
-      for (int i=0; i < LOGE_CHANNEL_CNT; i=i+1) begin: loge_as
-        if (state == BUSY)
-          loge_match_BUSY_as: `ASSERT(
-            in_loge_cnt[i] == o_loge_valid[i] + loge_cnt[i]);
-        else if (state == FULL)
-          loge_match_FULL_as: `ASSERT(
-            in_loge_cnt[i] == o_loge_valid[i] + r_loge_valid[i]+ loge_cnt[i]);
-        else // state == EMPTY
-          loge_match_EMPTY_as: `ASSERT(in_loge_cnt[i] == loge_cnt[i]);
-      end
     end
 
   // proof
+  // NOTE: some following properties cannot be proved in reasonable time
+  // But I think that is fine as they were "proof" statements
   always @(posedge clk)
   if (rstn) begin
     if (state == EMPTY) begin
       `ASSERT(in_logb_cnt == out_cnt);
     end
     else if (state == BUSY) begin
-      `ASSERT(out_cnt + o_logb_valid == in_logb_cnt);
-      if (o_logb_valid)
-        `ASSERT(o_logb_data == out_cnt);
+      `ASSERT(out_cnt + 1 == in_logb_cnt);
+      `ASSERT(o_logb_data == out_cnt);
     end
     else if (state == FULL) begin
-      `ASSERT(out_cnt + o_logb_valid + r_logb_valid == in_logb_cnt);
-      if (o_logb_valid)
-        `ASSERT(o_logb_data == out_cnt);
-      if (r_logb_valid)
-        `ASSERT(r_logb_data + o_logb_valid == in_logb_cnt);
+      `ASSERT(out_cnt + 2 == in_logb_cnt);
+      `ASSERT(o_logb_data == out_cnt);
+      `ASSERT(r_logb_data + 1 == in_logb_cnt);
     end
     `ASSERT(state != 'b11);
   end
@@ -363,81 +385,13 @@ else
     (insert_replay && remove_replay) [*3]
   );
 
-  ////////////////////////////////////////////////////////////////////////////////
-  // Old code to verify the equivalence of the two ways of enforcing happen
-  // before
-  ////////////////////////////////////////////////////////////////////////////////
-  // Maintain runtime packet counter
-  logic [PKT_CNT_WIDTH-1:0] rt_loge_cnt [LOGE_CHANNEL_CNT-1:0];
-  always @(posedge clk)
-    if (!rstn) begin
-      for (int i=0; i < LOGE_CHANNEL_CNT; i=i+1)
-        rt_loge_cnt[i] <= 0;
-    end
-    else begin
-      for (int i=0; i < LOGE_CHANNEL_CNT; i=i+1) begin
-        rt_loge_cnt[i] <= rt_loge_cnt[i] + rt_loge_valid[i];
-      end
-    end
-
-  // Maintain replay packet counter
-  logic [PKT_CNT_WIDTH-1:0] loge_cnt [LOGE_CHANNEL_CNT-1:0];
-  wire [PKT_CNT_WIDTH-1:0] loge_cnt_next [LOGE_CHANNEL_CNT-1:0];
-  genvar i;
-  generate
-    for (i=0; i < LOGE_CHANNEL_CNT; i=i+1)
-      assign loge_cnt_next[i] = loge_cnt[i] + o_loge_valid[i];
-  endgenerate
-  always @(posedge clk)
-    if (!rstn) begin
-      for (int i=0; i < LOGE_CHANNEL_CNT; i=i+1)
-        loge_cnt[i] <= 0;
-    end
-    else begin
-      // unload, flow, flush
-      if (remove_replay)
-        for (int i=0; i < LOGE_CHANNEL_CNT; i=i+1)
-          loge_cnt[i] <= loge_cnt_next[i];
-    end
-
-  // Compare the replay packet counters with runtime packet counters
-  // OK to replay if replay counter <= runtime counter
-  // It is OK to replay if runtime packet counter >= replay packet counter
-  // In an unpacked logging bus, when logb_valid and loge_valid happen at the same
-  // time, the loge_valid is not counted towards to the replay packet counter of
-  // the logb_valid at the same cycle.
-  // But during the conversion from unpacked logging bus to a packed writeback
-  // bus, the loge_valid is counted towards to the replay packet counter of the
-  // logb_valid at the same cycle. This is to only encode loge_valid when there
-  // are some logb_valid to record.
-  // So the replay packet counter should be loge_cnt_next, which is only valid if
-  // in_valid.
-  // the two's complement of replay packet counter
-  wire [PKT_CNT_WIDTH-1:0] loge_cnt_neg [LOGE_CHANNEL_CNT-1:0];
-  wire [PKT_CNT_WIDTH-1:0] pkt_cnt_sub [LOGE_CHANNEL_CNT-1:0];
-  logic [LOGE_CHANNEL_CNT-1:0] pkt_cnt_sub_sign;
-  logic old_ok_to_replay;
-  generate 
-    for (i=0; i < LOGE_CHANNEL_CNT; i=i+1) begin
-      assign loge_cnt_neg[i] = ~loge_cnt_next[i] + PKT_CNT_WIDTH'(1);
-      assign pkt_cnt_sub[i] = rt_loge_cnt[i] + loge_cnt_neg[i];
-      // sign is 0 --> runtime cnt - replay cnt is positive or zero,
-      // runtime cnt >= replay cnt, thus OK to replay
-      // else, should wait for the happen-before to be enforced
-      assign pkt_cnt_sub_sign[i] = pkt_cnt_sub[i][PKT_CNT_WIDTH-1];
-    end
-  endgenerate
-  logic old_ok_to_replay;
-  assign old_ok_to_replay = !(|pkt_cnt_sub_sign);
-
-  logic old_out_valid;
-  assign old_out_valid = (state != EMPTY) && o_logb_valid && old_ok_to_replay;
-
-  equ_check: `ASSERT property (@(posedge clk)
+  sub_equ_check: `ASSERT property (@(posedge clk)
     disable iff (!rstn)
-    out_valid == old_out_valid
+    &test_sub_equal
   );
 `endif
+
+// The following debug code is out-dated
 `ifdef DEBUG_ILA
 if (DEBUG) begin
   if (LOGE_CHANNEL_CNT != 25)
