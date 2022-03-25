@@ -19,3 +19,4 @@
    `HLS_DESIGN=face_detection ./aws_build_dcp_from_cl.sh`
    remember to `export CL_DIR=xxx/cl_hls`
 7. `dram_dma` simulation: `make AXI_MEMORY_MODEL=1 VCS=1 C_TEST=test_dram_dma_hwsw_cosim RR_MODE=none/record(v)/replay(v) /compile/run`
+   hls simulation: `make HLS_DESIGN=mobilenet VCS=1 AXI_MEMORY_MODEL=1 RR_MODE=none PARAM_PATH=~/iSmartDNN/params_384_320_160_v2.bin FIG_PATH=~/iSmartDNN/1.bin`
