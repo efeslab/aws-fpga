@@ -7,7 +7,7 @@
   // note: if using AXI_MEMORY_MODEL, this number should be large
   // if use the accurate but slow memory model, this number should be small
   #ifndef RR_POLLING_INTERVAL
-    #define RR_POLLING_INTERVAL 1
+    #define RR_POLLING_INTERVAL 10
   #endif
 #else
 #define DEFAULT_BUFFER_SIZE (1ULL << 30)
