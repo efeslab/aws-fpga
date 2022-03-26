@@ -351,7 +351,7 @@ out:
 #else
 #define BUFFERSIZE (1024*1024*128)
 #endif
-#define OCL_INJECT_CNT (65)
+#define OCL_INJECT_CNT (0)
 #define OCL_INJECT_SIZE (sizeof(uint32_t) * OCL_INJECT_CNT)
 #define READBACK_SIZE (OCL_INJECT_SIZE + BUFFERSIZE)
 #define REPORT_LIMIT (200)
@@ -387,7 +387,7 @@ int axis_fifo_main(int argc, char *argv[]) {
   //hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W_INTVL), 200);
 #else
   // on real hardware, poke ocl in a new thread would trigger the bug
-  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1); //
+  //hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1); //
   rc = pthread_create(&ocl_tid, NULL, &ocl_thread_start, NULL);
   fail_on(rc, out, "failed to create ocl pthread");
 #endif
@@ -417,7 +417,7 @@ int axis_fifo_main(int argc, char *argv[]) {
   }
   for (size_t i = 0; i < READBACK_SIZE/sizeof(uint32_t); ++i) {
     uint32_t n = readback_mem[i];
-    printf("%d\n", n);
+    //printf("%d\n", n);
     if (0 <= n && n < 2*BUFFERSIZE/sizeof(uint32_t)) {
       counters[n]++;
     } else if (n == -1) {
@@ -431,7 +431,7 @@ int axis_fifo_main(int argc, char *argv[]) {
       // odd, from ocl
       if (i < 2 * OCL_INJECT_CNT + 1) {
         if (counters[i] != 1) {
-          printf("ocl %d expected 1 got %d\n", i, counters[i]);
+          //printf("ocl %d expected 1 got %d\n", i, counters[i]);
           unexpected++;
         }
       } else {
@@ -439,7 +439,7 @@ int axis_fifo_main(int argc, char *argv[]) {
       }
     } else {
       if (counters[i] != 1) {
-        printf("pcis %d expected 1 got %d\n", i, counters[i]);
+        //printf("pcis %d expected 1 got %d\n", i, counters[i]);
         unexpected++;
       }
     }
@@ -454,8 +454,10 @@ int axis_fifo_main(int argc, char *argv[]) {
 }
 void *ocl_thread_start(void *arg) {
   // ocl are all odd
-  for (size_t i = 0; i < OCL_INJECT_CNT; ++i) {
-    hls_poke_ocl(APP_CSR_ADDR(APP_CSR_INJECT), 2 * i + 1);
-  }
+  //for (size_t i = 0; i < OCL_INJECT_CNT; ++i) {
+  //  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_INJECT), 2 * i + 1);
+  //}
+  sleep(1);
+  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1); //
   return NULL;
 }
