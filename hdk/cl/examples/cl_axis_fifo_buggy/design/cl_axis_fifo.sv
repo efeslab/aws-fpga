@@ -31,7 +31,6 @@ module cl_axis_fifo #(parameter NUM_DDR=4)
 // that the CL will use
 
 `include "unused_sh_bar1_template.inc"
-`include "unused_pcim_template.inc"
 `include "unused_cl_sda_template.inc"
 
 
@@ -77,6 +76,43 @@ axi_bus_W_t pcis_write_bus();
 axi_lite_bus_t sh_ocl_bus();
 axi_lite_bus_t cl_axil_slv_bus();
 axi_bus_t cl_axi_mstr_bus();
+
+`define AXI_SLV_WIRE2BUS(b, m, s, pfx)                                         \
+  axi_bus_t b();                                                               \
+  assign m``_``s``pfx``awid = b.awid;                                          \
+  assign m``_``s``pfx``awaddr = b.awaddr;                                      \
+  assign m``_``s``pfx``awlen = b.awlen;                                        \
+  assign m``_``s``pfx``awsize = b.awsize;                                      \
+  assign m``_``s``pfx``awvalid = b.awvalid;                                    \
+  assign b.awready = s``_``m``pfx``awready;                                    \
+                                                                               \
+  /*assign b.wid = 0;  TODO: get rid of wid*/                                  \
+  assign m``_``s``pfx``wdata = b.wdata;                                        \
+  assign m``_``s``pfx``wstrb = b.wstrb;                                        \
+  assign m``_``s``pfx``wlast = b.wlast;                                        \
+  assign m``_``s``pfx``wvalid = b.wvalid;                                      \
+  assign b.wready = s``_``m``pfx``wready;                                      \
+                                                                               \
+  assign b.bid = s``_``m``pfx``bid;                                            \
+  assign b.bresp = s``_``m``pfx``bresp;                                        \
+  assign b.bvalid = s``_``m``pfx``bvalid;                                      \
+  assign m``_``s``pfx``bready = b.bready;                                      \
+                                                                               \
+  assign m``_``s``pfx``arid = b.arid;                                          \
+  assign m``_``s``pfx``araddr = b.araddr;                                      \
+  assign m``_``s``pfx``arlen = b.arlen;                                        \
+  assign m``_``s``pfx``arsize = b.arsize;                                      \
+  assign m``_``s``pfx``arvalid = b.arvalid;                                    \
+  assign b.arready = s``_``m``pfx``arready;                                    \
+                                                                               \
+  assign b.rid = s``_``m``pfx``rid;                                            \
+  assign b.rdata = s``_``m``pfx``rdata;                                        \
+  assign b.rresp = s``_``m``pfx``rresp;                                        \
+  assign b.rlast = s``_``m``pfx``rlast;                                        \
+  assign b.rvalid = s``_``m``pfx``rvalid;                                      \
+  assign m``_``s``pfx``rready = b.rready
+
+`AXI_SLV_WIRE2BUS(sh_pcim_bus, cl, sh, _pcim_);
 
 logic clk;
 (* dont_touch = "true" *) logic pipe_rst_n;
@@ -133,7 +169,6 @@ always_ff @(negedge sync_rst_n or posedge clk)
       sh_cl_flr_assert_q <= sh_cl_flr_assert;
       cl_sh_flr_done <= sh_cl_flr_assert_q && !cl_sh_flr_done;
    end
-
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////// DMA PCIS SLAVE module ///////////////////////////////
@@ -279,7 +314,7 @@ axis_app #(
   .clk(clk), .rstn(sync_rst_n),
   .pcis_write_bus(pcis_write_bus),
   .sh_ocl_bus(cl_axil_slv_bus),
-  .ddr_mstr_bus(cl_axi_mstr_bus),
+  .ddr_mstr_bus(sh_pcim_bus),
   .irq_req(cl_sh_apppf_irq_req[0]),
   .irq_ack(sh_cl_apppf_irq_ack[0])
 );

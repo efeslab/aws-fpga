@@ -1,5 +1,7 @@
 typedef struct packed {
     logic [31:0] ddr_wait_cyc;
+    logic [63:0] writeback_base_addr;
+    logic writeback_base_addr_update;
     logic allow_ddr_w;
     logic app_done;
 } axis_app_csrs_t;
@@ -352,6 +354,8 @@ assign ddr_w_bus.awsize = 3'b110;
 always_ff @(posedge clk)
     if (!rstn)
         ddr_base_addr <= 0;
+    else if (csrs.writeback_base_addr_update)
+        ddr_base_addr <= csrs.writeback_base_addr;
     else if (ddr_w_bus.awvalid && ddr_w_bus.awready)
         ddr_base_addr <= ddr_base_addr + WDATA_WIDTH / 8;
 assign ddr_w_bus.awaddr = ddr_base_addr;
@@ -467,6 +471,8 @@ typedef enum {
     INJECT,
     ALLOW_DDR_W,
     ALLOW_DDR_W_INTVL, // 0 is disable
+    WRITEBACK_BASE_ADDR_LO,
+    WRITEBACK_BASE_ADDR_HI,
     TOTAL_CSR_NUM
 } csr_t;
 `define CSR_ADDR(idx) (idx << 2)
@@ -501,11 +507,23 @@ always_ff @(posedge clk)
                 ocl_w_cnt <= ocl_w_cnt + 1;
                 buf_wdata <= sh_ocl_bus.wdata;
              end
+            `CSR_ADDR(WRITEBACK_BASE_ADDR_LO):
+                csrs.writeback_base_addr[31:0] <= sh_ocl_bus.wdata;
+            `CSR_ADDR(WRITEBACK_BASE_ADDR_HI):
+                csrs.writeback_base_addr[63:32] <= sh_ocl_bus.wdata;
         endcase
     else if ((allow_ddr_w_intvl_csr != 0) &&
              (allow_ddr_w_intvl_csr == allow_ddr_w_intvl_clkcnt))
         // flip csrs_allow_ddr_w
         csrs.allow_ddr_w <= !csrs.allow_ddr_w;
+
+always_ff @(posedge clk)
+    if (!rstn)
+        csrs.writeback_base_addr_update <= 0;
+    else if (sh_ocl_bus.wvalid && sh_ocl_bus.wready && buf_awaddr == `CSR_ADDR(WRITEBACK_BASE_ADDR_HI))
+        csrs.writeback_base_addr_update <= 1;
+    else
+        csrs.writeback_base_addr_update <= 0;
 
 always_ff @(posedge clk)
     if (!rstn)

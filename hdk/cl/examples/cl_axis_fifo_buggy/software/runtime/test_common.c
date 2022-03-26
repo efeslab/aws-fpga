@@ -362,6 +362,8 @@ typedef enum {
   APP_CSR_INJECT,
   APP_CSR_ALLOW_DDR_W,
   APP_CSR_ALLOW_DDR_W_INTVL, // 0 is disable
+  APP_CSR_WRITEBACK_BASE_ADDR_LO,
+  APP_CSR_WRITEBACK_BASE_ADDR_HI,
 } app_csr_idx_t;
 #define APP_CSR_ADDR(idx) (0x4 * idx)
 typedef struct {
@@ -375,18 +377,36 @@ int axis_fifo_main(int argc, char *argv[]) {
   for (uint64_t i = 0; i < BUFFERSIZE/sizeof(uint32_t); ++i) {
     pcis_mem[i] = 2*i;
   }
+
+#ifdef SV_TEST
+  uint32_t *readback_mem = aligned_alloc(BUFFER_ALIGNMENT, READBACK_SIZE);
+  fail_on(readback_mem == NULL, out, "allocate readback_mem failed");
+  memset(readback_mem, 0, READBACK_SIZE);
+#else
+  void *readback_mem;
+  uint64_t pa;
+  uint64_t sizeB;
+  fail_on(fpga_hugealloc_get(&readback_mem, &pa, &sizeB), out, "allocate hugepage failed");
+  memset(readback_mem, 0, READBACK_SIZE);
+#endif
+
   int rc;
   // ocl thread
   pthread_t ocl_tid;
   void *ocl_ret;
 #ifdef SV_TEST
+  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_DDR_WAIT_CYC), 10);
+  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_WRITEBACK_BASE_ADDR_LO), (uint64_t)readback_mem & 0xffffffff);
+  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_WRITEBACK_BASE_ADDR_HI), ((uint64_t)readback_mem >> 32) & 0xffffffff);
   ocl_thread_start(NULL);
   // force fifo to fill up to trigger the bug
   hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1);
-  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_DDR_WAIT_CYC), 10);
   //hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W_INTVL), 200);
 #else
   // on real hardware, poke ocl in a new thread would trigger the bug
+  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_DDR_WAIT_CYC), 10);
+  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_WRITEBACK_BASE_ADDR_LO), (uint64_t)readback_mem & 0xffffffff);
+  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_WRITEBACK_BASE_ADDR_HI), ((uint64_t)readback_mem >> 32) & 0xffffffff);
   hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1); //
   rc = pthread_create(&ocl_tid, NULL, &ocl_thread_start, NULL);
   fail_on(rc, out, "failed to create ocl pthread");
@@ -403,14 +423,8 @@ int axis_fifo_main(int argc, char *argv[]) {
   hls_poke_ocl(APP_CSR_ADDR(APP_CSR_DONE), 1);
   // wait for completion (irq)
   rr_wait_irq(0);
-  // read back and check
-  uint32_t *readback_mem = aligned_alloc(BUFFER_ALIGNMENT, READBACK_SIZE);
-  fail_on(readback_mem == NULL, out, "allocate readback_mem failed");
-  memset(readback_mem, 0, READBACK_SIZE);
-  rc = do_dma_read((uint8_t*)readback_mem, READBACK_SIZE, 0, 0, slot_id);
-  fail_on(rc, out, "DMA read failed");
-  size_t unexpected = 0, minus1_counter = 0, oob_counter = 0;
 
+  size_t unexpected = 0, minus1_counter = 0, oob_counter = 0;
   uint32_t *counters = aligned_alloc(BUFFER_ALIGNMENT, 2*BUFFERSIZE);
   for (size_t i = 0; i < 2*BUFFERSIZE/sizeof(uint32_t); ++i) {
     counters[i] = 0;
