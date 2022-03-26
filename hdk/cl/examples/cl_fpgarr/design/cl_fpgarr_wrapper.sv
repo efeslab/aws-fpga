@@ -67,6 +67,18 @@ rr_axi_register_slice PCIS_AXI_REG_SLC (
   .slv(dma_pcis_bus),
   .mstr(dma_pcis_bus_q)
 );
+rr_axi_bus_t dma_pcis_bus_slow();
+rr_axi_bus_t dma_pcis_bus_slow_q();
+rr_axi_address_slowing PCIS_AXI_ADDR_SLOW (
+    .clk(clk), .rstn(rstn),
+    .axi_in(dma_pcis_bus_q),
+    .axi_out(dma_pcis_bus_slow)
+);
+rr_axi_register_slice PCIS_AXI_REG_SLC_SLOW (
+  .clk(clk), .rstn(rstn),
+  .slv(dma_pcis_bus_slow),
+  .mstr(dma_pcis_bus_slow_q)
+);
 `AXIL_MSTR_WIRE2BUS(sda_bus, sda, cl, _);
 rr_axi_lite_bus_t sda_bus_q();
 rr_axi_register_slice_lite SDA_AXL_REG_SLC (
@@ -511,7 +523,7 @@ rr_axi_slv_sel pcim_sel (
 // dma_pcis_bus_q or pcis_replay_axi_bus ?
 rr_axi_mstr_sel pcis_sel (
   .sel(rr_mode_csr.replayEn),
-  .inAS(dma_pcis_bus_q),
+  .inAS(dma_pcis_bus_slow_q),
   .inBS(pcis_replay_axi_bus),
   .outM(rr_dma_pcis_record_bus)
 );

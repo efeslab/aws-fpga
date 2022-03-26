@@ -20,6 +20,9 @@ ${CL_FPGARR_ROOT}/design/cl_fpgarr_rr_sel.sv
 ${CL_FPGARR_ROOT}/design/cl_fpgarr_rt_loge_crossbar.sv
 ${CL_FPGARR_ROOT}/design/cl_fpgarr_int_to_pcim.sv
 
+### make axi address slower
+${CL_FPGARR_ROOT}/design/cl_fpgarr_axi_address_slowing.sv
+
 ## fpgarr tracestorage files
 ${CL_FPGARR_ROOT}/design/cl_fpgarr_tracestorage_axi.sv
 ${CL_FPGARR_ROOT}/design/cl_fpgarr_tracestorage_wrapper.sv
