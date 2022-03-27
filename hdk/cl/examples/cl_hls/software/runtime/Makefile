@@ -21,7 +21,8 @@ CFLAGS = -DCONFIG_LOGLEVEL=4 -g $(INCLUDES)
 
 LDLIBS = -lfpga_mgmt
 
-ALL_HLS_DESIGN = 3d_rendering bnn digit_recognition face_detection spam_filter optical_flow sssp sha256 mobilenet
+#ALL_HLS_DESIGN = 3d_rendering bnn digit_recognition face_detection spam_filter optical_flow sssp sha256 mobilenet
+ALL_HLS_DESIGN = sha256
 
 LIB_SRC = test_common.c
 LIB_HEADER = test_common.h
@@ -43,7 +44,7 @@ RUN_RR = sudo RR_MODE=$(1) $(2)
 RR_NONE = $(call RUN_RR,none,$(1))
 RR_RECORDV = $(call RUN_RR,recordv,$(1))
 RR_REPLAYV = $(call RUN_RR,replayv,$(1))
-LOAD_AFI_TPL = sudo fpga-load-local-image -S 0 -I $(1)
+LOAD_AFI_TPL = sudo fpga-clear-local-image -S 0; sudo fpga-load-local-image -S 0 -I $(1)
 HLS_GEN_DIR=../../gen
 NUM_TEST?=10
 AUTOMATE_TEST_OUT_DIR?=/mnt/output
@@ -63,6 +64,7 @@ test: $(BIN)
 	for i in `seq -w 1 $(NUM_TEST)`; do \
 	    $(LOAD_AFI); \
 	    $(call RR_NONE, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(HLS_DESIGN)_$${i}_none.log; \
+	    sudo fpga-describe-local-image -S 0 -M | tee $(AUTOMATE_TEST_OUT_DIR)/$(HLS_DESIGN)_$${i}_none_describe_local.log; \
 	    $(LOAD_AFI); \
 	    $(call RR_RECORDV, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(HLS_DESIGN)_$${i}_recordv.log; \
 	    $(LOAD_AFI); \

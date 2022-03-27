@@ -51,7 +51,7 @@ RR_NONE = $(call RUN_RR,none,$(1))
 RR_RECORDV = $(call RUN_RR,recordv,$(1))
 RR_REPLAYV = $(call RUN_RR,replayv,$(1))
 # 250MHz
-LOAD_AFI = sudo fpga-load-local-image -S 0 -I agfi-00e0065e59eec807f
+LOAD_AFI = sudo fpga-clear-local-image -S 0; sudo fpga-load-local-image -S 0 -I agfi-02ea492b628917a3d
 NUM_TEST?=10
 AUTOMATE_TEST_OUT_DIR?=/mnt/output
 BIN=test_dram_dma
@@ -61,6 +61,7 @@ test: $(BIN)
 	for i in `seq -w 1 $(NUM_TEST)`; do \
 	    $(LOAD_AFI); \
 	    $(call RR_NONE, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_none.log; \
+			sudo fpga-describe-local-image -S 0 -M | tee $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_none_describe_local.log; \
 	    $(LOAD_AFI); \
 	    $(call RR_RECORDV, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_recordv.log; \
 	    $(LOAD_AFI); \

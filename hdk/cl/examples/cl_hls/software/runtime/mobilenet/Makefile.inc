@@ -7,4 +7,4 @@ HLS_DESIGN_COMPILER = $(CXX)
 HLS_DESIGN_TEST_ENV := PARAM_PATH=$(HLS_GEN_DIR)/mobilenet/data/params_384_320_160_v2.bin FIG_PATH=$(HLS_GEN_DIR)/mobilenet/data/1.bin
 # NO ARGV
 # 250MHz
-HLS_DESIGN_AGFI_ID := agfi-0c5fcc4a1d01a671a
+HLS_DESIGN_AGFI_ID := agfi-073dab75877aeb885

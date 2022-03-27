@@ -7,4 +7,4 @@ HLS_DESIGN_COMPILER = $(CXX)
 HLS_DESIGN_TEST_ENV := DATA_PATH=$(HLS_GEN_DIR)/optical-flow/datasets/current OUTFILE=abcdefg.flo
 # NO ARGV
 # 250MHz
-HLS_DESIGN_AGFI_ID := agfi-0d6707a35ffc1d470
+HLS_DESIGN_AGFI_ID := agfi-0c6d6cb40b435c47b
