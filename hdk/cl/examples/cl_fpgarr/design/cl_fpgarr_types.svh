@@ -313,6 +313,29 @@ typedef struct packed {
 } rr_mode_csr_t;
 
 typedef struct packed {
+  logic [31:0] a_aw;
+  logic [31:0] a_w;
+  logic [31:0] a_ar;
+  logic [31:0] a_r;
+  logic [31:0] a_b;
+  logic [31:0] b_aw;
+  logic [31:0] b_w;
+  logic [31:0] b_ar;
+  logic [31:0] b_r;
+  logic [31:0] b_b;
+  logic [31:0] c_aw;
+  logic [31:0] c_w;
+  logic [31:0] c_ar;
+  logic [31:0] c_r;
+  logic [31:0] c_b;
+  logic [31:0] d_aw;
+  logic [31:0] d_w;
+  logic [31:0] d_ar;
+  logic [31:0] d_r;
+  logic [31:0] d_b;
+} rr_ddr_counter_csr_t;
+
+typedef struct packed {
   struct packed {
     struct packed {
       logic wb_record_inst;         // bit 39

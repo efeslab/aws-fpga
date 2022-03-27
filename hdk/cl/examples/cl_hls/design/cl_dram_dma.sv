@@ -524,4 +524,42 @@ sh_ddr #(
 // DDR controller instantiation   
 //-----------------------------------------
 
+///////////////////////////////////////////////////////////////////////
+///////////////// DDR traffic counting logic //////////////////////////
+///////////////////////////////////////////////////////////////////////
+
+`ifdef COUNT_DDR
+`define DEFINE_DDR_COUNTER(pfx, bus)                                \
+    logic [31:0] ddr_aw_counter_``pfx;                              \
+    logic [31:0] ddr_w_counter_``pfx;                               \
+    logic [31:0] ddr_ar_counter_``pfx;                              \
+    logic [31:0] ddr_r_counter_``pfx;                               \
+    logic [31:0] ddr_b_counter_``pfx;                               \
+always_ff @(posedge clk) begin                                      \
+    if (!dma_pcis_slv_sync_rst_n) begin                             \
+        ddr_aw_counter_``pfx <= 0;                                  \
+        ddr_w_counter_``pfx <= 0;                                   \
+        ddr_ar_counter_``pfx <= 0;                                  \
+        ddr_r_counter_``pfx <= 0;                                   \
+        ddr_b_counter_``pfx <= 0;                                   \
+    end else begin                                                  \
+        if (bus.awvalid && bus.awready)                             \
+            ddr_aw_counter_``pfx <= ddr_aw_counter_``pfx + 1;       \
+        if (bus.wvalid && bus.wready)                               \
+            ddr_w_counter_``pfx <= ddr_w_counter_``pfx + 1;         \
+        if (bus.arvalid && bus.arready)                             \
+            ddr_ar_counter_``pfx <= ddr_ar_counter_``pfx + 1;       \
+        if (bus.rvalid && bus.rready)                               \
+            ddr_r_counter_``pfx <= ddr_r_counter_``pfx + 1;         \
+        if (bus.bvalid && bus.bready)                               \
+            ddr_b_counter_``pfx <= ddr_b_counter_``pfx + 1;         \
+    end                                                             \
+end
+`DEFINE_DDR_COUNTER(a, lcl_cl_sh_ddra)
+`DEFINE_DDR_COUNTER(b, lcl_cl_sh_ddrb)
+`DEFINE_DDR_COUNTER(c, cl_sh_ddr_bus)
+`DEFINE_DDR_COUNTER(d, lcl_cl_sh_ddrd)
+`endif
+
+
 endmodule   

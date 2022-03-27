@@ -262,7 +262,7 @@ endfunction
 // ALWAYS update (increase) this RR_CSR_VERSION_INT after making changes to CSR
 // address allocation
 // format: YYYY_MM_DD_HH
-parameter int RR_CSR_VERSION_INT = 2022031604;
+parameter int RR_CSR_VERSION_INT = 2022032701;
 ////////////////////////////////////////////////////////////////////////////////
 // Debug CSR configurations
 `undef DEBUG_RECORD_CSR
@@ -283,6 +283,9 @@ function automatic int GET_RR_CSR_CNT();
   `endif
   `ifdef DEBUG_REPLAY_CSR
     GET_RR_CSR_CNT = GET_RR_CSR_CNT + 10;
+  `endif
+  `ifdef COUNT_DDR
+    GET_RR_CSR_CNT = GET_RR_CSR_CNT + 20;
   `endif
   GET_RR_CSR_CNT = 2**$clog2(GET_RR_CSR_CNT);
 endfunction
@@ -378,6 +381,28 @@ typedef enum bit [RR_CSR_ADDR_WIDTH-1:0] {
   RR_AXI_STATUS_HI,
   RR_AXI_STATUS_LO,
   `endif // DEBUG_RECORD_CSR
+  `ifdef COUNT_DDR
+  RR_DDR_COUNTER_A_AW,
+  RR_DDR_COUNTER_A_W,
+  RR_DDR_COUNTER_A_AR,
+  RR_DDR_COUNTER_A_R,
+  RR_DDR_COUNTER_A_B,
+  RR_DDR_COUNTER_B_AW,
+  RR_DDR_COUNTER_B_W,
+  RR_DDR_COUNTER_B_AR,
+  RR_DDR_COUNTER_B_R,
+  RR_DDR_COUNTER_B_B,
+  RR_DDR_COUNTER_C_AW,
+  RR_DDR_COUNTER_C_W,
+  RR_DDR_COUNTER_C_AR,
+  RR_DDR_COUNTER_C_R,
+  RR_DDR_COUNTER_C_B,
+  RR_DDR_COUNTER_D_AW,
+  RR_DDR_COUNTER_D_W,
+  RR_DDR_COUNTER_D_AR,
+  RR_DDR_COUNTER_D_R,
+  RR_DDR_COUNTER_D_B,
+  `endif // COUNT_DDR
   `ifdef DEBUG_PCHK_CSR
   // pcim pchk csrs
   RR_PCIM_PCHK_ASSERTED,

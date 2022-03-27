@@ -116,6 +116,10 @@ storage_axi_write_csr_t storage_axi_write_csr;
 storage_axi_read_csr_t storage_axi_read_csr;
 // rr_mode_csr is used to control the record/replay behaviour
 rr_mode_csr_t rr_mode_csr;
+`ifdef COUNT_DDR
+// ddr_counter_csr is used to count ddr traffics
+rr_ddr_counter_csr_t ddr_counter_csr, ddr_counter_csr_q;
+`endif
 // rr_state_csr is used to expose internal fifo errors
 // rr_state_csr_next is connected to fifo signals. Part of them are accumulated
 // (bit or) to rr_state_csr at each cycle. Part of them are real-time states
@@ -489,6 +493,9 @@ rr_csrs #(
     .rr_mode_csr(rr_mode_csr),
     .rr_state_csr(rr_state_csr),
     .wb_record_dbg_csr(wb_record_dbg_csr),
+`ifdef COUNT_DDR
+    .ddr_counter_csr(ddr_counter_csr_q),
+`endif
     .pcim_interconnect_dbg_csr(pcim_interconnect_dbg_csr)
 );
 
@@ -687,6 +694,34 @@ dbg_fpgarr_wrapper_ila ila (
   .probe14(ocl_B)
 );
 `endif
+
+`ifdef COUNT_DDR
+lib_pipe #(.WIDTH($bits(rr_ddr_counter_csr_t)), .STAGES(3))
+    PIPE_DDR_COUNTER_A(.clk(clk), .rst_n(1'b1), .in_bus(ddr_counter_csr), .out_bus(ddr_counter_csr_q));
+always_ff @(posedge clk) begin
+    ddr_counter_csr.a_aw <= CL.ddr_aw_counter_a;
+    ddr_counter_csr.a_w <= CL.ddr_w_counter_a;
+    ddr_counter_csr.a_ar <= CL.ddr_ar_counter_a;
+    ddr_counter_csr.a_r <= CL.ddr_r_counter_a;
+    ddr_counter_csr.a_b <= CL.ddr_b_counter_a;
+    ddr_counter_csr.b_aw <= CL.ddr_aw_counter_b;
+    ddr_counter_csr.b_w <= CL.ddr_w_counter_b;
+    ddr_counter_csr.b_ar <= CL.ddr_ar_counter_b;
+    ddr_counter_csr.b_r <= CL.ddr_r_counter_b;
+    ddr_counter_csr.b_b <= CL.ddr_b_counter_b;
+    ddr_counter_csr.c_aw <= CL.ddr_aw_counter_c;
+    ddr_counter_csr.c_w <= CL.ddr_w_counter_c;
+    ddr_counter_csr.c_ar <= CL.ddr_ar_counter_c;
+    ddr_counter_csr.c_r <= CL.ddr_r_counter_c;
+    ddr_counter_csr.c_b <= CL.ddr_b_counter_c;
+    ddr_counter_csr.d_aw <= CL.ddr_aw_counter_d;
+    ddr_counter_csr.d_w <= CL.ddr_w_counter_d;
+    ddr_counter_csr.d_ar <= CL.ddr_ar_counter_d;
+    ddr_counter_csr.d_r <= CL.ddr_r_counter_d;
+    ddr_counter_csr.d_b <= CL.ddr_b_counter_d;
+end
+`endif
+
 endmodule
 `ifdef TEST_REPLAY
   $error("Should not be used with TEST_REPLAY");

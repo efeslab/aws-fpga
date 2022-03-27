@@ -10,6 +10,9 @@ module rr_csrs #(
     input storage_axi_read_csr_t storage_axi_read_csr,
     input rr_state_csr_t rr_state_csr,
     input rr_packed2wb_dbg_csr_t wb_record_dbg_csr,
+`ifdef COUNT_DDR
+    input rr_ddr_counter_csr_t ddr_counter_csr,
+`endif
     input pcim_interconnect_dbg_csr_t pcim_interconnect_dbg_csr
 );
 
@@ -199,6 +202,28 @@ module rr_csrs #(
             csrs[RR_AXI_STATUS_HI] <= storage_axi_read_csr_i.trace_rw_cnts.axi_status[32 +: 32];
             csrs[RR_AXI_STATUS_LO] <= storage_axi_read_csr_i.trace_rw_cnts.axi_status[0 +: 32];
             `endif // DEBUG_RECORD_CSR
+            `ifdef COUNT_DDR
+            csrs[RR_DDR_COUNTER_A_AW] <= ddr_counter_csr.a_aw;
+            csrs[RR_DDR_COUNTER_A_W]  <= ddr_counter_csr.a_w;
+            csrs[RR_DDR_COUNTER_A_AR] <= ddr_counter_csr.a_ar;
+            csrs[RR_DDR_COUNTER_A_R]  <= ddr_counter_csr.a_r;
+            csrs[RR_DDR_COUNTER_A_B]  <= ddr_counter_csr.a_b;
+            csrs[RR_DDR_COUNTER_B_AW] <= ddr_counter_csr.b_aw;
+            csrs[RR_DDR_COUNTER_B_W]  <= ddr_counter_csr.b_w;
+            csrs[RR_DDR_COUNTER_B_AR] <= ddr_counter_csr.b_ar;
+            csrs[RR_DDR_COUNTER_B_R]  <= ddr_counter_csr.b_r;
+            csrs[RR_DDR_COUNTER_B_B]  <= ddr_counter_csr.b_b;
+            csrs[RR_DDR_COUNTER_C_AW] <= ddr_counter_csr.c_aw;
+            csrs[RR_DDR_COUNTER_C_W]  <= ddr_counter_csr.c_w;
+            csrs[RR_DDR_COUNTER_C_AR] <= ddr_counter_csr.c_ar;
+            csrs[RR_DDR_COUNTER_C_R]  <= ddr_counter_csr.c_r;
+            csrs[RR_DDR_COUNTER_C_B]  <= ddr_counter_csr.c_b;
+            csrs[RR_DDR_COUNTER_D_AW] <= ddr_counter_csr.d_aw;
+            csrs[RR_DDR_COUNTER_D_W]  <= ddr_counter_csr.d_w;
+            csrs[RR_DDR_COUNTER_D_AR] <= ddr_counter_csr.d_ar;
+            csrs[RR_DDR_COUNTER_D_R]  <= ddr_counter_csr.d_r;
+            csrs[RR_DDR_COUNTER_D_B]  <= ddr_counter_csr.d_b;
+            `endif // COUNT_DDR
             `ifdef DEBUG_REPLAY_CSR
             csrs[RR_REPLAY_AR_TRANS_CNT] <= storage_axi_read_csr_i.trace_rw_cnts.replay_ar_trans_cnt;
             csrs[RR_REPLAY_R_TRANS_CNT] <= storage_axi_read_csr_i.trace_rw_cnts.replay_r_trans_cnt;
