@@ -367,3 +367,40 @@ app: sssp
 app: sha256
 22_03_17-022433.nohup.out (GEFEI)
 app: mobilenet
+
+22_03_23-182925.nohup.out (GEFEI)
+app: axis_fifo_buggy
+first trial
+
+22_03_25-012958.nohup.out (GEFEI)
+app: axis_fifo_buggy
+add ddr_wait_cyc, allow_ddr_w_intvl.
+add replayer loge_valid aggregation
+
+22_03_25-013237.nohup.out (GEFEI)
+app: dram
+commit: 9087274
+add replayer loge_valid aggregation
+
+22_03_25-031704.nohup.out (GEFEI)
+app: axis_fifo_buggy(losscheck)
+jiacheng compiled with losscheck instrumentation
+
+22_03_25-014535.nohup.out (GEFEI)
+app: 3d_rendering
+22_03_25-015536.nohup.out (GEFEI)
+app: bnn
+22_03_25-130052.nohup.out (GEFEI)
+app: digit_recognition
+22_03_25-131053.nohup.out (GEFEI)
+app: face_detection
+22_03_25-132054.nohup.out (GEFEI)
+app: spam_filter
+22_03_25-210933.nohup.out (GEFEI)
+app: optical_flow
+22_03_25-211934.nohup.out (GEFEI)
+app: sssp
+22_03_25-212935.nohup.out (GEFEI)
+app: sha256
+22_03_25-213936.nohup.out (GEFEI)
+app: mobilenet

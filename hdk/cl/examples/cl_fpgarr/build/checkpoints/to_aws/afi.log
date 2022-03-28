@@ -322,3 +322,83 @@ Description: mobilenet_22_03_17-022433 3d_rendering flex PCIM workaround and APP
     "FpgaImageId": "afi-073be447716c88e38",
     "FpgaImageGlobalId": "agfi-0c5fcc4a1d01a671a"
 }
+axis_fifo_buggy_22_03_23-182925
+Description: axis_fifo_buggy_22_03_23-182925 first trial (GEFEI)
+{
+    "FpgaImageId": "afi-04b09152612f73e3f",
+    "FpgaImageGlobalId": "agfi-0b8859973daac7576"
+}
+cl_fpgarr_22_03_25-013237
+Description: cl_fpgarr_22_03_25-013237 cl_fpgarr dram_dma aggregated loge_valid (GEFEI)
+{
+    "FpgaImageId": "afi-036be3e53357eca9d",
+    "FpgaImageGlobalId": "agfi-02ea492b628917a3d"
+}
+axis_fifo_buggy_22_03_25-012958
+Description: axis_fifo_buggy_22_03_25-012958 second trial, more contrived setup and aggregated loge_valid (GEFEI)
+{
+    "FpgaImageId": "afi-0b37add39f069ffda",
+    "FpgaImageGlobalId": "agfi-0fa94e30b488273e0"
+}
+axis_fifo_buggy_losscheck_22_03_25-031704
+Description: axis_fifo_buggy_losscheck_22_03_25-031704 second trial, more contrived setup and aggregated loge_valid, plus losscheck ()
+{
+    "FpgaImageId": "afi-02cbf72d16c3ca621",
+    "FpgaImageGlobalId": "agfi-0e7b0fe35b155e88c"
+}
+3d_rendering_22_03_25-014535
+Description: 3d_rendering_22_03_25-014535 3d_rendering aggregated loge_valid ()
+{
+    "FpgaImageId": "afi-0bdf483c79c114e5a",
+    "FpgaImageGlobalId": "agfi-04cd9a6cf38574eaf"
+}
+bnn_22_03_25-015536
+Description: bnn_22_03_25-015536 bnn aggregated loge_valid ()
+{
+    "FpgaImageId": "afi-08de6196978c79324",
+    "FpgaImageGlobalId": "agfi-09eee52fdb937f8c1"
+}
+digit_recognition_22_03_25-130052
+Description: digit_recognition_22_03_25-130052 digit_recognition aggregated loge_valid ()
+{
+    "FpgaImageId": "afi-02c120a59def2bbc8",
+    "FpgaImageGlobalId": "agfi-082e764759adb1c1b"
+}
+face_detection_22_03_25-131053
+Description: face_detection_22_03_25-131053 face_detection aggregated loge_valid ()
+spam_filter_22_03_25-132054
+Description: spam_filter_22_03_25-132054 spam_filter aggregated loge_valid ()
+{
+    "FpgaImageId": "afi-04420e1395f2786ba",
+    "FpgaImageGlobalId": "agfi-015ab89bef5a3ca6e"
+}
+optical_flow_22_03_25-210933
+Description: optical_flow_22_03_25-210933 optical_flow aggregated loge_valid ()
+{
+    "FpgaImageId": "afi-0712f9ad9335fd67c",
+    "FpgaImageGlobalId": "agfi-0c6d6cb40b435c47b"
+}
+sssp_22_03_25-211934
+Description: sssp_22_03_25-211934 sssp aggregated loge_valid ()
+{
+    "FpgaImageId": "afi-0912f01f369450a3c",
+    "FpgaImageGlobalId": "agfi-0787859b13f8f4d97"
+}
+sha256_22_03_25-212935
+Description: sha256_22_03_25-212935 sha256 aggregated loge_valid ()
+{
+    "FpgaImageId": "afi-0875baf5129c7dcfd",
+    "FpgaImageGlobalId": "agfi-086380e95f307c702"
+}
+mobilenet_22_03_25-213936
+Description: mobilenet_22_03_25-213936 mobilenet aggregated loge_valid ()
+{
+    "FpgaImageId": "afi-02460221f477258e4",
+    "FpgaImageGlobalId": "agfi-073dab75877aeb885"
+}
+axis_fifo_buggy_losscheck_22_03_26-015201
+Description: axis_fifo_buggy_losscheck_22_03_26-015201 second trial, more contrived setup and aggregated loge_valid, plus losscheck (fixed port width) ()
+{
+    "FpgaImageId": "afi-0d34e3c435379df06",
+    "FpgaImageGlobalId": "agfi-04d184e6f1ac13f7a"
+}
