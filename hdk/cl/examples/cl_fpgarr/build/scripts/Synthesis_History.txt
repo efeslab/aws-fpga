@@ -404,3 +404,9 @@ app: sssp
 app: sha256
 22_03_25-213936.nohup.out (GEFEI)
 app: mobilenet
+
+22_03_28-192023.nohup.out (GEFEI)
+app: dram_dma
+count_ddr
+
+
