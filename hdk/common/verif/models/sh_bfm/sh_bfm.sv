@@ -811,8 +811,8 @@ module sh_bfm #(
 
    initial begin
       for (int i=0; i<NUM_PCIE; i++) begin
-         cfg_max_payload[i] <= 2'b01; // 256 bytes
-         cfg_max_read_req[i] <= 3'b001; // 256 bytes
+         cfg_max_payload <= 2'b01; // 256 bytes
+         cfg_max_read_req <= 3'b001; // 256 bytes
       end
    end
 
