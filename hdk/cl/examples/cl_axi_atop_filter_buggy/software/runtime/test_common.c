@@ -356,7 +356,9 @@ out:
 #define BUFFER_ALIGNMENT (4096)
 typedef enum {
   APP_PCIM_BASE_ADDR_LO = 0,
-  APP_PCIM_BASE_ADDR_HI
+  APP_PCIM_BASE_ADDR_HI,
+  APP_TOTAL_BYTES,
+  APP_START_WB,
 } app_csr_idx_t;
 #define APP_CSR_ADDR(idx) (0x4 * idx)
 void pcim_alloc_buffer(uint64_t size, void **va_p, void **pa_p) {
@@ -393,13 +395,16 @@ int axi_atop_filter_main(int argc, char *argv[]) {
   pcim_alloc_buffer(BUFFERSIZE, (void**)(&pcim_mem_pa), (void**)(&pcim_mem_va));
   fail_on(pcim_mem_va == NULL, out, "allocate pcim_mem_va failed");
   memset(pcim_mem_va, 0, BUFFERSIZE);
-  printf("Setting PCIM_BASE_ADDR \n");
+  printf("Setting PCIM_BASE_ADDR 0x%x\n", pcim_mem_pa);
   hls_poke_ocl(APP_CSR_ADDR(APP_PCIM_BASE_ADDR_LO), UINT64_LO32(pcim_mem_pa));
   hls_poke_ocl(APP_CSR_ADDR(APP_PCIM_BASE_ADDR_HI), UINT64_HI32(pcim_mem_pa));
+  hls_poke_ocl(APP_CSR_ADDR(APP_TOTAL_BYTES), BUFFERSIZE);
   // continue doing pcis dma write
   rc = do_dma_write((uint8_t*)pcis_mem, BUFFERSIZE, 0, 0, slot_id);
   fail_on(rc, out, "DMA write failed");
-  sv_pause(100); // FIXME: change to interrupt
+  hls_poke_ocl(APP_CSR_ADDR(APP_START_WB), 1);
+  // wait for completion (irq)
+  rr_wait_irq(0);
   // validate output
   size_t unexpected = 0, minus1_counter = 0, oob_counter = 0;
 #define TCOUNTER uint32_t

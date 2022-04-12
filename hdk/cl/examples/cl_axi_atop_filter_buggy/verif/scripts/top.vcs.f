@@ -77,4 +77,7 @@ ${TEST_NAME}
 
 +define+DEBUG_INTERCONNECT
 +define+SIMULATION_AVOID_X
-+define+LOSSCHECK
+# enable the TEST_BUGGY_AXI_ATOP_FILTER macro to simulate adversarial awready signal
+#+define+TEST_BUGGY_AXI_ATOP_FILTER
+# enable the CORRECT_AXI_ATOP_FILTER macro to patch the buggy code
+#+define+CORRECT_AXI_ATOP_FILTER

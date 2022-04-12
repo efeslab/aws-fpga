@@ -1,24 +1,76 @@
 typedef struct packed {
     logic [63:0] pcim_base_addr;
+    logic [31:0] totalB; // total bytes to echo
+    logic startWB; // start write back (from DDR to PCIM)
 } app_csrs_t;
 
 module axi_atop_filter_app (
     input wire clk,
     input wire rstn,
-    axi_bus_t.master pcis_bus,
+    input logic [1:0] sh_cl_cfg_max_payload,
     axi_lite_bus_t.master sh_ocl_bus,
-    axi_bus_t.slave pcim_mstr_bus
+    axi_bus_t.slave ddr_mstr_bus,
+    axi_bus_t.slave pcim_mstr_bus,
+    output logic irq_req,
+    input logic irq_ack
 );
 
+axi_bus_t axi_W();
 AXI_BUS #(.AXI_ADDR_WIDTH(64), .AXI_DATA_WIDTH(512), .AXI_ID_WIDTH(6), .AXI_USER_WIDTH(1)) axi_atop_in();
 AXI_BUS #(.AXI_ADDR_WIDTH(64), .AXI_DATA_WIDTH(512), .AXI_ID_WIDTH(6), .AXI_USER_WIDTH(1)) axi_atop_out();
 
-//// aws AXI (pcis_bus) -> pulp AXI (axi_atop_in)
+// R2W state control
+logic [31:0] issuedR_Bytes;
+logic [31:0] oneR_Bytes;
+logic [7:0] burst_len;
+AXI_R2W axi_R2W_inst (
+    .clk(clk), .rstn(rstn),
+    .burst_len(burst_len),
+    .issueR(csrs.startWB && issuedR_Bytes < csrs.totalB),
+    .axi_R(ddr_mstr_bus),
+    .axi_W(axi_W)
+);
+
+localparam WDATA_WIDTH = 512;
+always_ff @(posedge clk)
+    if (!rstn)
+        oneR_Bytes <= 0;
+    else
+        case (sh_cl_cfg_max_payload)
+            2'b00: // 128B
+                oneR_Bytes <= 128;
+            2'b01: // 256B
+                oneR_Bytes <= 256;
+            2'b10: // 512B
+                oneR_Bytes <= 512;
+            2'b11: // reserved
+                oneR_Bytes <= 0;
+        endcase
+always_ff @(posedge clk)
+    if (!rstn)
+        issuedR_Bytes <= 0;
+    else if (ddr_mstr_bus.arvalid && ddr_mstr_bus.arready)
+        issuedR_Bytes <= issuedR_Bytes + oneR_Bytes;
+always_ff @(posedge clk)
+    if (!rstn)
+        burst_len <= 0;
+    else
+        case (sh_cl_cfg_max_payload)
+            2'b00: // 128B
+                burst_len <= 1;
+            2'b01: // 256B
+                burst_len <= 3;
+            2'b10: // 512B
+                burst_len <= 7;
+            2'b11: // reserved
+                burst_len <= 0;
+        endcase
+//// aws AXI (axi_W) -> pulp AXI (axi_atop_in)
 // AW
-assign axi_atop_in.aw_id = pcis_bus.awid[5:0];
-assign axi_atop_in.aw_addr = pcis_bus.awaddr;
-assign axi_atop_in.aw_len = pcis_bus.awlen;
-assign axi_atop_in.aw_size = pcis_bus.awsize;
+assign axi_atop_in.aw_id = axi_W.awid[5:0];
+assign axi_atop_in.aw_addr = axi_W.awaddr;
+assign axi_atop_in.aw_len = axi_W.awlen;
+assign axi_atop_in.aw_size = axi_W.awsize;
 assign axi_atop_in.aw_burst = 2'b01; // INCR
 assign axi_atop_in.aw_lock = 0; // normal access
 assign axi_atop_in.aw_cache = 4'b0011; // 001x non-cacheable 1: system
@@ -29,26 +81,26 @@ assign axi_atop_in.aw_qos = 4'b0; // not participating in any QOS
 assign axi_atop_in.aw_region = 4'b0; // no region I guess?
 assign axi_atop_in.aw_atop = 6'b0; // no atomic operation
 assign axi_atop_in.aw_user = 0;
-assign axi_atop_in.aw_valid = pcis_bus.awvalid;
-assign pcis_bus.awready = axi_atop_in.aw_ready;
+assign axi_atop_in.aw_valid = axi_W.awvalid;
+assign axi_W.awready = axi_atop_in.aw_ready;
 // W
-assign axi_atop_in.w_data = pcis_bus.wdata;
-assign axi_atop_in.w_strb = pcis_bus.wstrb;
-assign axi_atop_in.w_last = pcis_bus.wlast;
+assign axi_atop_in.w_data = axi_W.wdata;
+assign axi_atop_in.w_strb = axi_W.wstrb;
+assign axi_atop_in.w_last = axi_W.wlast;
 assign axi_atop_in.w_user = 0;
-assign axi_atop_in.w_valid = pcis_bus.wvalid;
-assign pcis_bus.wready = axi_atop_in.w_ready;
+assign axi_atop_in.w_valid = axi_W.wvalid;
+assign axi_W.wready = axi_atop_in.w_ready;
 // B
-assign pcis_bus.bid[5:0] = axi_atop_in.b_id;
-assign pcis_bus.bresp = axi_atop_in.b_resp;
-//assign pcis_bus.buser = ??? // disabled skip
-assign pcis_bus.bvalid = axi_atop_in.b_valid;
-assign axi_atop_in.b_ready = pcis_bus.bready;
+assign axi_W.bid[5:0] = axi_atop_in.b_id;
+assign axi_W.bresp = axi_atop_in.b_resp;
+//assign axi_W.buser = ??? // disabled skip
+assign axi_W.bvalid = axi_atop_in.b_valid;
+assign axi_atop_in.b_ready = axi_W.bready;
 // AR
-assign axi_atop_in.ar_id = pcis_bus.arid[5:0];
-assign axi_atop_in.ar_addr = pcis_bus.araddr;
-assign axi_atop_in.ar_len = pcis_bus.arlen;
-assign axi_atop_in.ar_size = pcis_bus.arsize;
+assign axi_atop_in.ar_id = axi_W.arid[5:0];
+assign axi_atop_in.ar_addr = axi_W.araddr;
+assign axi_atop_in.ar_len = axi_W.arlen;
+assign axi_atop_in.ar_size = axi_W.arsize;
 assign axi_atop_in.ar_burst = 2'b01; // INCR
 assign axi_atop_in.ar_lock = 0; // normal access
 assign axi_atop_in.ar_cache = 4'b0011; // 001x non-cacheable 1: system
@@ -58,16 +110,16 @@ assign axi_atop_in.ar_prot = 3'b010; // [2] Data access,
 assign axi_atop_in.ar_qos = 4'b0; // not participating in any QOS
 assign axi_atop_in.ar_region = 4'b0; // no region I guess?
 assign axi_atop_in.ar_user = 0;
-assign axi_atop_in.ar_valid = pcis_bus.arvalid;
-assign pcis_bus.arready = axi_atop_in.ar_ready;
+assign axi_atop_in.ar_valid = axi_W.arvalid;
+assign axi_W.arready = axi_atop_in.ar_ready;
 // R
-assign pcis_bus.rid[5:0] = axi_atop_in.r_id;
-assign pcis_bus.rdata = axi_atop_in.r_data;
-assign pcis_bus.rresp = axi_atop_in.r_resp;
-assign pcis_bus.rlast = axi_atop_in.r_last;
-//assign pcis_bus.ruser = ??? // disabled skip
-assign pcis_bus.rvalid = axi_atop_in.r_valid;
-assign axi_atop_in.r_ready = pcis_bus.rready;
+assign axi_W.rid[5:0] = axi_atop_in.r_id;
+assign axi_W.rdata = axi_atop_in.r_data;
+assign axi_W.rresp = axi_atop_in.r_resp;
+assign axi_W.rlast = axi_atop_in.r_last;
+//assign axi_W.ruser = ??? // disabled skip
+assign axi_W.rvalid = axi_atop_in.r_valid;
+assign axi_atop_in.r_ready = axi_W.rready;
 
 axi_atop_filter_intf #(
     .AXI_ID_WIDTH(6),
@@ -95,8 +147,24 @@ assign pcim_mstr_bus.awid = axi_atop_out.aw_id;
 assign pcim_mstr_bus.awaddr = axi_atop_out.aw_addr + csrs.pcim_base_addr;
 assign pcim_mstr_bus.awlen = axi_atop_out.aw_len;
 assign pcim_mstr_bus.awsize = axi_atop_out.aw_size;
+`ifndef TEST_BUGGY_AXI_ATOP_FILTER
 assign pcim_mstr_bus.awvalid = axi_atop_out.aw_valid;
 assign axi_atop_out.aw_ready = pcim_mstr_bus.awready;
+`else
+// testing buggy behavior
+// aw_ready/valid are passed through only if w_valid is seen after a w_last
+logic aw_pass;
+assign pcim_mstr_bus.awvalid = aw_pass ? axi_atop_out.aw_valid : 0;
+assign axi_atop_out.aw_ready = aw_pass ? pcim_mstr_bus.awready : 0;
+
+always_ff @(posedge clk)
+    if (!rstn)
+        aw_pass <= 0;
+    else if (pcim_mstr_bus.wvalid && pcim_mstr_bus.wready && pcim_mstr_bus.wlast)
+        aw_pass <= 0;
+    else if (pcim_mstr_bus.wvalid && pcim_mstr_bus.wready)
+        aw_pass <= 1;
+`endif
 // W
 assign pcim_mstr_bus.wid = 0;
 assign pcim_mstr_bus.wdata = axi_atop_out.w_data;
@@ -126,6 +194,23 @@ assign axi_atop_out.r_user = 0;
 assign axi_atop_out.r_valid = pcim_mstr_bus.rvalid;
 assign pcim_mstr_bus.rready = axi_atop_out.r_ready;
 
+logic [31:0] completedW_Bytes;
+always_ff @(posedge clk)
+    if (!rstn)
+        completedW_Bytes <= 0;
+    else if (pcim_mstr_bus.bvalid && pcim_mstr_bus.bready)
+        completedW_Bytes <= completedW_Bytes + oneR_Bytes;
+
+// manage interrupt
+logic irq_requested = 0, irq_requested_past = 0;
+always_ff @(posedge clk)
+    if (!rstn)
+        irq_requested <= 0;
+    else if (completedW_Bytes == csrs.totalB)
+        irq_requested <= 1;
+always_ff @(posedge clk)
+    irq_requested_past <= irq_requested;
+assign irq_req = !irq_requested_past && irq_requested;
 
 endmodule
 
@@ -200,6 +285,8 @@ assign sh_ocl_bus.bresp = 0; // OK
 typedef enum {
     PCIM_BASE_ADDR_LO = 0,
     PCIM_BASE_ADDR_HI,
+    TOTAL_BYTES,
+    START_WB,
     TOTAL_CSR_NUM
 } csr_t;
 `define CSR_ADDR(idx) (idx << 2)
@@ -219,5 +306,94 @@ always_ff @(posedge clk)
                 csrs.pcim_base_addr[0 +: 32] <= sh_ocl_bus.wdata;
             `CSR_ADDR(PCIM_BASE_ADDR_HI):
                 csrs.pcim_base_addr[32 +: 32] <= sh_ocl_bus.wdata;
+            `CSR_ADDR(TOTAL_BYTES):
+                csrs.totalB <= sh_ocl_bus.wdata;
+            `CSR_ADDR(START_WB):
+                csrs.startWB <= 1;
         endcase
+endmodule
+
+module AXI_R2W (
+    input wire clk,
+    input wire rstn,
+    input logic [7:0] burst_len,
+    // if asserted, will issue R and convert its responses to W
+    // Note that deasserting R will not abort on-going transactions
+    input logic issueR,
+    // the axi bus to issue read commands
+    axi_bus_t.slave axi_R,
+    // the axi bus to issue write commands
+    axi_bus_t.slave axi_W
+);
+localparam WDATA_WIDTH = 512;
+// next address to issue R or W
+logic [63:0] addr;
+typedef enum {
+    IDLE, // wait for issueR
+    ISSUE_AR_AW, // issue both AW and AR
+    ISSUE_AR, // AW finished earlier, continue issuing AR
+    ISSUE_AW  // AR finished earlier, continue issuing AW
+} state_t;
+// axi_R.R will be directly connected to axi_W.W
+state_t state, state_next;
+always_comb begin
+    state_next = state;
+    case (state)
+        IDLE:
+            if (issueR)
+                state_next = ISSUE_AR_AW;
+        ISSUE_AR_AW:
+            // implies axi_R.arvalid and axi_W.awvalid
+            if (axi_R.arready && axi_W.awready)
+                state_next = IDLE;
+            else if (!axi_R.arready && axi_W.awready)
+                state_next = ISSUE_AR;
+            else if (axi_R.arready && !axi_W.awready)
+                state_next = ISSUE_AW;
+        ISSUE_AR:
+            // implies axi_R.arvalid
+            if (axi_R.arready)
+                state_next = IDLE;
+        ISSUE_AW:
+            // implies axi_W.awvalid
+            if (axi_W.awready)
+                state_next = IDLE;
+    endcase
+end
+always_ff @(posedge clk)
+    if (!rstn) state <= IDLE;
+    else state <= state_next; // manage axi_R.AR
+assign axi_R.arid = 0;
+assign axi_R.araddr = addr;
+assign axi_R.arlen = burst_len;
+assign axi_R.arsize = 3'b110; // 64B
+assign axi_R.arvalid = (state == ISSUE_AR_AW) || (state == ISSUE_AR);
+// manage axi_W.AW
+assign axi_W.awid = 0;
+assign axi_W.awaddr = addr;
+assign axi_W.awlen = burst_len;
+assign axi_W.awsize = 3'b110; // 64B
+assign axi_W.awvalid = (state == ISSUE_AR_AW) || (state == ISSUE_AW);
+// manage addr
+always_ff @(posedge clk)
+    if (!rstn) addr <= 0;
+    else if (state != IDLE && state_next == IDLE)
+        addr <= addr + (burst_len + 1) * WDATA_WIDTH / 8;
+// connect axi_R.R to axi_W.W
+assign axi_W.wid = 0;
+assign axi_W.wdata = axi_R.rdata;
+assign axi_W.wstrb = 64'hffffffffffffffff;
+assign axi_W.wlast = axi_R.rlast;
+assign axi_W.wvalid = axi_R.rvalid;
+assign axi_R.rready = axi_W.wready;
+// ignore axi_W.B
+assign axi_W.bready = 1;
+//// MISC
+// disable axi_R write
+assign axi_R.awvalid = 0;
+assign axi_R.wvalid = 0;
+assign axi_R.bready = 1;
+// disable axi_W read
+assign axi_W.arvalid = 0;
+assign axi_W.rready = 1;
 endmodule
