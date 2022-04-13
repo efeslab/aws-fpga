@@ -1,3 +1,4 @@
+#include "cl_fpgarr_buscfg.hpp"
 #include "cl_fpgarr_decoder.hpp"
 #include <unistd.h>
 #include <stdlib.h>
@@ -18,14 +19,19 @@ int DecoderCmdExec(const argoptions_t &options) {
   int rc;
   switch (options.op_type) {
     case argoptions_t::OP_ANLYS: {
+      VIDITrace<BUSCFG> T;
       Decoder<BUSCFG> d(options.anlys_filepath);
-      d.gen_report(stdout, options.isVerbose);
+      d.parse_trace(T);
+      T.gen_report(stdout, options.isVerbose);
       break;
     }
     case argoptions_t::OP_COMP: {
+      VIDITrace<BUSCFG> T1, T2;
       Decoder<BUSCFG> d1(options.comp_filepaths[0]);
+      d1.parse_trace(T1);
       Decoder<BUSCFG> d2(options.comp_filepaths[1]);
-      rc = (d1.gen_compare_report(stdout, d2, options.isVerbose,
+      d2.parse_trace(T2);
+      rc = (T1.gen_compare_report(stdout, T2, options.isVerbose,
                                   options.enableHBVer2) != true);
       break;
     }
