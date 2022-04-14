@@ -151,12 +151,6 @@ class VIDITrace {
   // return true if the loge channel is also a logb channel (i.e. successfull)
   // return false if the loge channel is not a logb channel (i.e. do nothing)
   bool tryFinishOneLOGEChannekPkt(size_t loge_chid);
-  void updateLOGECnt(const loge_bset_t &loge_bset, bool isCommit);
-  // Clean up the end of trace, where all on-the-fly packets are assumed to
-  // finish even if their loge_valid has not been received.
-  // Unfinished packets exist because the happens-before encoder still caches
-  // the last loge_valid
-  void finishOngoingPkt();
   /*
    * Utilities to examine a VIDI Trace
    */
@@ -164,7 +158,7 @@ class VIDITrace {
   struct Statistics;
   Statistics stat;
 
-  void print_loge_cnt(FILE *fp, size_t loge_cnt_id);
+  void print_loge_cnt(FILE *fp, loge_cnt_t &loge_cnt);
 
   void print_header_loge_names(FILE *fp);
 

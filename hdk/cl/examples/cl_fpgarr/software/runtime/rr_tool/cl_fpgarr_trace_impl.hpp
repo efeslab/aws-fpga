@@ -145,29 +145,6 @@ bool VIDITrace<BUSCFG>::tryFinishOneLOGEChannekPkt(size_t loge_chid) {
 }
 
 template <typename BUSCFG>
-void VIDITrace<BUSCFG>::updateLOGECnt(const loge_bset_t &loge_bset,
-                                      bool isCommit) {
-  if (isCommit) loge_cnt_vec.push_back(cur_loge_cnt);
-  for (uint8_t i = 0; i < BUSCFG::LOGE_CNT; ++i) {
-    if (loge_bset.test(i)) {
-      ++cur_loge_cnt[i];
-    }
-  }
-}
-
-template <typename BUSCFG>
-void VIDITrace<BUSCFG>::finishOngoingPkt() {
-  for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
-    ChannelTraceBase *ch_p = getCH(i);
-    if (ch_p->logb_loge_cnt_id_vec.size() > ch_p->loge_loge_cnt_id_vec.size()) {
-      ch_p->finishOnePkt(loge_cnt_vec.size());
-    }
-  }
-  // the vector clock being pushed here is referred above
-  loge_cnt_vec.push_back(cur_loge_cnt);
-}
-
-template <typename BUSCFG>
 struct VIDITrace<BUSCFG>::Statistics {
   static constexpr int getCWsum() {
     int sum = 0;
@@ -188,8 +165,7 @@ struct VIDITrace<BUSCFG>::Statistics {
 };
 
 template <typename BUSCFG>
-void VIDITrace<BUSCFG>::print_loge_cnt(FILE *fp, size_t loge_cnt_id) {
-  loge_cnt_t &loge_cnt = loge_cnt_vec[loge_cnt_id];
+void VIDITrace<BUSCFG>::print_loge_cnt(FILE *fp, loge_cnt_t &loge_cnt) {
   for (uint8_t i = 0; i < BUSCFG::LOGE_CNT; ++i) {
     fprintf(fp, "%" NAME_MAX_LEN "d ", loge_cnt[i]);
   }
@@ -218,10 +194,10 @@ void VIDITrace<BUSCFG>::dump_parsed_text(FILE *fp) {
   // header for LOGE
   print_header_loge_names(fp);
   // per-channel finished packet counter
-  std::array<size_t, BUSCFG::LOGB_CNT> channel_idx = {};
-  std::array<size_t, BUSCFG::LOGE_CNT> loge_cnt = {};
+  std::array<size_t, BUSCFG::LOGB_CNT> channel_start_pktcnt = {};
+  std::array<size_t, BUSCFG::LOGB_CNT> channel_finish_pktcnt = {};
+  loge_cnt_t loge_cnt = {};
   size_t pkt_id = 0;
-  size_t loge_cnt_id = 0;
   size_t pktsize_vec_acc = 0;
   auto logb_bset_it = logb_valid_vec.begin();
   auto loge_bset_it = loge_valid_vec.begin();
@@ -238,43 +214,46 @@ void VIDITrace<BUSCFG>::dump_parsed_text(FILE *fp) {
     assert(logb_bset_it->any() || loge_bset_it->any());
     // process loge first because they represent the ending of packets sent
     // before this cycle
-    bool loge_matches_logb = false;
     if (loge_bset_it->any()) {
+      // first pass loge, check vector clock
       for (uint8_t i = 0; i < BUSCFG::LOGE_CNT; ++i) {
-        if (loge_bset_it->test(i)) {
-          fprintf(fp, "%" NAME_MAX_LEN "s packet[%ld] ends\n",
-                  BUSCFG::LOGE_NAMES[i], loge_cnt[i]);
-          ++loge_cnt[i];
-        }
         if (loge_bset_it->test(i) && (loge2logb_map[i] != loge2logb_INVALID)) {
           size_t loge_idx = loge2logb_map[i];
-          loge_matches_logb = true;
-          assert(
-              channels[loge_idx]->loge_loge_cnt_id_vec[channel_idx[loge_idx]] ==
-              loge_cnt_id);
+          size_t ref_loge_cnt_id =
+              getCH(loge_idx)
+                  ->loge_loge_cnt_id_vec[channel_finish_pktcnt[loge_idx]];
+          loge_cnt_t &ref_loge_cnt = loge_cnt_vec[ref_loge_cnt_id];
+          assert(ref_loge_cnt == loge_cnt);
           // only advance per-channel packet counter after that packet is
           // finished
           // Important assumption: one channel cannot start the next packet
           // without finishing the previous packet
-          ++channel_idx[loge_idx];
+          ++channel_finish_pktcnt[loge_idx];
+        }
+      }
+      // second pass loge, update vector clock
+      for (uint8_t i = 0; i < BUSCFG::LOGE_CNT; ++i) {
+        if (loge_bset_it->test(i)) {
+          fprintf(fp, "%" NAME_MAX_LEN "s packet[%d] ends\n",
+                  BUSCFG::LOGE_NAMES[i], loge_cnt[i]);
+          ++loge_cnt[i];
         }
       }
     }
     if (logb_bset_it->any()) {
       for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
         if (logb_bset_it->test(i)) {
-          channels[i]->printPkt(fp, channel_idx[i]);
-          assert(channels[i]->logb_loge_cnt_id_vec[channel_idx[i]] ==
-                 loge_cnt_id);
+          channels[i]->printPkt(fp, channel_start_pktcnt[i]);
+          size_t ref_loge_cnt_id =
+              getCH(i)->logb_loge_cnt_id_vec[channel_start_pktcnt[i]];
+          loge_cnt_t &ref_loge_cnt = loge_cnt_vec[ref_loge_cnt_id];
+          assert(ref_loge_cnt == loge_cnt);
+          ++channel_start_pktcnt[i];
         }
       }
     }
     if (logb_bset_it->any() || loge_bset_it->any()) {
-      print_loge_cnt(fp, loge_cnt_id);
-    }
-    if (logb_bset_it->any() || loge_matches_logb) {
-      // refer to the corresponding logic in parse_trace()
-      ++loge_cnt_id;
+      print_loge_cnt(fp, loge_cnt);
     }
     ++pkt_id;
   }
@@ -449,9 +428,9 @@ bool VIDITrace<BUSCFG>::gen_compare_report(FILE *fp, VIDITrace<BUSCFG> &other,
         if (mismatch || violation) {
           print_header_loge_names(fp);
           fprintf(fp, "From trace file %s:\n", filepath);
-          print_loge_cnt(fp, loge_cnt_vec_idx_a);
+          print_loge_cnt(fp, loge_cnt_vec[loge_cnt_vec_idx_a]);
           fprintf(fp, "From trace file %s:\n", other.filepath);
-          other.print_loge_cnt(fp, loge_cnt_vec_idx_b);
+          other.print_loge_cnt(fp, loge_cnt_vec[loge_cnt_vec_idx_b]);
         }
       }
     }
@@ -502,38 +481,50 @@ void VIDITrace<BUSCFG>::updateHBEncoding() {
   auto loge_bset_it = loge_valid_vec.begin();
   assert(logb_valid_vec.size() == loge_valid_vec.size() &&
          "inconsistent trace data structure");
+  // first vector clock is all-zero
+  // Then every logging unit pushes a new vector clock.
+  // For each logging unit,
+  // (1) the loge packets refer to vector clock from the previous logging unit.
+  // (2) the logb packets refer to vector clock from current logging unit.
+  loge_cnt_vec.push_back(cur_loge_cnt);
   for (; logb_bset_it != logb_valid_vec.end(); ++logb_bset_it, ++loge_bset_it) {
-    // process logb
-    for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
-      if (logb_bset_it->test(i)) {
-        getCH(i)->startOnePkt(loge_cnt_vec.size());
-      }
-    }
-    // process loge
-    bool loge_matches_logb = false;
+    // process loge first, because they represent the ending of packets sent
+    // before this cycle.
+    // refer to the vector clock updated by previous logging unit
     for (uint8_t loge_chid = 0; loge_chid < BUSCFG::LOGE_CNT; ++loge_chid) {
       if (loge_bset_it->test(loge_chid)) {
         if (loge2logb_map[loge_chid] != loge2logb_INVALID) {
-          getCH(loge2logb_map[loge_chid])->finishOnePkt(loge_cnt_vec.size());
-          loge_matches_logb = true;
+          getCH(loge2logb_map[loge_chid])
+              ->finishOnePkt(loge_cnt_vec.size() - 1);
         }
       }
     }
-    // maintain loge vector clock
-    // note that the logb and loge processed above only refer to the vector
-    // clock excluding current logging unit's loge_valid.
-    //
-    // We update loge_valid after a packet is processed.
-    // only commit the loge vector clock if the vector clock from previous
-    // logging units is referenced in the above channel packet processing,
-    // which is:
-    //  1. at least one new transaction started on LOGB channels
-    //  OR
-    //  2. at least one transaction ended on LOGB channels
-    updateLOGECnt(*loge_bset_it, logb_bset_it->any() || loge_matches_logb);
+    // update vector clock
+    for (uint8_t i = 0; i < BUSCFG::LOGE_CNT; ++i) {
+      if (loge_bset_it->test(i)) {
+        ++cur_loge_cnt[i];
+      }
+    }
+    loge_cnt_vec.push_back(cur_loge_cnt);
+    // process logb
+    // refer to the vector clock updated by current logging unit
+    for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
+      if (logb_bset_it->test(i)) {
+        getCH(i)->startOnePkt(loge_cnt_vec.size() - 1);
+      }
+    }
   }
-  // Cleanup on-the-fly packets. Consider them all finish in the end
-  finishOngoingPkt();
+  // Clean up the end of trace, where all on-the-fly packets are assumed to
+  // finish even if their loge_valid has not been received.
+  // Unfinished packets exist because the happens-before encoder still caches
+  // the last loge_valid
+  // Consider all on-the-fly packets finish in the end
+  for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
+    ChannelTraceBase *ch_p = getCH(i);
+    if (ch_p->logb_loge_cnt_id_vec.size() > ch_p->loge_loge_cnt_id_vec.size()) {
+      ch_p->finishOnePkt(loge_cnt_vec.size() - 1);
+    }
+  }
 }
 
 template <typename BUSCFG>
