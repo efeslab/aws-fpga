@@ -15,6 +15,7 @@ constexpr void constexpr_for(F&& f)
   }
 }
 
+// TODO: move to cl_fpgarr_main.cpp this is not utils
 struct argoptions_t {
   enum {CFG_UNKNOWN, CFG_RECORD, CFG_VERIF} cfg_type = CFG_UNKNOWN;
   enum {OP_UNKNOWN, OP_ANLYS, OP_COMP, OP_MUTATE} op_type = OP_UNKNOWN;

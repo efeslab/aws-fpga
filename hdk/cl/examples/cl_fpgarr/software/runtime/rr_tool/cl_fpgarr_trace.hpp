@@ -36,15 +36,14 @@ struct ChannelTraceBase {
   static bool findStringInArray(const char *s, size_t slen, const char *arr[],
                                 size_t arrlen);
   ChannelTraceBase(const char *_name);
-  // p is a pointer to the byte that contains valid data
-  // off is the offset (0~7) meaning valid data starts from which bit in that
-  // byte
-  // both `p` and `off` will be updated to represent the remaining valid data
-  // upon return
+  //// {{{ HB Encoding Tracking
   // loge_cnt_id is the index of the corresponding loge vector clock for this
   // packet.
-  virtual void parseOnePkt(ibitstream &ibits, size_t loge_cnt_id) = 0;
+  void startOnePkt(size_t loge_cnt_id);
   void finishOnePkt(size_t loge_cnt_id);
+  void clearHBEncoding();
+  //// }}}
+  virtual void parseOnePkt(ibitstream &ibits) = 0;
   virtual void printPkt(FILE *fp, size_t i,
                         const char *suffix = "\n") const = 0;
   virtual void exportPkt(obitstream &obits, size_t pktid) const = 0;
@@ -73,7 +72,7 @@ struct ChannelTrace : public ChannelTraceBase {
   virtual void test() override {
     printf("this is channel %s having %d bits (%d bytes)\n", name, wb, wB);
   }
-  virtual void parseOnePkt(ibitstream &ibits, size_t loge_cnt_id) override;
+  virtual void parseOnePkt(ibitstream &ibits) override;
   void printPkt(FILE *fp, size_t i, const char *suffix = "\n") const override;
   void exportPkt(obitstream &obits, size_t pktid) const override;
   bool comparePkt(size_t pktid, const ChannelTraceBase *_other) const override;
@@ -152,7 +151,7 @@ class VIDITrace {
   // return true if the loge channel is also a logb channel (i.e. successfull)
   // return false if the loge channel is not a logb channel (i.e. do nothing)
   bool tryFinishOneLOGEChannekPkt(size_t loge_chid);
-  void updateLOGECnt(bool isCommit);
+  void updateLOGECnt(const loge_bset_t &loge_bset, bool isCommit);
   // Clean up the end of trace, where all on-the-fly packets are assumed to
   // finish even if their loge_valid has not been received.
   // Unfinished packets exist because the happens-before encoder still caches
@@ -171,6 +170,8 @@ class VIDITrace {
 
  public:
   void updateStat(size_t start_off, size_t pktsize);
+  void clearHBEncoding();
+  void updateHBEncoding();
   void dump_parsed_text(FILE *fp);
   void dump_statistics(FILE *fp);
   void gen_report(FILE *fp, bool verbose = false);

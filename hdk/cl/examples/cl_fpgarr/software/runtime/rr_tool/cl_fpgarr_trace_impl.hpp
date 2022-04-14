@@ -33,20 +33,26 @@ bool ChannelTraceBase::findStringInArray(const char *s, size_t slen,
   }
   return false;
 }
+void ChannelTraceBase::startOnePkt(size_t loge_cnt_id) {
+  logb_loge_cnt_id_vec.push_back(loge_cnt_id);
+}
 void ChannelTraceBase::finishOnePkt(size_t loge_cnt_id) {
   loge_loge_cnt_id_vec.push_back(loge_cnt_id);
+}
+void ChannelTraceBase::clearHBEncoding() {
+  logb_loge_cnt_id_vec.clear();
+  loge_loge_cnt_id_vec.clear();
 }
 
 /*
  * Implementation of template class ChannelTrace
  */
 template <size_t BITS>
-void ChannelTrace<BITS>::parseOnePkt(ibitstream &ibuf, size_t loge_cnt_id) {
+void ChannelTrace<BITS>::parseOnePkt(ibitstream &ibuf) {
   pkt_t pkt = {};  // zero initialized
   uint8_t *d = pkt.data();
   ibuf.getNbits_ptr(d, wb);
   data.push_back(pkt);
-  this->logb_loge_cnt_id_vec.push_back(loge_cnt_id);
   ++(this->cnt);
 }
 template <size_t BITS>
@@ -126,7 +132,7 @@ ChannelTraceBase *VIDITrace<BUSCFG>::getCH(size_t logb_chid) const {
 template <typename BUSCFG>
 void VIDITrace<BUSCFG>::parseOneLOGBChannelPkt(size_t logb_chid,
                                                ibitstream &ibits) {
-  getCH(logb_chid)->parseOnePkt(ibits, loge_cnt_vec.size());
+  getCH(logb_chid)->parseOnePkt(ibits);
 }
 
 template <typename BUSCFG>
@@ -139,11 +145,11 @@ bool VIDITrace<BUSCFG>::tryFinishOneLOGEChannekPkt(size_t loge_chid) {
 }
 
 template <typename BUSCFG>
-void VIDITrace<BUSCFG>::updateLOGECnt(bool isCommit) {
+void VIDITrace<BUSCFG>::updateLOGECnt(const loge_bset_t &loge_bset,
+                                      bool isCommit) {
   if (isCommit) loge_cnt_vec.push_back(cur_loge_cnt);
-  loge_bset_t &latest_loge_bset = loge_valid_vec.back();
   for (uint8_t i = 0; i < BUSCFG::LOGE_CNT; ++i) {
-    if (latest_loge_bset.test(i)) {
+    if (loge_bset.test(i)) {
       ++cur_loge_cnt[i];
     }
   }
@@ -483,10 +489,57 @@ typename VIDITrace<BUSCFG>::trace_size_t VIDITrace<BUSCFG>::exportTrace(
       if (logb_bset_it->test(i))
         getCH(i)->exportPkt(obits, channel_pktcnt[i]++);
     }
-    if (aligned_pktbits > raw_pktbits) // alignment padding
+    if (aligned_pktbits > raw_pktbits)  // alignment padding
       obits.putNbits(uint8_t(0), aligned_pktbits - raw_pktbits);
     tsize += aligned_pktbits;
   }
   return tsize;
+}
+
+template <typename BUSCFG>
+void VIDITrace<BUSCFG>::updateHBEncoding() {
+  auto logb_bset_it = logb_valid_vec.begin();
+  auto loge_bset_it = loge_valid_vec.begin();
+  assert(logb_valid_vec.size() == loge_valid_vec.size() &&
+         "inconsistent trace data structure");
+  for (; logb_bset_it != logb_valid_vec.end(); ++logb_bset_it, ++loge_bset_it) {
+    // process logb
+    for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
+      if (logb_bset_it->test(i)) {
+        getCH(i)->startOnePkt(loge_cnt_vec.size());
+      }
+    }
+    // process loge
+    bool loge_matches_logb = false;
+    for (uint8_t loge_chid = 0; loge_chid < BUSCFG::LOGE_CNT; ++loge_chid) {
+      if (loge_bset_it->test(loge_chid)) {
+        if (loge2logb_map[loge_chid] != loge2logb_INVALID) {
+          getCH(loge2logb_map[loge_chid])->finishOnePkt(loge_cnt_vec.size());
+          loge_matches_logb = true;
+        }
+      }
+    }
+    // maintain loge vector clock
+    // note that the logb and loge processed above only refer to the vector
+    // clock excluding current logging unit's loge_valid.
+    //
+    // We update loge_valid after a packet is processed.
+    // only commit the loge vector clock if the vector clock from previous
+    // logging units is referenced in the above channel packet processing,
+    // which is:
+    //  1. at least one new transaction started on LOGB channels
+    //  OR
+    //  2. at least one transaction ended on LOGB channels
+    updateLOGECnt(*loge_bset_it, logb_bset_it->any() || loge_matches_logb);
+  }
+  // Cleanup on-the-fly packets. Consider them all finish in the end
+  finishOngoingPkt();
+}
+
+template <typename BUSCFG>
+void VIDITrace<BUSCFG>::clearHBEncoding() {
+  cur_loge_cnt = loge_cnt_t{};  // zero initalize
+  loge_cnt_vec.clear();
+  for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) getCH(i)->clearHBEncoding();
 }
 #endif  // CL_FPGARR_TRACE_IMPL_H
