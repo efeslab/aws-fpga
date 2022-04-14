@@ -1,30 +1,25 @@
 #ifndef CL_FPGARR_DECODER_H
 #define CL_FPGARR_DECODER_H
 // -std=c++17 is required
-#include <algorithm>
 #include <cassert>
 #include <cstdint>
-#include <cstring>
+#include <cstdio>
 
 #include "cl_fpgarr_trace.hpp"
-#include "cl_fpgarr_utils.hpp"
-
-using namespace std;
 
 template <typename BUSCFG>
 class Decoder {
  private:
-  // determine what type to use logb_valid
-  typedef uint16_t logb_valid_t;
-  // determine what type to use for loge_valid
-  typedef uint32_t loge_valid_t;
-  // determine what type to represent the total length of the whole trace
-  typedef uint64_t trace_size_t;
+  // shortcut to trace typedefs
+  typedef typename VIDITrace<BUSCFG>::pktsize_t pktsize_t;
+  typedef typename VIDITrace<BUSCFG>::logb_valid_t logb_valid_t;
+  typedef typename VIDITrace<BUSCFG>::loge_valid_t loge_valid_t;
+  typedef typename VIDITrace<BUSCFG>::trace_size_t trace_size_t;
 
   FILE *fp = nullptr;
   const char *filepath = nullptr;
   trace_size_t trace_bits;
-  static constexpr int BUFSIZE = 4096;
+  static constexpr size_t BUFSIZE = 4096;
   ibitstream ibuf;
   size_t ibuf_read_cb(void *p, size_t nbytes) {
     return fread(p, 1, nbytes, fp);
@@ -35,7 +30,7 @@ class Decoder {
       : filepath(_filepath),
         ibuf(BUFSIZE, std::bind(&Decoder::ibuf_read_cb, this,
                                 std::placeholders::_1, std::placeholders::_2)) {
-    fp = fopen(_filepath, "r");
+    fp = fopen(_filepath, "rb");
   }
   ~Decoder() {
     if (fp) fclose(fp);

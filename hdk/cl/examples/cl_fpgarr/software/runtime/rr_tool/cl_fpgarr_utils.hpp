@@ -17,11 +17,15 @@ constexpr void constexpr_for(F&& f)
 
 struct argoptions_t {
   enum {CFG_UNKNOWN, CFG_RECORD, CFG_VERIF} cfg_type = CFG_UNKNOWN;
-  enum {OP_UNKNOWN, OP_ANLYS, OP_COMP} op_type = OP_UNKNOWN;
+  enum {OP_UNKNOWN, OP_ANLYS, OP_COMP, OP_MUTATE} op_type = OP_UNKNOWN;
   bool isVerbose = false;
   union {
     const char *anlys_filepath;
     const char *comp_filepaths[2] = {nullptr, nullptr};
+    struct {
+      const char *input_filepath;
+      const char *output_filepath;
+    }; // for OP_MUTATE
   };
   bool enableHBVer2 = false;
 };

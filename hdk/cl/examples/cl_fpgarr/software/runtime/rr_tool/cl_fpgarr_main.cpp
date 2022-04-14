@@ -1,4 +1,5 @@
 #include "cl_fpgarr_buscfg.hpp"
+#include "cl_fpgarr_encoder.hpp"
 #include "cl_fpgarr_decoder.hpp"
 #include <unistd.h>
 #include <stdlib.h>
@@ -10,8 +11,11 @@ void print_help() {
       "\t -d for dump/verbose\n"
       "\t --hbver2 to enable the end-end definiton of happens-before");
   puts("cfg_type ([-r|-v]) : -r for record_bus_t, -v for validate_bus_t\n");
-  puts("cmd ([-a FILE|-c FILE1 -c FILE2]) : -a for analyse (take one file), "
-      "-c for compare (take two files)\n");
+  puts(
+      "cmd ([-a FILE|-c FILE1 -c FILE2|-m FILE -o OUT_FILE]) : \n"
+      "-a for analyse (take one file),\n"
+      "-c for compare (take two files)\n"
+      "-m for mutation, -o to specify output file\n");
 }
 
 template <typename BUSCFG>
@@ -35,13 +39,22 @@ int DecoderCmdExec(const argoptions_t &options) {
                                   options.enableHBVer2) != true);
       break;
     }
+    case argoptions_t::OP_MUTATE: {
+      VIDITrace<BUSCFG> Tin, Tout;
+      Decoder<BUSCFG> d(options.input_filepath);
+      d.parse_trace(Tin);
+      Encoder<BUSCFG> e(options.output_filepath);
+      e.export_trace(Tin);
+      rc = 0;
+      break;
+    }
     default:
       rc = -1;
   }
   return rc;
 }
 
-#define GETOPT_STRING "rva:c:d"
+#define GETOPT_STRING "rva:c:m:o:d"
 enum optEnum {
   OPT_HBVER2 = 0x100, // random value as the base to avoid ascii
 };
@@ -74,6 +87,12 @@ void parse_args(int argc, char *const argv[], argoptions_t *options) {
       case 'd':
         options->isVerbose = true;
         break;
+      case 'm':
+        options->op_type = argoptions_t::OP_MUTATE;
+        options->input_filepath = optarg;
+        break;
+      case 'o':
+        options->output_filepath = optarg;
       case OPT_HBVER2:
         options->enableHBVer2 = true;
         break;

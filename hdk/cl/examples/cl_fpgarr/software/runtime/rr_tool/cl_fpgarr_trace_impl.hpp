@@ -44,7 +44,7 @@ template <size_t BITS>
 void ChannelTrace<BITS>::parseOnePkt(ibitstream &ibuf, size_t loge_cnt_id) {
   pkt_t pkt = {};  // zero initialized
   uint8_t *d = pkt.data();
-  ibuf.getNbits(d, wb);
+  ibuf.getNbits_ptr(d, wb);
   data.push_back(pkt);
   this->logb_loge_cnt_id_vec.push_back(loge_cnt_id);
   ++(this->cnt);
@@ -58,6 +58,11 @@ void ChannelTrace<BITS>::printPkt(FILE *fp, size_t i,
     fprintf(fp, "%02x", pkt[i - 1]);
   }
   fputs(suffix, fp);
+}
+template <size_t BITS>
+void ChannelTrace<BITS>::exportPkt(obitstream &obits, size_t pktid) const {
+  assert(pktid < data.size());
+  obits.putNbits_ptr(data[pktid].data(), wb);
 }
 template <size_t BITS>
 bool ChannelTrace<BITS>::comparePkt(size_t pktid,
@@ -90,15 +95,22 @@ template <typename BUSCFG>
 typename VIDITrace<BUSCFG>::pktsize_t VIDITrace<BUSCFG>::logb_bset_push(
     const logb_bset_t &bset) {
   logb_valid_vec.push_back(bset);
+  pktsize_t pktbits = getLUsize(bset);
   // update statitics of logging unit size
   // pktbits is in terms of bits, not aligned to PACKET_ALIGNMENT
+  assert(pktbits < Statistics::maxLUBits);
+  stat.update_LU_dist(pktbits);
+  return pktbits;
+}
+
+template <typename BUSCFG>
+typename VIDITrace<BUSCFG>::pktsize_t VIDITrace<BUSCFG>::getLUsize(
+    const logb_bset_t &bset) const {
   pktsize_t pktbits =
       BUSCFG::OFFSET_WIDTH + BUSCFG::LOGB_CNT + BUSCFG::LOGE_CNT;
   for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
     if (bset.test(i)) pktbits += BUSCFG::CW[i];
   }
-  assert(pktbits < Statistics::maxLUBits);
-  stat.update_LU_dist(pktbits);
   return pktbits;
 }
 
@@ -446,5 +458,35 @@ bool VIDITrace<BUSCFG>::gen_compare_report(FILE *fp, VIDITrace<BUSCFG> &other,
           violation_cnt, (double)violation_cnt / pkt_cnt * 100,
           content_mismatch_cnt, (double)content_mismatch_cnt / pkt_cnt * 100);
   return true;
+}
+
+template <typename BUSCFG>
+typename VIDITrace<BUSCFG>::trace_size_t VIDITrace<BUSCFG>::exportTrace(
+    obitstream &obits) const {
+  auto logb_bset_it = logb_valid_vec.begin();
+  auto loge_bset_it = loge_valid_vec.begin();
+  assert(logb_valid_vec.size() == loge_valid_vec.size() &&
+         "inconsistent trace data structure");
+  trace_size_t tsize = 0;
+  std::array<size_t, BUSCFG::LOGB_CNT> channel_pktcnt = {};
+  for (; logb_bset_it != logb_valid_vec.end(); ++logb_bset_it, ++loge_bset_it) {
+    pktsize_t raw_pktbits = getLUsize(*logb_bset_it);
+    pktsize_t aligned_pktbits = GET_ALIGNED_BITS(raw_pktbits);
+    obits.putNbits(aligned_pktbits, BUSCFG::OFFSET_WIDTH);
+    logb_valid_t logb_valid =
+        static_cast<logb_valid_t>(logb_bset_it->to_ulong());
+    loge_valid_t loge_valid =
+        static_cast<loge_valid_t>(loge_bset_it->to_ulong());
+    obits.putNbits(logb_valid, BUSCFG::LOGB_CNT);
+    obits.putNbits(loge_valid, BUSCFG::LOGE_CNT);
+    for (uint8_t i = 0; i < BUSCFG::LOGB_CNT; ++i) {
+      if (logb_bset_it->test(i))
+        getCH(i)->exportPkt(obits, channel_pktcnt[i]++);
+    }
+    if (aligned_pktbits > raw_pktbits) // alignment padding
+      obits.putNbits(uint8_t(0), aligned_pktbits - raw_pktbits);
+    tsize += aligned_pktbits;
+  }
+  return tsize;
 }
 #endif  // CL_FPGARR_TRACE_IMPL_H

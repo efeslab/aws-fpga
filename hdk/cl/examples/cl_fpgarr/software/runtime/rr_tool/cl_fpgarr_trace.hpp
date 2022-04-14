@@ -47,6 +47,7 @@ struct ChannelTraceBase {
   void finishOnePkt(size_t loge_cnt_id);
   virtual void printPkt(FILE *fp, size_t i,
                         const char *suffix = "\n") const = 0;
+  virtual void exportPkt(obitstream &obits, size_t pktid) const = 0;
   virtual bool comparePkt(size_t pktid,
                           const ChannelTraceBase *other) const = 0;
   virtual void test() = 0;
@@ -74,6 +75,7 @@ struct ChannelTrace : public ChannelTraceBase {
   }
   virtual void parseOnePkt(ibitstream &ibits, size_t loge_cnt_id) override;
   void printPkt(FILE *fp, size_t i, const char *suffix = "\n") const override;
+  void exportPkt(obitstream &obits, size_t pktid) const override;
   bool comparePkt(size_t pktid, const ChannelTraceBase *_other) const override;
 };
 
@@ -86,9 +88,39 @@ class VIDITrace {
  public:
   // determine what type to use for packet(logging unit) size, max < 2000bits
   typedef uint16_t pktsize_t;
+  // determine what type to use logb_valid
+  typedef uint16_t logb_valid_t;
+  // determine what type to use for loge_valid
+  typedef uint32_t loge_valid_t;
+  // determine what type to represent the total length of the whole trace
+  typedef uint64_t trace_size_t;
 
  private:
-  //////////////////////////// happens-before encoding //////////////////////
+  //////////////////////////// Metadata of all channels //////////////////////
+  // this is a mapping from loge entries to the corresponding logb channel, if
+  // the loge channel may start new transactions as well.
+  // valid value is [0..BUSCFG::LOGB_CNT)
+  static constexpr size_t loge2logb_INVALID = BUSCFG::LOGB_CNT;
+  std::array<size_t, BUSCFG::LOGE_CNT> loge2logb_map;
+  ///////////////////////////////////////////////////////////////////////////
+  ////////////////////// Crucial info that defines a trace //////////////////
+  ///////////////////////////////////////////////////////////////////////////
+  /////////////////////////// Headers of logging units //////////////////////
+  // logb_valid_vec[i] contains the logb_valid of logging_unit[i] in the trace
+  typedef bitset<BUSCFG::LOGB_CNT> logb_bset_t;
+  vector<logb_bset_t> logb_valid_vec;
+  // loge_valid_vec[i] contains the loge_valid of logging_unit[i] in the trace
+  typedef bitset<BUSCFG::LOGE_CNT> loge_bset_t;
+  vector<loge_bset_t> loge_valid_vec;
+  //////////////////////////// Channels sub-structure //////////////////////
+  // this is for all LOGB channels, channels that may start new transactions
+  std::array<ChannelTraceBase *, BUSCFG::LOGB_CNT> channels;
+  constexpr void channels_init();
+  const char *filepath = "[in-memory]";
+  ///////////////////////////////////////////////////////////////////////////
+  //////////////////////////// non-critical auxiliary info //////////////////
+  ///////////////////////////////////////////////////////////////////////////
+  /////////////// happens-before encoding
   // the type to count how many packets as finished in each channel
   typedef uint32_t loge_pkt_cnt_t;
   // the type to track packet counters of all channels
@@ -99,24 +131,6 @@ class VIDITrace {
   loge_cnt_t cur_loge_cnt = {};
   // the (finished) packet counter of all channels when a packet comes
   vector<loge_cnt_t> loge_cnt_vec;
-  //////////////////////////// Headers of logging units //////////////////////
-  // logb_valid_vec[i] contains the logb_valid of logging_unit[i] in the trace
-  typedef bitset<BUSCFG::LOGB_CNT> logb_bset_t;
-  vector<logb_bset_t> logb_valid_vec;
-  // loge_valid_vec[i] contains the loge_valid of logging_unit[i] in the trace
-  typedef bitset<BUSCFG::LOGE_CNT> loge_bset_t;
-  vector<loge_bset_t> loge_valid_vec;
-  //////////////////////////// Metadata of all channels //////////////////////
-  // this is a mapping from loge entries to the corresponding logb channel, if
-  // the loge channel may start new transactions as well.
-  // valid value is [0..BUSCFG::LOGB_CNT)
-  static constexpr size_t loge2logb_INVALID = BUSCFG::LOGB_CNT;
-  std::array<size_t, BUSCFG::LOGE_CNT> loge2logb_map;
-  //////////////////////////// Channels sub-structure //////////////////////
-  // this is for all LOGB channels, channels that may start new transactions
-  std::array<ChannelTraceBase *, BUSCFG::LOGB_CNT> channels;
-  constexpr void channels_init();
-  const char *filepath = "[N/A]";
 
  public:
   VIDITrace() { channels_init(); }
@@ -128,6 +142,7 @@ class VIDITrace {
   void setFilePath(const char *_filepath) { filepath = _filepath; }
   // return the size of logging unit in bits
   pktsize_t logb_bset_push(const logb_bset_t &bset);
+  pktsize_t getLUsize(const logb_bset_t &bset) const;
   void loge_bset_push(const loge_bset_t &bset);
   ChannelTraceBase *getCH(size_t logb_chid) const;
   // NOTE: assume the buffer p and off contains the whole transaction content
@@ -165,6 +180,8 @@ class VIDITrace {
   // return true: equal, false: not equal
   bool gen_compare_report(FILE *fp, VIDITrace<BUSCFG> &other,
                           bool verbose = false, bool enableHBVer2 = false);
+  // return the total size of exported trace in bits
+  trace_size_t exportTrace(obitstream &obits) const;
 };
 #include "cl_fpgarr_trace_impl.hpp"
 #endif  // CL_FPGARR_TRACE_H

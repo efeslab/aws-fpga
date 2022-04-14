@@ -1,10 +1,8 @@
 #ifndef CL_FPGARR_DECODER_IMPL_H
 #define CL_FPGARR_DECODER_IMPL_H
-#include "cl_fpgarr_decoder.hpp"
 
 template <typename BUSCFG>
 void Decoder<BUSCFG>::parse_trace(VIDITrace<BUSCFG> &T) {
-  typedef typename VIDITrace<BUSCFG>::pktsize_t pktsize_t;
   assert(fp && "file open failed");
   assert(fread(&trace_bits, sizeof(trace_bits), 1, fp) == 1);
   // the static_assert is to make sure the buffer is large enough to hold the
