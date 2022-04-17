@@ -38,7 +38,6 @@ void Decoder<BUSCFG>::parse_trace(VIDITrace<BUSCFG> &T) {
     pktsize_t pktbits = T.logb_bset_push(logb_valid_bset);
     // processing loge
     bitset<BUSCFG::LOGE_CNT> loge_valid_bset;
-    bool loge_matches_logb = false;
     for (uint8_t i = 0; i < BUSCFG::LOGE_CNT; ++i) {
       if (loge_valid & (0x1 << i)) {
         loge_valid_bset.set(i);
@@ -46,7 +45,7 @@ void Decoder<BUSCFG>::parse_trace(VIDITrace<BUSCFG> &T) {
     }
     T.loge_bset_push(loge_valid_bset);
     assert(alignment_padding_size < 8);
-    uint8_t eat_padding = ibuf.getNbits<uint8_t>(alignment_padding_size);
+    [[maybe_unused]] uint8_t eat_padding = ibuf.getNbits<uint8_t>(alignment_padding_size);
     parsed_bits += pktsize;
     assert(pktsize == GET_ALIGNED_BITS(pktbits));
   }

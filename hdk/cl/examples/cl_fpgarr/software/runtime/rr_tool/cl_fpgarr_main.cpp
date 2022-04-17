@@ -20,13 +20,14 @@ void print_help() {
 
 template <typename BUSCFG>
 int DecoderCmdExec(const argoptions_t &options) {
-  int rc;
+  int rc = -1;
   switch (options.op_type) {
     case argoptions_t::OP_ANLYS: {
       VIDITrace<BUSCFG> T;
       Decoder<BUSCFG> d(options.anlys_filepath);
       d.parse_trace(T);
       T.gen_report(stdout, options.isVerbose);
+      rc = 0;
       break;
     }
     case argoptions_t::OP_COMP: {

@@ -36,6 +36,7 @@ struct ChannelTraceBase {
   static bool findStringInArray(const char *s, size_t slen, const char *arr[],
                                 size_t arrlen);
   ChannelTraceBase(const char *_name);
+  virtual ~ChannelTraceBase() {}
   //// {{{ HB Encoding Tracking
   // loge_cnt_id is the index of the corresponding loge vector clock for this
   // packet.
@@ -72,6 +73,7 @@ struct ChannelTrace : public ChannelTraceBase {
   virtual void test() override {
     printf("this is channel %s having %d bits (%d bytes)\n", name, wb, wB);
   }
+  virtual ~ChannelTrace() {}
   virtual void parseOnePkt(ibitstream &ibits) override;
   void printPkt(FILE *fp, size_t i, const char *suffix = "\n") const override;
   void exportPkt(obitstream &obits, size_t pktid) const override;
