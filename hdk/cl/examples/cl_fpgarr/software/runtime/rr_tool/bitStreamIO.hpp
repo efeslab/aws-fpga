@@ -1,6 +1,7 @@
 #ifndef CL_FPGARR_BITSTREAMIO_H
 #define CL_FPGARR_BITSTREAMIO_H
 #include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <functional>
@@ -9,11 +10,13 @@ using std::uint8_t;
 
 class bitstream {
  protected:
+  // whether buf is managed. If unmanaged, do not handle alloc/dealloc
+  bool is_managed;
   uint8_t *buf = nullptr;
   size_t len = 0;  // len of valid bytes
   uint8_t *p = buf;
   uint8_t off = 0;
-  size_t bufsize = 0;
+  size_t bufsize = 0; // in bytes
 
   // src is a pointer to the byte that contains valid data
   // dst is a pointer to the byte that I should write valid data
@@ -67,9 +70,20 @@ class bitstream {
   static size_t Bs2bs(size_t Nbytes) { return Nbytes * 8; }
 
  public:
+  // initialize managed bitstream, alloc new memory
   bitstream(size_t _bufsize)
-      : buf(new uint8_t[_bufsize](/*zero initialized*/)), bufsize(_bufsize) {}
-  ~bitstream() { delete[] buf; }
+      : is_managed(true),
+        buf(new uint8_t[_bufsize](/*zero initialized*/)),
+        bufsize(_bufsize) {}
+  // initialize unmanaged bitstream, use existing memory
+  bitstream(void *_buf, size_t _bufsize)
+      : is_managed(false),
+        buf(static_cast<uint8_t *>(_buf)),
+        len(_bufsize),
+        bufsize(_bufsize) {}
+  ~bitstream() {
+    if (is_managed) delete[] buf;
+  }
 };
 
 class ibitstream : public bitstream {
@@ -79,10 +93,15 @@ class ibitstream : public bitstream {
   // return number of bytes successfully read
   typedef std::function<size_t(void *p, size_t nbytes)> read_cb_t;
   read_cb_t read_cb;
+  static size_t fake_read_cb(void *p, size_t nbytes) { return 0; }
 
  public:
+  // allocate new memory as buffer
   ibitstream(size_t bufsize, read_cb_t _read_cb)
       : bitstream(bufsize), read_cb(_read_cb) {}
+  // use existing memory as buffer
+  ibitstream(const void *buf, size_t bufsize)
+      : bitstream(const_cast<void *>(buf), bufsize), read_cb(&fake_read_cb) {}
   // Illustration of buf, len, p, off
   // |<--consumed data-->|<-valid data to read->|<---invalid--->|
   // [----------------------------------------------------------]
@@ -98,7 +117,8 @@ class ibitstream : public bitstream {
     size_t remain_bits = Bs2bs(remain_bytes) - this->off;
     // the minimum available bits in a full buffer (when off != 0) must greater
     // than requested Nbits
-    assert((Nbits < Bs2bs(this->bufsize - 1)) && "Invalid read request Nbits");
+    assert((Nbits <= Bs2bs(this->bufsize) - this->off) &&
+           "Invalid read request Nbits");
     if (remain_bits < Nbits) {
       memmove(this->buf, this->p, remain_bytes);
       size_t n =

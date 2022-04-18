@@ -4,6 +4,7 @@
  * Implementation of class ChannelTraceBase
  */
 ChannelTraceBase::ChannelTraceBase(const char *_name) : name(_name) {
+  // assuming channel name are encoded as "{interface_name}_{channel_type}"
   size_t intf_len = std::strchr(_name, '_') - _name;
   size_t ch_len = std::strlen(_name) - intf_len - 1;
   const char *intf_name = _name;
@@ -24,14 +25,7 @@ ChannelTraceBase::ChannelTraceBase(const char *_name) : name(_name) {
   // recv channel from input interface: output channel
   // send channel from output interface: output channel
   isInput = !(isInputInterface ^ isSendChannel);
-}
-bool ChannelTraceBase::findStringInArray(const char *s, size_t slen,
-                                         const char *arr[], size_t arrlen) {
-  for (size_t i = 0; i < arrlen; ++i) {
-    if (strncmp(s, arr[i], std::min(slen, std::strlen(arr[i]))) == 0)
-      return true;
-  }
-  return false;
+  tid = F1PktType::getType(intf_name, intf_len, ch_name, ch_len);
 }
 void ChannelTraceBase::startOnePkt(size_t loge_cnt_id) {
   logb_loge_cnt_id_vec.push_back(loge_cnt_id);
@@ -59,11 +53,17 @@ template <size_t BITS>
 void ChannelTrace<BITS>::printPkt(FILE *fp, size_t i,
                                   const char *suffix) const {
   const pkt_t &pkt = data[i];
-  fprintf(fp, "%" NAME_MAX_LEN "s packet[%ld]: 0x", name, i);
-  for (uint8_t i = wB; i > 0; --i) {
-    fprintf(fp, "%02x", pkt[i - 1]);
-  }
+  fprintf(fp, "%" NAME_MAX_LEN "s packet[%ld]: ", name, i);
+  // struct representation of a pkt content
+  F1ChannelPkt_t s_pkt(tid, pkt.data(), wB);
+  s_pkt.printPkt(fp);
   fputs(suffix, fp);
+}
+template <size_t BITS>
+void ChannelTrace<BITS>::getDecodedPkt(size_t pktid,
+                                       F1ChannelPkt_t &pkt) const {
+  assert(pktid <= data.size());
+  pkt.refill(tid, data[pktid].data(), wB);
 }
 template <size_t BITS>
 void ChannelTrace<BITS>::exportPkt(obitstream &obits, size_t pktid) const {

@@ -2,6 +2,7 @@
 #define CL_FPGARR_UTILS_H
 #include <type_traits>
 #include <cstdint>
+#include <cstring>
 
 // constexpr_for is taken from
 // https://artificial-mind.net/blog/2020/10/31/constexpr-for
@@ -31,9 +32,7 @@ struct argoptions_t {
   bool enableHBVer2 = false;
 };
 
-const char *input_interfaces[] = {"pcis", "sda", "ocl", "bar1"};
-const char *output_interfaces[] = {"pcim"};
-const char *send_channels[] = {"AW", "W", "AR"};
-const char *recv_channels[] = {"B", "R"};
 #define ARRAY_LEN(x) (sizeof(x)/sizeof(x[0]))
+bool findStringInArray(const char *s, size_t slen, const char *const *arr,
+                       size_t arrlen);
 #endif // CL_FPGARR_UTILS_H

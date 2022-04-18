@@ -11,10 +11,9 @@
 #include <vector>
 
 #include "bitStreamIO.hpp"
+#include "cl_fpgarr_trace_content.hpp"
 #include "cl_fpgarr_utils.hpp"
 
-// some basic config parameters
-#define PACKET_ALIGNMENT 8
 // max length of channel name
 #define NAME_MAX_LEN "7"
 // max length of the property name
@@ -31,10 +30,16 @@ struct ChannelTraceBase {
   // id refering to vector clock that is defined between loge and loge
   vector<size_t> loge_loge_cnt_id_vec;
   const char *name;
+  static constexpr const char *input_interfaces[] = {"pcis", "sda", "ocl",
+                                                     "bar1"};
+  static constexpr const char *output_interfaces[] = {"pcim"};
+  static constexpr const char *send_channels[] = {"AW", "W", "AR"};
+  static constexpr const char *recv_channels[] = {"B", "R"};
   bool isInput;  // whether this channel is an input channel from Shell to APP
+  // tid represents the type of packets in this channel, determined based on the
+  // channel name
+  F1PktType::type tid;
 
-  static bool findStringInArray(const char *s, size_t slen, const char *arr[],
-                                size_t arrlen);
   ChannelTraceBase(const char *_name);
   virtual ~ChannelTraceBase() {}
   //// {{{ HB Encoding Tracking
@@ -50,15 +55,9 @@ struct ChannelTraceBase {
   virtual void exportPkt(obitstream &obits, size_t pktid) const = 0;
   virtual bool comparePkt(size_t pktid,
                           const ChannelTraceBase *other) const = 0;
+  virtual void getDecodedPkt(size_t pktid, F1ChannelPkt_t &pkt) const = 0;
   virtual void test() = 0;
 };
-
-constexpr int GET_ALIGNED_BITS(int x) {
-  return (x + PACKET_ALIGNMENT - 1) & (~(PACKET_ALIGNMENT - 1));
-}
-constexpr int GET_ALIGNED_BYTES(int x) {
-  return (x + PACKET_ALIGNMENT - 1) / PACKET_ALIGNMENT;
-}
 
 template <size_t BITS>
 struct ChannelTrace : public ChannelTraceBase {
@@ -69,14 +68,18 @@ struct ChannelTrace : public ChannelTraceBase {
   // the content of each packet in this channel
   vector<pkt_t> data;
 
-  ChannelTrace(const char *_name) : ChannelTraceBase(_name) {}
+  ChannelTrace(const char *_name) : ChannelTraceBase(_name) {
+    assert(wb == F1PktType::tid_bits[tid] && "tid_bits mismatches");
+  }
   virtual void test() override {
-    printf("this is channel %s having %d bits (%d bytes)\n", name, wb, wB);
+    printf("Channel %s has %d bits (%d bytes), %s\n", name, wb, wB,
+           isInput ? "InputChannel" : "OutputChannel");
   }
   virtual ~ChannelTrace() {}
   virtual void parseOnePkt(ibitstream &ibits) override;
   void printPkt(FILE *fp, size_t i, const char *suffix = "\n") const override;
   void exportPkt(obitstream &obits, size_t pktid) const override;
+  void getDecodedPkt(size_t pktid, F1ChannelPkt_t &pkt) const override;
   bool comparePkt(size_t pktid, const ChannelTraceBase *_other) const override;
 };
 
@@ -95,6 +98,9 @@ class VIDITrace {
   typedef uint32_t loge_valid_t;
   // determine what type to represent the total length of the whole trace
   typedef uint64_t trace_size_t;
+  // types that defines a logging unit
+  typedef bitset<BUSCFG::LOGB_CNT> logb_bset_t;
+  typedef bitset<BUSCFG::LOGE_CNT> loge_bset_t;
 
  private:
   //////////////////////////// Metadata of all channels //////////////////////
@@ -108,10 +114,8 @@ class VIDITrace {
   ///////////////////////////////////////////////////////////////////////////
   /////////////////////////// Headers of logging units //////////////////////
   // logb_valid_vec[i] contains the logb_valid of logging_unit[i] in the trace
-  typedef bitset<BUSCFG::LOGB_CNT> logb_bset_t;
   vector<logb_bset_t> logb_valid_vec;
   // loge_valid_vec[i] contains the loge_valid of logging_unit[i] in the trace
-  typedef bitset<BUSCFG::LOGE_CNT> loge_bset_t;
   vector<loge_bset_t> loge_valid_vec;
   //////////////////////////// Channels sub-structure //////////////////////
   // this is for all LOGB channels, channels that may start new transactions
