@@ -91,6 +91,7 @@ module rr_int_to_pcim #(
             int_hold <= 0;
             int_ack_ready <= 0;
             int_clear <= 0;
+            int_ack <= 0;
         end else begin
             int_hold <= (int_hold & ~int_clear) | int_req;
 
@@ -116,6 +117,8 @@ module rr_int_to_pcim #(
                             end
                         end
                     end
+                    else
+                        wb_ready <= 0;
                 end
                 default: begin
                     wb_ready <= 0;
