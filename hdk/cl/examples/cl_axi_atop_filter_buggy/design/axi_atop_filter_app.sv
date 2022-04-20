@@ -2,6 +2,7 @@ typedef struct packed {
     logic [63:0] pcim_base_addr;
     logic [31:0] totalB; // total bytes to echo
     logic startWB; // start write back (from DDR to PCIM)
+    logic apply_bugfix; // determine which version axi_top_filter code to use
 } app_csrs_t;
 
 module axi_atop_filter_app (
@@ -16,8 +17,6 @@ module axi_atop_filter_app (
 );
 
 axi_bus_t axi_W();
-AXI_BUS #(.AXI_ADDR_WIDTH(64), .AXI_DATA_WIDTH(512), .AXI_ID_WIDTH(6), .AXI_USER_WIDTH(1)) axi_atop_in();
-AXI_BUS #(.AXI_ADDR_WIDTH(64), .AXI_DATA_WIDTH(512), .AXI_ID_WIDTH(6), .AXI_USER_WIDTH(1)) axi_atop_out();
 
 // R2W state control
 logic [31:0] issuedR_Bytes;
@@ -27,6 +26,7 @@ AXI_R2W axi_R2W_inst (
     .clk(clk), .rstn(rstn),
     .burst_len(burst_len),
     .issueR(csrs.startWB && issuedR_Bytes < csrs.totalB),
+    .W_base_addr(csrs.pcim_base_addr),
     .axi_R(ddr_mstr_bus),
     .axi_W(axi_W)
 );
@@ -66,60 +66,27 @@ always_ff @(posedge clk)
                 burst_len <= 0;
         endcase
 //// aws AXI (axi_W) -> pulp AXI (axi_atop_in)
-// AW
-assign axi_atop_in.aw_id = axi_W.awid[5:0];
-assign axi_atop_in.aw_addr = axi_W.awaddr;
-assign axi_atop_in.aw_len = axi_W.awlen;
-assign axi_atop_in.aw_size = axi_W.awsize;
-assign axi_atop_in.aw_burst = 2'b01; // INCR
-assign axi_atop_in.aw_lock = 0; // normal access
-assign axi_atop_in.aw_cache = 4'b0011; // 001x non-cacheable 1: system
-assign axi_atop_in.aw_prot = 3'b010; // [2] Data access,
-                                     // [1] Non-secure access,
-                                     // [0] Unpriviledged access
-assign axi_atop_in.aw_qos = 4'b0; // not participating in any QOS
-assign axi_atop_in.aw_region = 4'b0; // no region I guess?
-assign axi_atop_in.aw_atop = 6'b0; // no atomic operation
-assign axi_atop_in.aw_user = 0;
-assign axi_atop_in.aw_valid = axi_W.awvalid;
-assign axi_W.awready = axi_atop_in.aw_ready;
-// W
-assign axi_atop_in.w_data = axi_W.wdata;
-assign axi_atop_in.w_strb = axi_W.wstrb;
-assign axi_atop_in.w_last = axi_W.wlast;
-assign axi_atop_in.w_user = 0;
-assign axi_atop_in.w_valid = axi_W.wvalid;
-assign axi_W.wready = axi_atop_in.w_ready;
-// B
-assign axi_W.bid[5:0] = axi_atop_in.b_id;
-assign axi_W.bresp = axi_atop_in.b_resp;
-//assign axi_W.buser = ??? // disabled skip
-assign axi_W.bvalid = axi_atop_in.b_valid;
-assign axi_atop_in.b_ready = axi_W.bready;
-// AR
-assign axi_atop_in.ar_id = axi_W.arid[5:0];
-assign axi_atop_in.ar_addr = axi_W.araddr;
-assign axi_atop_in.ar_len = axi_W.arlen;
-assign axi_atop_in.ar_size = axi_W.arsize;
-assign axi_atop_in.ar_burst = 2'b01; // INCR
-assign axi_atop_in.ar_lock = 0; // normal access
-assign axi_atop_in.ar_cache = 4'b0011; // 001x non-cacheable 1: system
-assign axi_atop_in.ar_prot = 3'b010; // [2] Data access,
-                                     // [1] Non-secure access,
-                                     // [0] Unpriviledged access
-assign axi_atop_in.ar_qos = 4'b0; // not participating in any QOS
-assign axi_atop_in.ar_region = 4'b0; // no region I guess?
-assign axi_atop_in.ar_user = 0;
-assign axi_atop_in.ar_valid = axi_W.arvalid;
-assign axi_W.arready = axi_atop_in.ar_ready;
-// R
-assign axi_W.rid[5:0] = axi_atop_in.r_id;
-assign axi_W.rdata = axi_atop_in.r_data;
-assign axi_W.rresp = axi_atop_in.r_resp;
-assign axi_W.rlast = axi_atop_in.r_last;
-//assign axi_W.ruser = ??? // disabled skip
-assign axi_W.rvalid = axi_atop_in.r_valid;
-assign axi_atop_in.r_ready = axi_W.rready;
+axi_bus_t axi_W_buggy();
+axi_bus_t axi_W_fixed();
+aws_axi_slv_sel axi_W_sel_inst (
+    .sel(csrs.apply_bugfix),
+    .inAM(axi_W_buggy),
+    .inBM(axi_W_fixed),
+    .outS(axi_W)
+);
+AXI_BUS #(.AXI_ADDR_WIDTH(64), .AXI_DATA_WIDTH(512), .AXI_ID_WIDTH(6), .AXI_USER_WIDTH(1)) axi_atop_in_buggy();
+AXI_BUS #(.AXI_ADDR_WIDTH(64), .AXI_DATA_WIDTH(512), .AXI_ID_WIDTH(6), .AXI_USER_WIDTH(1)) axi_atop_in_fixed();
+AXI_BUS #(.AXI_ADDR_WIDTH(64), .AXI_DATA_WIDTH(512), .AXI_ID_WIDTH(6), .AXI_USER_WIDTH(1)) axi_atop_out_buggy();
+AXI_BUS #(.AXI_ADDR_WIDTH(64), .AXI_DATA_WIDTH(512), .AXI_ID_WIDTH(6), .AXI_USER_WIDTH(1)) axi_atop_out_fixed();
+
+aws_AXI_to_pulp_AXI_mstr atop_in_buggy_inst (
+    .aws_axi_M(axi_W_buggy),
+    .pulp_axi_M(axi_atop_in_buggy)
+);
+aws_AXI_to_pulp_AXI_mstr atop_in_fixed_inst (
+    .aws_axi_M(axi_W_fixed),
+    .pulp_axi_M(axi_atop_in_fixed)
+);
 
 axi_atop_filter_intf #(
     .AXI_ID_WIDTH(6),
@@ -127,11 +94,41 @@ axi_atop_filter_intf #(
     .AXI_DATA_WIDTH(512),
     .AXI_USER_WIDTH(1),
     .AXI_MAX_WRITE_TXNS(32)
-) axi_atop_filter_inst (
+) axi_atop_filter_buggy_inst (
     .clk_i(clk),
     .rst_ni(rstn),
-    .slv(axi_atop_in),
-    .mst(axi_atop_out)
+    .slv(axi_atop_in_buggy),
+    .mst(axi_atop_out_buggy)
+);
+
+axi_atop_filter_fixed_intf #(
+    .AXI_ID_WIDTH(6),
+    .AXI_ADDR_WIDTH(64),
+    .AXI_DATA_WIDTH(512),
+    .AXI_USER_WIDTH(1),
+    .AXI_MAX_WRITE_TXNS(32)
+) axi_atop_filter_fixed_inst (
+    .clk_i(clk),
+    .rst_ni(rstn),
+    .slv(axi_atop_in_fixed),
+    .mst(axi_atop_out_fixed)
+);
+
+axi_bus_t pcim_out_buggy();
+axi_bus_t pcim_out_fixed();
+pulp_AXI_to_aws_AXI_mstr atop_out2pcim_buggy_inst (
+    .pulp_axi_M(axi_atop_out_buggy),
+    .aws_axi_M(pcim_out_buggy)
+);
+pulp_AXI_to_aws_AXI_mstr atop_out2pcim_fixed_inst (
+    .pulp_axi_M(axi_atop_out_fixed),
+    .aws_axi_M(pcim_out_fixed)
+);
+aws_axi_mstr_sel pcim_mstr_sel_inst (
+    .sel(csrs.apply_bugfix),
+    .inAS(pcim_out_buggy),
+    .inBS(pcim_out_fixed),
+    .outM(pcim_mstr_bus)
 );
 
 app_csrs_t csrs;
@@ -140,59 +137,6 @@ axi_atop_ocl_csr ocl_csr_inst(
     .sh_ocl_bus(sh_ocl_bus),
     .csrs(csrs)
 );
-
-//// pulp AXI (axi_atop_out) -> aws AXI (pcim_mstr_bus)
-// AW
-assign pcim_mstr_bus.awid = axi_atop_out.aw_id;
-assign pcim_mstr_bus.awaddr = axi_atop_out.aw_addr + csrs.pcim_base_addr;
-assign pcim_mstr_bus.awlen = axi_atop_out.aw_len;
-assign pcim_mstr_bus.awsize = axi_atop_out.aw_size;
-`ifndef TEST_BUGGY_AXI_ATOP_FILTER
-assign pcim_mstr_bus.awvalid = axi_atop_out.aw_valid;
-assign axi_atop_out.aw_ready = pcim_mstr_bus.awready;
-`else
-// testing buggy behavior
-// aw_ready/valid are passed through only if w_valid is seen after a w_last
-logic aw_pass;
-assign pcim_mstr_bus.awvalid = aw_pass ? axi_atop_out.aw_valid : 0;
-assign axi_atop_out.aw_ready = aw_pass ? pcim_mstr_bus.awready : 0;
-
-always_ff @(posedge clk)
-    if (!rstn)
-        aw_pass <= 0;
-    else if (pcim_mstr_bus.wvalid && pcim_mstr_bus.wready && pcim_mstr_bus.wlast)
-        aw_pass <= 0;
-    else if (pcim_mstr_bus.wvalid && pcim_mstr_bus.wready)
-        aw_pass <= 1;
-`endif
-// W
-assign pcim_mstr_bus.wid = 0;
-assign pcim_mstr_bus.wdata = axi_atop_out.w_data;
-assign pcim_mstr_bus.wstrb = axi_atop_out.w_strb;
-assign pcim_mstr_bus.wlast = axi_atop_out.w_last;
-assign pcim_mstr_bus.wvalid = axi_atop_out.w_valid;
-assign axi_atop_out.w_ready = pcim_mstr_bus.wready;
-// B
-assign axi_atop_out.b_id = pcim_mstr_bus.bid;
-assign axi_atop_out.b_resp = pcim_mstr_bus.bresp;
-assign axi_atop_out.b_user = 0;
-assign axi_atop_out.b_valid = pcim_mstr_bus.bvalid;
-assign pcim_mstr_bus.bready = axi_atop_out.b_ready;
-// AR
-assign pcim_mstr_bus.arid = axi_atop_out.ar_id;
-assign pcim_mstr_bus.araddr = axi_atop_out.ar_addr + csrs.pcim_base_addr;
-assign pcim_mstr_bus.arlen = axi_atop_out.ar_len;
-assign pcim_mstr_bus.arsize = axi_atop_out.ar_size;
-assign pcim_mstr_bus.arvalid = axi_atop_out.ar_valid;
-assign axi_atop_out.ar_ready = pcim_mstr_bus.arready;
-// R
-assign axi_atop_out.r_id = pcim_mstr_bus.rid;
-assign axi_atop_out.r_data = pcim_mstr_bus.rdata;
-assign axi_atop_out.r_resp = pcim_mstr_bus.rresp;
-assign axi_atop_out.r_last = pcim_mstr_bus.rlast;
-assign axi_atop_out.r_user = 0;
-assign axi_atop_out.r_valid = pcim_mstr_bus.rvalid;
-assign pcim_mstr_bus.rready = axi_atop_out.r_ready;
 
 logic [31:0] completedW_Bytes;
 always_ff @(posedge clk)
@@ -206,7 +150,7 @@ logic irq_requested = 0, irq_requested_past = 0;
 always_ff @(posedge clk)
     if (!rstn)
         irq_requested <= 0;
-    else if (completedW_Bytes == csrs.totalB)
+    else if (completedW_Bytes == csrs.totalB && csrs.startWB)
         irq_requested <= 1;
 always_ff @(posedge clk)
     irq_requested_past <= irq_requested;
@@ -287,6 +231,7 @@ typedef enum {
     PCIM_BASE_ADDR_HI,
     TOTAL_BYTES,
     START_WB,
+    APPLY_BUGFIX,
     TOTAL_CSR_NUM
 } csr_t;
 `define CSR_ADDR(idx) (idx << 2)
@@ -299,6 +244,9 @@ always_ff @(posedge clk)
 always_ff @(posedge clk)
     if (!rstn) begin
         csrs.pcim_base_addr <= 0;
+        csrs.totalB <= 0;
+        csrs.startWB <= 0;
+        csrs.apply_bugfix <= 0;
     end
     else if (sh_ocl_bus.wvalid && sh_ocl_bus.wready)
         case (buf_awaddr)
@@ -310,6 +258,10 @@ always_ff @(posedge clk)
                 csrs.totalB <= sh_ocl_bus.wdata;
             `CSR_ADDR(START_WB):
                 csrs.startWB <= 1;
+            `CSR_ADDR(APPLY_BUGFIX):
+                // disallow updating apply_bugfix when writeback has started
+                csrs.apply_bugfix <=
+                    csrs.startWB ?  csrs.apply_bugfix : sh_ocl_bus.wdata[0];
         endcase
 endmodule
 
@@ -320,6 +272,7 @@ module AXI_R2W (
     // if asserted, will issue R and convert its responses to W
     // Note that deasserting R will not abort on-going transactions
     input logic issueR,
+    input logic [63:0] W_base_addr,
     // the axi bus to issue read commands
     axi_bus_t.slave axi_R,
     // the axi bus to issue write commands
@@ -370,7 +323,7 @@ assign axi_R.arsize = 3'b110; // 64B
 assign axi_R.arvalid = (state == ISSUE_AR_AW) || (state == ISSUE_AR);
 // manage axi_W.AW
 assign axi_W.awid = 0;
-assign axi_W.awaddr = addr;
+assign axi_W.awaddr = addr + W_base_addr;
 assign axi_W.awlen = burst_len;
 assign axi_W.awsize = 3'b110; // 64B
 assign axi_W.awvalid = (state == ISSUE_AR_AW) || (state == ISSUE_AW);
@@ -396,4 +349,104 @@ assign axi_R.bready = 1;
 // disable axi_W read
 assign axi_W.arvalid = 0;
 assign axi_W.rready = 1;
+endmodule
+
+module aws_AXI_to_pulp_AXI_mstr (
+    axi_bus_t.master aws_axi_M,
+    AXI_BUS.Master pulp_axi_M
+);
+assign pulp_axi_M.aw_id = aws_axi_M.awid[5:0];
+assign pulp_axi_M.aw_addr = aws_axi_M.awaddr;
+assign pulp_axi_M.aw_len = aws_axi_M.awlen;
+assign pulp_axi_M.aw_size = aws_axi_M.awsize;
+assign pulp_axi_M.aw_burst = 2'b01; // INCR
+assign pulp_axi_M.aw_lock = 0; // normal access
+assign pulp_axi_M.aw_cache = 4'b0011; // 001x non-cacheable 1: system
+assign pulp_axi_M.aw_prot = 3'b010; // [2] Data access,
+                                     // [1] Non-secure access,
+                                     // [0] Unpriviledged access
+assign pulp_axi_M.aw_qos = 4'b0; // not participating in any QOS
+assign pulp_axi_M.aw_region = 4'b0; // no region I guess?
+assign pulp_axi_M.aw_atop = 6'b0; // no atomic operation
+assign pulp_axi_M.aw_user = 0;
+assign pulp_axi_M.aw_valid = aws_axi_M.awvalid;
+assign aws_axi_M.awready = pulp_axi_M.aw_ready;
+// W
+assign pulp_axi_M.w_data = aws_axi_M.wdata;
+assign pulp_axi_M.w_strb = aws_axi_M.wstrb;
+assign pulp_axi_M.w_last = aws_axi_M.wlast;
+assign pulp_axi_M.w_user = 0;
+assign pulp_axi_M.w_valid = aws_axi_M.wvalid;
+assign aws_axi_M.wready = pulp_axi_M.w_ready;
+// B
+assign aws_axi_M.bid[5:0] = pulp_axi_M.b_id;
+assign aws_axi_M.bresp = pulp_axi_M.b_resp;
+//assign aws_axi_M.buser = ??? // disabled skip
+assign aws_axi_M.bvalid = pulp_axi_M.b_valid;
+assign pulp_axi_M.b_ready = aws_axi_M.bready;
+// AR
+assign pulp_axi_M.ar_id = aws_axi_M.arid[5:0];
+assign pulp_axi_M.ar_addr = aws_axi_M.araddr;
+assign pulp_axi_M.ar_len = aws_axi_M.arlen;
+assign pulp_axi_M.ar_size = aws_axi_M.arsize;
+assign pulp_axi_M.ar_burst = 2'b01; // INCR
+assign pulp_axi_M.ar_lock = 0; // normal access
+assign pulp_axi_M.ar_cache = 4'b0011; // 001x non-cacheable 1: system
+assign pulp_axi_M.ar_prot = 3'b010; // [2] Data access,
+                                     // [1] Non-secure access,
+                                     // [0] Unpriviledged access
+assign pulp_axi_M.ar_qos = 4'b0; // not participating in any QOS
+assign pulp_axi_M.ar_region = 4'b0; // no region I guess?
+assign pulp_axi_M.ar_user = 0;
+assign pulp_axi_M.ar_valid = aws_axi_M.arvalid;
+assign aws_axi_M.arready = pulp_axi_M.ar_ready;
+// R
+assign aws_axi_M.rid[5:0] = pulp_axi_M.r_id;
+assign aws_axi_M.rdata = pulp_axi_M.r_data;
+assign aws_axi_M.rresp = pulp_axi_M.r_resp;
+assign aws_axi_M.rlast = pulp_axi_M.r_last;
+//assign aws_axi_M.ruser = ??? // disabled skip
+assign aws_axi_M.rvalid = pulp_axi_M.r_valid;
+assign pulp_axi_M.r_ready = aws_axi_M.rready;
+endmodule
+
+module pulp_AXI_to_aws_AXI_mstr (
+    AXI_BUS.Slave pulp_axi_M,
+    axi_bus_t.slave aws_axi_M
+);
+// AW
+assign aws_axi_M.awid = pulp_axi_M.aw_id;
+assign aws_axi_M.awaddr = pulp_axi_M.aw_addr;
+assign aws_axi_M.awlen = pulp_axi_M.aw_len;
+assign aws_axi_M.awsize = pulp_axi_M.aw_size;
+assign aws_axi_M.awvalid = pulp_axi_M.aw_valid;
+assign pulp_axi_M.aw_ready = aws_axi_M.awready;
+// W
+assign aws_axi_M.wid = 0;
+assign aws_axi_M.wdata = pulp_axi_M.w_data;
+assign aws_axi_M.wstrb = pulp_axi_M.w_strb;
+assign aws_axi_M.wlast = pulp_axi_M.w_last;
+assign aws_axi_M.wvalid = pulp_axi_M.w_valid;
+assign pulp_axi_M.w_ready = aws_axi_M.wready;
+// B
+assign pulp_axi_M.b_id = aws_axi_M.bid;
+assign pulp_axi_M.b_resp = aws_axi_M.bresp;
+assign pulp_axi_M.b_user = 0;
+assign pulp_axi_M.b_valid = aws_axi_M.bvalid;
+assign aws_axi_M.bready = pulp_axi_M.b_ready;
+// AR
+assign aws_axi_M.arid = pulp_axi_M.ar_id;
+assign aws_axi_M.araddr = pulp_axi_M.ar_addr;
+assign aws_axi_M.arlen = pulp_axi_M.ar_len;
+assign aws_axi_M.arsize = pulp_axi_M.ar_size;
+assign aws_axi_M.arvalid = pulp_axi_M.ar_valid;
+assign pulp_axi_M.ar_ready = aws_axi_M.arready;
+// R
+assign pulp_axi_M.r_id = aws_axi_M.rid;
+assign pulp_axi_M.r_data = aws_axi_M.rdata;
+assign pulp_axi_M.r_resp = aws_axi_M.rresp;
+assign pulp_axi_M.r_last = aws_axi_M.rlast;
+assign pulp_axi_M.r_user = 0;
+assign pulp_axi_M.r_valid = aws_axi_M.rvalid;
+assign aws_axi_M.rready = pulp_axi_M.r_ready;
 endmodule

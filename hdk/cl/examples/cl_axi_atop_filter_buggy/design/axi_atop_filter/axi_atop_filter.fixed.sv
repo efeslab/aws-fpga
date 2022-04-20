@@ -31,7 +31,7 @@
 // non-atomic bursts [E2.1.4]. That is, an atomic burst may never have the same ID as any other
 // write or read burst that is ongoing at the same time.
 
-module axi_atop_filter #(
+module axi_atop_filter_fixed #(
   parameter int unsigned AxiIdWidth = 0,  // Synopsys DC requires a default value for parameters.
   // Maximum number of AXI write bursts outstanding at the same time
   parameter int unsigned AxiMaxWriteTxns = 0,
@@ -49,7 +49,8 @@ module axi_atop_filter #(
   input  resp_t mst_resp_i
 );
 
-  typedef logic [$clog2(AxiMaxWriteTxns+1)-1:0] cnt_t;
+  localparam int unsigned CounterWidth = $clog2(AxiMaxWriteTxns+1);
+  typedef logic [CounterWidth:0] cnt_t;
   cnt_t   w_cnt_d, w_cnt_q;
 
   typedef enum logic [2:0] { W_FEEDTHROUGH, BLOCK_AW, ABSORB_W, INJECT_B, WAIT_R } w_state_t;
@@ -98,11 +99,11 @@ module axi_atop_filter #(
           mst_req_o.aw_valid  = slv_req_i.aw_valid;
           slv_resp_o.aw_ready = mst_resp_i.aw_ready;
         end
-// The following buggy comes from 5416cb8e62eb6be6c1b6ba0ad7bc0130bb17d57a
-        // Feed W channel through if at least one AW request is outstanding.  This does not allow
-        // W beats before the corresponding AW because we need to know the `atop` of an AW to decide
-        // what to do with the W beats.
-        if (w_cnt_q > 0) begin
+// commit 81835b3e039043fa1653e3faf33c8cee30f0da2d is considered the bugfix
+        // Feed W channel through if at least one AW request is outstanding or a new non atop AW is
+        // initiated.
+        if (((w_cnt_q > 0) && !w_cnt_q[CounterWidth]) ||
+            (slv_req_i.aw_valid && slv_req_i.aw.atop[5:4] == axi_pkg::ATOP_NONE)) begin
           mst_req_o.w_valid  = slv_req_i.w_valid;
           slv_resp_o.w_ready = mst_resp_i.w_ready;
         end
@@ -314,7 +315,7 @@ endmodule
 `include "axi/typedef.svh"
 
 // interface wrapper
-module axi_atop_filter_intf #(
+module axi_atop_filter_fixed_intf #(
   parameter int unsigned AXI_ID_WIDTH   = 0, // Synopsys DC requires a default value for parameters.
   parameter int AXI_ADDR_WIDTH = 0,
   parameter int AXI_DATA_WIDTH = 0,
@@ -351,7 +352,7 @@ module axi_atop_filter_intf #(
   `AXI_ASSIGN_FROM_REQ  ( mst     , mst_req  )
   `AXI_ASSIGN_TO_RESP   ( mst_resp, mst      )
 
-  axi_atop_filter #(
+  axi_atop_filter_fixed #(
     .AxiIdWidth      ( AXI_ID_WIDTH       ),
   // Maximum number of AXI write bursts outstanding at the same time
     .AxiMaxWriteTxns ( AXI_MAX_WRITE_TXNS ),

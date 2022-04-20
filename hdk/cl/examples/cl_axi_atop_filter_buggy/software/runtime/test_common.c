@@ -359,6 +359,7 @@ typedef enum {
   APP_PCIM_BASE_ADDR_HI,
   APP_TOTAL_BYTES,
   APP_START_WB,
+  APP_APPLY_BUGFIX,
 } app_csr_idx_t;
 #define APP_CSR_ADDR(idx) (0x4 * idx)
 void pcim_alloc_buffer(uint64_t size, void **va_p, void **pa_p) {
@@ -399,12 +400,21 @@ int axi_atop_filter_main(int argc, char *argv[]) {
   hls_poke_ocl(APP_CSR_ADDR(APP_PCIM_BASE_ADDR_LO), UINT64_LO32(pcim_mem_pa));
   hls_poke_ocl(APP_CSR_ADDR(APP_PCIM_BASE_ADDR_HI), UINT64_HI32(pcim_mem_pa));
   hls_poke_ocl(APP_CSR_ADDR(APP_TOTAL_BYTES), BUFFERSIZE);
+  printf("Setting APP_APPLY_BUGFIX\n");
+  hls_poke_ocl(APP_CSR_ADDR(APP_APPLY_BUGFIX), 1);
   // continue doing pcis dma write
   rc = do_dma_write((uint8_t*)pcis_mem, BUFFERSIZE, 0, 0, slot_id);
   fail_on(rc, out, "DMA write failed");
   hls_poke_ocl(APP_CSR_ADDR(APP_START_WB), 1);
-  // wait for completion (irq)
-  rr_wait_irq(0);
+  // Use pcim polling instead of irq to avoid the irq_pcim interconnect
+  // I need to directly connect the buggy component to VIDI replayer to trigger
+  // the deadlock bug.
+  while (pcim_mem_va[DATA_LEN-1] == 0)
+#ifdef SV_TEST
+    sv_pause(10);
+#else
+    ;
+#endif
   // validate output
   size_t unexpected = 0, minus1_counter = 0, oob_counter = 0;
 #define TCOUNTER uint32_t

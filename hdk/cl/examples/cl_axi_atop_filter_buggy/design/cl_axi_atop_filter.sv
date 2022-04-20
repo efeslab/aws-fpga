@@ -291,6 +291,7 @@ axi_atop_filter_app AXI_ATOP_FILTER_BUGGY_APP (
   .irq_req(cl_sh_apppf_irq_req[0]),
   .irq_ack(sh_cl_apppf_irq_ack[0])
 );
+assign cl_sh_apppf_irq_req[15:1] = 0;
 
 ///////////////////////////////////////////////////////////////////////
 //////////////////// Customized Accelerator ///////////////////////////
