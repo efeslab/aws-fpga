@@ -27,6 +27,45 @@ module axi_to_axil_master(
    assign axil.rready = axi.rready;
 endmodule
 
+module axi_direct_to_axi(
+   rr_axi_bus_t.master axiM,
+   rr_axi_bus_t.slave axiS
+);
+// AW
+assign axiS.awid = axiM.awid;
+assign axiS.awaddr = axiM.awaddr;
+assign axiS.awlen = axiM.awlen;
+assign axiS.awsize = axiM.awsize;
+assign axiS.awvalid = axiM.awvalid;
+assign axiM.awready = axiS.awready;
+// W
+assign axiS.wid = axiM.wid;
+assign axiS.wdata = axiM.wdata;
+assign axiS.wstrb = axiM.wstrb;
+assign axiS.wlast = axiM.wlast;
+assign axiS.wvalid = axiM.wvalid;
+assign axiM.wready = axiS.wready;
+// B
+assign axiM.bid = axiS.bid;
+assign axiM.bresp = axiS.bresp;
+assign axiM.bvalid = axiS.bvalid;
+assign axiS.bready = axiM.bready;
+// AR
+assign axiS.arid = axiM.arid;
+assign axiS.araddr = axiM.araddr;
+assign axiS.arlen = axiM.arlen;
+assign axiS.arsize = axiM.arsize;
+assign axiS.arvalid = axiM.arvalid;
+assign axiM.arready = axiS.arready;
+// R
+assign axiM.rid = axiS.rid;
+assign axiM.rdata = axiS.rdata;
+assign axiM.rresp = axiS.rresp;
+assign axiM.rlast = axiS.rlast;
+assign axiM.rvalid = axiS.rvalid;
+assign axiS.rready = axiM.rready;
+endmodule
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // reduction_and is to establish fake depenencies to prevent synthesizer from

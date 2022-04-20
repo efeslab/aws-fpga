@@ -587,27 +587,54 @@ rr_tracedecoder #(
 // Convert cl interrupt requests to cl pcim requests
 ////////////////////////////////////////////////////////////////////////////////
 // irq_req[15] is reserved for rr buffer management (not implemented yet)
-logic [15:0] cl_irq_req, cl_irq_ack;
-assign cl_sh_apppf_irq_req = {storage_backend_irq_req, cl_irq_req[14:0]};
-assign cl_irq_ack[15] = 0;
 localparam CL_IRQ_ENABLED_NUM = 15;
-rr_int_to_pcim #(
-    .NUM_INT(CL_IRQ_ENABLED_NUM))
-cl_int_to_pcim(
-    .clk(clk),
-    .rstn(rstn),
-    .offset(storage_axi_write_csr.buf_addr),
-    .offset_update(storage_axi_write_csr.int_buf_update),
-    .int_req(cl_irq_req[CL_IRQ_ENABLED_NUM-1:0]),
-    .int_ack(cl_irq_ack[CL_IRQ_ENABLED_NUM-1:0]),
-    .pcim(irq_pcim_bus)
-);
-rr_cl_irq2pcim_interconnect cl_irq_pcim_interconnect (
-  .clk(clk), .rstn(rstn),
-  .rr_pcim_bus(rr_pcim_bus),
-  .irq_pcim_bus(irq_pcim_bus),
-  .rr_irq_pcim_bus(rr_irq_pcim_bus)
-);
+logic [15:0] cl_irq_req, cl_irq_ack;
+assign cl_sh_apppf_irq_req = {
+  storage_backend_irq_req,
+  cl_irq_req[CL_IRQ_ENABLED_NUM-1:0]};
+assign cl_irq_ack[15:CL_IRQ_ENABLED_NUM] = 0;
+`ifndef CL_DISABLE_IRQ_PCIM
+  rr_int_to_pcim #(
+      .NUM_INT(CL_IRQ_ENABLED_NUM))
+  cl_int_to_pcim(
+      .clk(clk),
+      .rstn(rstn),
+      .offset(storage_axi_write_csr.buf_addr),
+      .offset_update(storage_axi_write_csr.int_buf_update),
+      .int_req(cl_irq_req[CL_IRQ_ENABLED_NUM-1:0]),
+      .int_ack(cl_irq_ack[CL_IRQ_ENABLED_NUM-1:0]),
+      .pcim(irq_pcim_bus)
+  );
+  rr_cl_irq2pcim_interconnect cl_irq_pcim_interconnect (
+    .clk(clk), .rstn(rstn),
+    .rr_pcim_bus(rr_pcim_bus),
+    .irq_pcim_bus(irq_pcim_bus),
+    .rr_irq_pcim_bus(rr_irq_pcim_bus)
+  );
+`else
+  assign cl_irq_ack[CL_IRQ_ENABLED_NUM-1:0] =
+    sh_cl_apppf_irq_ack[CL_IRQ_ENABLED_NUM-1:0];
+  axi_direct_to_axi skip_irq_pcim_inst (
+    .axiM(rr_pcim_bus),
+    .axiS(rr_irq_pcim_bus)
+  );
+`endif // CL_DISABLE_IRQ_PCIM
+
+//`define DEBUG_IRQ_PCIM_ADDR
+`ifdef DEBUG_IRQ_PCIM_ADDR
+always_ff @(posedge clk)
+  if (rstn) begin
+    if (rr_pcim_bus.awvalid && rr_pcim_bus.awready)
+      $display("rr_pcim_bus addr 0x%x", rr_pcim_bus.awaddr);
+    if (irq_pcim_bus.awvalid && irq_pcim_bus.awready) begin
+      $display("irq_pcim_bus addr 0x%x", irq_pcim_bus.awaddr);
+      if (irq_pcim_bus.awaddr == 0)
+        $finish();
+    end
+    if (rr_irq_pcim_bus.awvalid && rr_irq_pcim_bus.awready)
+      $display("rr_irq_pcim_bus addr 0x%x", rr_irq_pcim_bus.awaddr);
+  end
+`endif
 
 // AXI Interconnect for the logging pcim traffic and user pcim traffic
 // NOTE: that all Xid field of pcim buses, either from logging or from the cl,
