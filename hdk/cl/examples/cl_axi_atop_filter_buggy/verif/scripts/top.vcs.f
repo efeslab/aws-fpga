@@ -62,12 +62,10 @@ ${CL_ROOT}/design/cl_dma_pcis_slv.sv
 ${CL_ROOT}/design/axi_atop_filter_app.sv
 ${CL_ROOT}/design/cl_axi_atop_filter.sv
 ${CL_ROOT}/design/cl_ocl_slv_reg.sv
-${CL_ROOT}/design/aws_axi_sel.sv
 +incdir+${CL_ROOT}/design/axi_atop_filter/include
 ${CL_ROOT}/design/axi_atop_filter/axi_pkg.sv
 ${CL_ROOT}/design/axi_atop_filter/axi_intf.sv
 ${CL_ROOT}/design/axi_atop_filter/axi_atop_filter.sv
-${CL_ROOT}/design/axi_atop_filter/axi_atop_filter.fixed.sv
 ${CL_ROOT}/design/axi_atop_filter/lib/stream_register.sv
 ${CL_ROOT}/design/axi_atop_filter/lib/fifo_v3.sv
 ${CL_ROOT}/design/axi_atop_filter/lib/fifo_v2.sv
@@ -82,5 +80,5 @@ ${TEST_NAME}
 # enable the TEST_BUGGY_AXI_ATOP_FILTER macro to simulate adversarial awready signal
 #+define+TEST_BUGGY_AXI_ATOP_FILTER
 # enable the CORRECT_AXI_ATOP_FILTER macro to patch the buggy code
-#+define+CORRECT_AXI_ATOP_FILTER
++define+CORRECT_AXI_ATOP_FILTER
 +define+CL_DISABLE_IRQ_PCIM

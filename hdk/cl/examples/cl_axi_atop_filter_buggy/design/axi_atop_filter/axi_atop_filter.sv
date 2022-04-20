@@ -49,7 +49,12 @@ module axi_atop_filter #(
   input  resp_t mst_resp_i
 );
 
+`ifndef CORRECT_AXI_ATOP_FILTER
   typedef logic [$clog2(AxiMaxWriteTxns+1)-1:0] cnt_t;
+`else
+  localparam int unsigned CounterWidth = $clog2(AxiMaxWriteTxns+1);
+  typedef logic [CounterWidth:0] cnt_t;
+`endif
   cnt_t   w_cnt_d, w_cnt_q;
 
   typedef enum logic [2:0] { W_FEEDTHROUGH, BLOCK_AW, ABSORB_W, INJECT_B, WAIT_R } w_state_t;
@@ -98,11 +103,19 @@ module axi_atop_filter #(
           mst_req_o.aw_valid  = slv_req_i.aw_valid;
           slv_resp_o.aw_ready = mst_resp_i.aw_ready;
         end
+`ifndef CORRECT_AXI_ATOP_FILTER
 // The following buggy comes from 5416cb8e62eb6be6c1b6ba0ad7bc0130bb17d57a
         // Feed W channel through if at least one AW request is outstanding.  This does not allow
         // W beats before the corresponding AW because we need to know the `atop` of an AW to decide
         // what to do with the W beats.
         if (w_cnt_q > 0) begin
+`else
+// commit 81835b3e039043fa1653e3faf33c8cee30f0da2d is considered the bugfix
+        // Feed W channel through if at least one AW request is outstanding or a new non atop AW is
+        // initiated.
+        if (((w_cnt_q > 0) && !w_cnt_q[CounterWidth]) ||
+            (slv_req_i.aw_valid && slv_req_i.aw.atop[5:4] == axi_pkg::ATOP_NONE)) begin
+`endif
           mst_req_o.w_valid  = slv_req_i.w_valid;
           slv_resp_o.w_ready = mst_resp_i.w_ready;
         end
