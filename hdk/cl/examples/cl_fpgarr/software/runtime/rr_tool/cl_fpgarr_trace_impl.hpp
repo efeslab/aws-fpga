@@ -95,6 +95,12 @@ constexpr void VIDITrace<BUSCFG>::channels_init() {
         loge2logb_map[i] = j;
     });
   });
+  constexpr_for<0, BUSCFG::LOGB_CNT, 1>([&](auto i) {
+    LOGB_name2id[std::string(BUSCFG::LOGB_NAMES[i])] = i;
+  });
+  constexpr_for<0, BUSCFG::LOGE_CNT, 1>([&](auto i) {
+    LOGE_name2id[std::string(BUSCFG::LOGE_NAMES[i])] = i;
+  });
 }
 
 template <typename BUSCFG>
@@ -178,6 +184,50 @@ void VIDITrace<BUSCFG>::print_header_loge_names(FILE *fp) {
     fprintf(fp, "%" NAME_MAX_LEN "s ", BUSCFG::LOGE_NAMES[i]);
   }
   fputc('\n', fp);
+}
+
+template <typename BUSCFG>
+ChannelTraceBase *VIDITrace<BUSCFG>::getLOGBChannelByName(const char *name) {
+  return channels[getLOGBChannelIdByName(name)];
+}
+
+template <typename BUSCFG>
+size_t VIDITrace<BUSCFG>::getLOGBChannelIdByName(const char *name) const {
+  auto find_it = LOGB_name2id.find(name);
+  assert(find_it != LOGB_name2id.end() && "Invalid Channel name");
+  return find_it->second;
+}
+
+template <typename BUSCFG>
+size_t VIDITrace<BUSCFG>::getLOGEChannelIdByName(const char *name) const {
+  auto find_it = LOGE_name2id.find(name);
+  assert(find_it != LOGE_name2id.end() && "Invalid Channel name");
+  return find_it->second;
+}
+
+template <typename BUSCFG>
+void VIDITrace<BUSCFG>::cleanEmptyLOGB_LOGE() {
+  assert(logb_valid_vec.size() == loge_valid_vec.size());
+  // iterator for compaction
+  auto logb_bset_nonempty_it = logb_valid_vec.begin();
+  auto loge_bset_nonempty_it = loge_valid_vec.begin();
+  // iterator for traversal
+  auto logb_bset_it = logb_valid_vec.begin();
+  auto loge_bset_it = loge_valid_vec.begin();
+  for (; logb_bset_it != logb_valid_vec.end(); ++logb_bset_it, ++loge_bset_it) {
+    if (logb_bset_it->any() || loge_bset_it->any()) {
+      // compact the trace but without overwriting
+      if (logb_bset_it != logb_bset_nonempty_it) {
+        *logb_bset_nonempty_it = *logb_bset_it;
+        *loge_bset_nonempty_it = *loge_bset_it;
+      }
+      ++logb_bset_nonempty_it;
+      ++loge_bset_nonempty_it;
+    }
+  }
+  logb_valid_vec.erase(logb_bset_nonempty_it, logb_valid_vec.end());
+  loge_valid_vec.erase(loge_bset_nonempty_it, loge_valid_vec.end());
+  assert(logb_valid_vec.size() == loge_valid_vec.size());
 }
 
 template <typename BUSCFG>
@@ -477,6 +527,7 @@ typename VIDITrace<BUSCFG>::trace_size_t VIDITrace<BUSCFG>::exportTrace(
 
 template <typename BUSCFG>
 void VIDITrace<BUSCFG>::updateHBEncoding() {
+  clearHBEncoding();
   auto logb_bset_it = logb_valid_vec.begin();
   auto loge_bset_it = loge_valid_vec.begin();
   assert(logb_valid_vec.size() == loge_valid_vec.size() &&

@@ -25,7 +25,7 @@ struct argoptions_t {
     const char *anlys_filepath;
     const char *comp_filepaths[2] = {nullptr, nullptr};
     struct {
-      const char *input_filepath;
+      const char *input_filepath[2];
       const char *output_filepath;
     }; // for OP_MUTATE
   };

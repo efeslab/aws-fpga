@@ -50,7 +50,6 @@ void Decoder<BUSCFG>::parse_trace(VIDITrace<BUSCFG> &T) {
     assert(pktsize == GET_ALIGNED_BITS(pktbits));
   }
   // Update HBEncoding
-  T.clearHBEncoding();
   T.updateHBEncoding();
 }
 #endif // CL_FPGARR_DECODER_IMPL_H

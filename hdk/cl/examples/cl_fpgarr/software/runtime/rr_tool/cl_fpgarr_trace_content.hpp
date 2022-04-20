@@ -94,10 +94,6 @@ struct F1PktType {
 };
 struct F1ChannelPkt_t {
   F1PktType::type tid;
-  F1ChannelPkt_t(F1PktType::type _tid, const void *raw_data, size_t sizeB)
-      : tid(_tid) {
-    decode_raw_data(raw_data, sizeB);
-  }
   union {
     F1_AXI_AW_t as_AXI_AW;
     F1_AXI_W_t as_AXI_W;
@@ -111,6 +107,13 @@ struct F1ChannelPkt_t {
     F1_AXIL_R_t as_AXIL_R;
   };
 
+  // construct with an existing packet
+  F1ChannelPkt_t(F1PktType::type _tid, const void *raw_data, size_t sizeB)
+      : tid(_tid) {
+    decode_raw_data(raw_data, sizeB);
+  }
+  // construct without initialization
+  F1ChannelPkt_t() : tid(F1PktType::INVALID) {}
   void decode_raw_data(const void *raw_data, size_t sizeB);
   // update the struct with another packet
   void refill(F1PktType::type _tid, const void *raw_data, size_t sizeB);
