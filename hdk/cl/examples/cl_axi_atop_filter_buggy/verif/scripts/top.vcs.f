@@ -82,3 +82,4 @@ ${TEST_NAME}
 # enable the CORRECT_AXI_ATOP_FILTER macro to patch the buggy code
 +define+CORRECT_AXI_ATOP_FILTER
 +define+CL_DISABLE_IRQ_PCIM
++define+DEBUG_PCHK_CSR

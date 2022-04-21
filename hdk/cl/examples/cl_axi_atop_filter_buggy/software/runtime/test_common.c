@@ -350,7 +350,8 @@ out:
 #ifdef SV_TEST
 #define BUFFERSIZE (1LL << 15)
 #else
-#define BUFFERSIZE (1024*1024*128)
+#define BUFFERSIZE (1024*1024*420LL)
+//#define BUFFERSIZE (0x3000LL)
 #endif
 #define REPORT_LIMIT (200)
 #define BUFFER_ALIGNMENT (4096)
@@ -359,9 +360,11 @@ typedef enum {
   APP_PCIM_BASE_ADDR_HI,
   APP_TOTAL_BYTES,
   APP_START_WB,
+  APP_MAX_PENDING_AR,
+  APP_MAX_PENDING_AW,
 } app_csr_idx_t;
 #define APP_CSR_ADDR(idx) (0x4 * idx)
-void pcim_alloc_buffer(uint64_t size, void **va_p, void **pa_p) {
+void pcim_alloc_buffer(uint64_t size, void **va_p, uint64_t *pa_p) {
 #ifdef SV_TEST
   *va_p = aligned_alloc(BUFFER_ALIGNMENT, size);
   assert(*va_p != NULL);
@@ -369,6 +372,7 @@ void pcim_alloc_buffer(uint64_t size, void **va_p, void **pa_p) {
 #else
   uint64_t sizeB;
   assert(fpga_hugealloc_get(va_p, pa_p, &sizeB) == 0);
+  printf("axi_atop_filter pcim buffer va %p\n", *va_p);
   assert(size <= sizeB);
 #endif
 }
@@ -381,6 +385,9 @@ void pcim_dealloc_buffer(void *va) {
 }
 #define TDATA uint32_t
 #define DATA_LEN (BUFFERSIZE/sizeof(TDATA))
+// for debugging
+// INCREMENTAL_TOTALB gradually increase the totalB csr for rate limit
+#undef INCREMENTAL_TOTALB
 int axi_atop_filter_main(int argc, char *argv[]) {
   // pcis_mem are all even
   uint32_t *pcis_mem = aligned_alloc(BUFFER_ALIGNMENT, BUFFERSIZE);
@@ -392,17 +399,39 @@ int axi_atop_filter_main(int argc, char *argv[]) {
   // setup pcim_mem
   uint64_t pcim_mem_pa;
   uint32_t *pcim_mem_va;
-  pcim_alloc_buffer(BUFFERSIZE, (void**)(&pcim_mem_pa), (void**)(&pcim_mem_va));
+  pcim_alloc_buffer(BUFFERSIZE, (void**)(&pcim_mem_va), &pcim_mem_pa);
   fail_on(pcim_mem_va == NULL, out, "allocate pcim_mem_va failed");
   memset(pcim_mem_va, 0, BUFFERSIZE);
-  printf("Setting PCIM_BASE_ADDR 0x%x\n", pcim_mem_pa);
+  printf("Setting PCIM_BASE_ADDR 0x%lx\n", pcim_mem_pa);
   hls_poke_ocl(APP_CSR_ADDR(APP_PCIM_BASE_ADDR_LO), UINT64_LO32(pcim_mem_pa));
   hls_poke_ocl(APP_CSR_ADDR(APP_PCIM_BASE_ADDR_HI), UINT64_HI32(pcim_mem_pa));
+#ifndef INCREMENTAL_TOTALB
   hls_poke_ocl(APP_CSR_ADDR(APP_TOTAL_BYTES), BUFFERSIZE);
+#define MAX_PENDING 32
+  hls_poke_ocl(APP_CSR_ADDR(APP_MAX_PENDING_AR), MAX_PENDING);
+  hls_poke_ocl(APP_CSR_ADDR(APP_MAX_PENDING_AW), MAX_PENDING);
+  printf("Setting MAX_PENDING of both AW AR to %d\n", MAX_PENDING);
+#endif
   // continue doing pcis dma write
   rc = do_dma_write((uint8_t*)pcis_mem, BUFFERSIZE, 0, 0, slot_id);
+  printf("done pcis_mem write\n");
   fail_on(rc, out, "DMA write failed");
   hls_poke_ocl(APP_CSR_ADDR(APP_START_WB), 1);
+
+  size_t next_totalB = 0;
+#ifdef INCREMENTAL_TOTALB
+#define CHUNK_BYTES (0x200LL)
+  while (next_totalB < BUFFERSIZE) {
+    next_totalB += CHUNK_BYTES;
+    hls_poke_ocl(APP_CSR_ADDR(APP_TOTAL_BYTES), next_totalB);
+    while (pcim_mem_va[next_totalB/sizeof(TDATA) - 1] == 0)
+#ifdef SV_TEST
+      sv_pause(10);
+#else // SV_TEST
+      ;
+#endif // SV_TEST
+  }
+#endif // INCREMENTAL_TOTALB
   // Use pcim polling instead of irq to avoid the irq_pcim interconnect
   // I need to directly connect the buggy component to VIDI replayer to trigger
   // the deadlock bug.
@@ -438,10 +467,10 @@ int axi_atop_filter_main(int argc, char *argv[]) {
     }
   }
 
-  printf("total: %ld, unexpected: %ld places, -1: %ld places, oob: %ld places\n",
+  printf("total: %lld, unexpected: %ld places, -1: %ld places, oob: %ld places\n",
           DATA_LEN, unexpected, minus1_counter, oob_counter);
   out:
   free(pcis_mem);
-  pcim_dealloc_buffer(pcim_mem_pa);
+  pcim_dealloc_buffer(pcim_mem_va);
   return 0;
 }

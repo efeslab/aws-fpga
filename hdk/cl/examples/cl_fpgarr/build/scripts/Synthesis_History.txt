@@ -409,4 +409,24 @@ app: mobilenet
 app: dram_dma
 count_ddr
 
+22_04_20-191447.nohup.out (GEFEI)
+app: axi_atop_filter
+buggy version
 
+22_04_20-192011.nohup.out (GEFEI)
+app: axi_atop_filter
+fixed version
+
+22_04_21-030203.nohup.out (GEFEI)
+app: axi_atop_filter
+buggy version + SYNTH_DEBUG_INTERCONNECT + DEBUG_PCHK_CSR
+
+22_04_21-054244.nohup.out (GEFEI)
+app: axi_atop_filter
+buggy version + SYNTH_DEBUG_INTERCONNECT
+with maxPendingAWAR
+
+22_04_21-054710.nohup.out (GEFEI)
+app: axi_atop_filter
+fixed version + without SYNTH_DEBUG_INTERCONNECT
+with maxPendingAWAR

@@ -242,4 +242,11 @@ pcim_dbg_cnt dbg_sh_cnt (
 // zero out all dbg_csr
 assign dbg_csr = ($bits(dbg_csr))'(0);
 `endif
+
+
+// TODO: to further debug the testing use case pcim-w-channel-protocol-error on
+// AWSF1, I want to add an ILA here to use pchk as trigger and track all pcim
+// interfaces write channel reated things (valid, ready and counter).
+// TODO.2: another choice is to re-configure the pcim interconnect write
+// acceptance and issuing so that sum of slave < master.
 endmodule

@@ -2,6 +2,10 @@ typedef struct packed {
     logic [63:0] pcim_base_addr;
     logic [31:0] totalB; // total bytes to echo
     logic startWB; // start write back (from DDR to PCIM)
+    logic [31:0] maxPendingAR; // the writeback path, how many on-the-fly ddr
+                               // read requests are allowed. min is 1
+    logic [31:0] maxPendingAW; // the writeback path, how many on-the-fly pcim
+                               // write requests are allowed. min is 1
 } app_csrs_t;
 
 module axi_atop_filter_app (
@@ -23,13 +27,41 @@ AXI_BUS #(.AXI_ADDR_WIDTH(64), .AXI_DATA_WIDTH(512), .AXI_ID_WIDTH(6), .AXI_USER
 logic [31:0] issuedR_Bytes;
 logic [31:0] oneR_Bytes;
 logic [7:0] burst_len;
+logic [31:0] pendingAR;
+logic [31:0] pendingAW;
 AXI_R2W axi_R2W_inst (
     .clk(clk), .rstn(rstn),
     .burst_len(burst_len),
-    .issueR(csrs.startWB && issuedR_Bytes < csrs.totalB),
+    .issueR(
+        csrs.startWB &&
+        (issuedR_Bytes < csrs.totalB) &&
+        (pendingAR < csrs.maxPendingAR) &&
+        (pendingAW < csrs.maxPendingAW)
+    ),
     .axi_R(ddr_mstr_bus),
     .axi_W(axi_W)
 );
+// maxPendingAR
+logic ddr_ar_issued;
+logic ddr_ar_finished;
+assign ddr_ar_issued = ddr_mstr_bus.arvalid && ddr_mstr_bus.arready;
+assign ddr_ar_finished =
+    ddr_mstr_bus.rvalid && ddr_mstr_bus.rready && ddr_mstr_bus.rlast;
+always_ff @(posedge clk)
+    if (!rstn)
+        pendingAR <= 0;
+    else
+        pendingAR <= pendingAR + ddr_ar_issued - ddr_ar_finished;
+// maxPendingAW
+logic axi_W_aw_issued;
+logic axi_W_aw_finished;
+assign axi_W_aw_issued = axi_W.awvalid && axi_W.awready;
+assign axi_W_aw_finished = axi_W.bvalid && axi_W.bready;
+always_ff @(posedge clk)
+    if (!rstn)
+        pendingAW <= 0;
+    else
+        pendingAW <= pendingAW + axi_W_aw_issued - axi_W_aw_finished;
 
 localparam WDATA_WIDTH = 512;
 always_ff @(posedge clk)
@@ -287,6 +319,8 @@ typedef enum {
     PCIM_BASE_ADDR_HI,
     TOTAL_BYTES,
     START_WB,
+    MAX_PENDING_AR,
+    MAX_PENDING_AW,
     TOTAL_CSR_NUM
 } csr_t;
 `define CSR_ADDR(idx) (idx << 2)
@@ -299,6 +333,10 @@ always_ff @(posedge clk)
 always_ff @(posedge clk)
     if (!rstn) begin
         csrs.pcim_base_addr <= 0;
+        csrs.startWB <= 0;
+        csrs.totalB <= 0;
+        csrs.maxPendingAR <= 1;
+        csrs.maxPendingAW <= 1;
     end
     else if (sh_ocl_bus.wvalid && sh_ocl_bus.wready)
         case (buf_awaddr)
@@ -309,7 +347,11 @@ always_ff @(posedge clk)
             `CSR_ADDR(TOTAL_BYTES):
                 csrs.totalB <= sh_ocl_bus.wdata;
             `CSR_ADDR(START_WB):
-                csrs.startWB <= 1;
+                csrs.startWB <= sh_ocl_bus.wdata[0];
+            `CSR_ADDR(MAX_PENDING_AR):
+                csrs.maxPendingAR <= sh_ocl_bus.wdata;
+            `CSR_ADDR(MAX_PENDING_AW):
+                csrs.maxPendingAW <= sh_ocl_bus.wdata;
         endcase
 endmodule
 
@@ -362,7 +404,8 @@ always_comb begin
 end
 always_ff @(posedge clk)
     if (!rstn) state <= IDLE;
-    else state <= state_next; // manage axi_R.AR
+    else state <= state_next;
+// manage axi_R.AR
 assign axi_R.arid = 0;
 assign axi_R.araddr = addr;
 assign axi_R.arlen = burst_len;
