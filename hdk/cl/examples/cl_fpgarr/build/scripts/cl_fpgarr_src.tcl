@@ -1,6 +1,7 @@
 # Add fpgarr source code to the target directory.
 # fpgarr project
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_defs.svh                 $TARGET_DIR
+file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_dbg.svh                  $TARGET_DIR
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_types.svh                $TARGET_DIR
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_pkg.sv                   $TARGET_DIR
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_utils.sv                 $TARGET_DIR

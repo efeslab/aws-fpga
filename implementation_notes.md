@@ -20,3 +20,6 @@
    remember to `export CL_DIR=xxx/cl_hls`
 7. `dram_dma` simulation: `make AXI_MEMORY_MODEL=1 VCS=1 C_TEST=test_dram_dma_hwsw_cosim RR_MODE=none/record(v)/replay(v) /compile/run`
    hls simulation: `make HLS_DESIGN=mobilenet VCS=1 AXI_MEMORY_MODEL=1 RR_MODE=none PARAM_PATH=~/iSmartDNN/params_384_320_160_v2.bin FIG_PATH=~/iSmartDNN/1.bin`
+8. on hardware debug. start xilinx HW server on the f1 instance, then in vivado:
+   `connect_hw_server -url efesfpga.ddns.net:3121 -allow_non_jtag`
+   `open_hw_target -xvc_url 127.0.0.1:10201`

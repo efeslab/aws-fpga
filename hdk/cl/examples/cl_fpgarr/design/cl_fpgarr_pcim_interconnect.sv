@@ -243,10 +243,65 @@ pcim_dbg_cnt dbg_sh_cnt (
 assign dbg_csr = ($bits(dbg_csr))'(0);
 `endif
 
-
+`ifdef SYNTH_DEBUG_INTERCONNECT
+`include "cl_fpgarr_dbg.svh"
 // TODO: to further debug the testing use case pcim-w-channel-protocol-error on
 // AWSF1, I want to add an ILA here to use pchk as trigger and track all pcim
 // interfaces write channel reated things (valid, ready and counter).
 // TODO.2: another choice is to re-configure the pcim interconnect write
 // acceptance and issuing so that sum of slave < master.
+`DBG_COUNT_AXI(logging_AW, logging_wb_bus, aw);                        // probe0
+`DBG_COUNT_AXI(logging_W, logging_wb_bus, w);                          // probe1
+`DBG_COUNT_AXI(logging_B, logging_wb_bus, b);                          // probe2
+`DBG_COUNT_AXI_AW_EXPECTED_W(logging_AW_paired_W, logging_wb_bus);     // probe3
+// logging_wb_pchk.pc_asserted                                         // probe4
+// logging_wb_pchk.pc_status                                           // probe5
+`DBG_COUNT_AXI(validate_AW, validation_wb_bus, aw);                    // probe6
+`DBG_COUNT_AXI(validate_W, validation_wb_bus, w);                      // probe7
+`DBG_COUNT_AXI(validate_B, validation_wb_bus, b);                      // probe8
+`DBG_COUNT_AXI_AW_EXPECTED_W(validate_AW_paired_W, validation_wb_bus); // probe9
+// validation_wb_pchk.pc_asserted                                      // probe10
+// validation_wb_pchk.pc_status                                        // probe11
+`DBG_COUNT_AXI(cl_pcim_AW, cl_pcim_bus, aw);                           // probe12
+`DBG_COUNT_AXI(cl_pcim_W, cl_pcim_bus, w);                             // probe13
+`DBG_COUNT_AXI(cl_pcim_B, cl_pcim_bus, b);                             // probe14
+`DBG_COUNT_AXI_AW_EXPECTED_W(cl_pcim_AW_paired_W, cl_pcim_bus);        // probe15
+// cl_pcim_pchk.pc_asserted                                            // probe16
+// cl_pcim_pchk.pc_status                                              // probe17
+`DBG_COUNT_AXI(sh_pcim_AW, sh_pcim_bus, aw);                           // probe18
+`DBG_COUNT_AXI(sh_pcim_W, sh_pcim_bus, w);                             // probe19
+`DBG_COUNT_AXI(sh_pcim_B, sh_pcim_bus, b);                             // probe20
+`DBG_COUNT_AXI_AW_EXPECTED_W(sh_pcim_AW_paired_W, sh_pcim_bus);        // probe21
+// sh_pcim_pchk.pc_asserted                                            // probe22
+// sh_pcim_pchk.pc_status                                              // probe23
+
+dbg_fpgarr_pcim_interconnect_ila ila_inst (
+   .clk(clk),
+   .probe0(logging_AW),
+   .probe1(logging_W),
+   .probe2(logging_B),
+   .probe3(logging_AW_paired_W),
+   .probe4(dbg_csr.logging_wb_pchk.pc_asserted),
+   .probe5(dbg_csr.logging_wb_pchk.pc_status),
+   .probe6(validate_AW),
+   .probe7(validate_W),
+   .probe8(validate_B),
+   .probe9(validate_AW_paired_W),
+   .probe10(dbg_csr.validation_wb_pchk.pc_asserted),
+   .probe11(dbg_csr.validation_wb_pchk.pc_status),
+   .probe12(cl_pcim_AW),
+   .probe13(cl_pcim_W),
+   .probe14(cl_pcim_B),
+   .probe15(cl_pcim_AW_paired_W),
+   .probe16(dbg_csr.cl_pcim_pchk.pc_asserted),
+   .probe17(dbg_csr.cl_pcim_pchk.pc_status),
+   .probe18(sh_pcim_AW),
+   .probe19(sh_pcim_W),
+   .probe20(sh_pcim_B),
+   .probe21(sh_pcim_AW_paired_W),
+   .probe22(dbg_csr.sh_pcim_pchk.pc_asserted),
+   .probe23(dbg_csr.sh_pcim_pchk.pc_status)
+);
+`endif // SYNTH_DEBUG_INTERCONNECT
 endmodule
+                                                                     

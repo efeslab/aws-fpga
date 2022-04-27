@@ -12,5 +12,6 @@ read_ip [ list \
   $CL_FPGARR_ROOT/ip/dbg_trace_split_ila/dbg_trace_split_ila.xci \
   $CL_FPGARR_ROOT/ip/dbg_valid_replayer_ila/dbg_valid_replayer_ila.xci \
   $CL_FPGARR_ROOT/ip/dbg_ready_replayer_ila/dbg_ready_replayer_ila.xci \
-  $CL_FPGARR_ROOT/ip/dbg_fpgarr_wrapper_ila/dbg_fpgarr_wrapper_ila.xci
+  $CL_FPGARR_ROOT/ip/dbg_fpgarr_wrapper_ila/dbg_fpgarr_wrapper_ila.xci \
+  $CL_FPGARR_ROOT/ip/dbg_fpgarr_pcim_interconnect_ila/dbg_fpgarr_pcim_interconnect_ila.xci
 ]

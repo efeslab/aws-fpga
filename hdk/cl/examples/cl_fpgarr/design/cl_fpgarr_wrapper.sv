@@ -679,14 +679,7 @@ assign rr_pcim_bus.wid = 0;
 // Debug ILA Core
 ////////////////////////////////////////////////////////////////////////////////
 `ifdef DEBUG_ILA
-localparam REPLAY_PKT_CNT_WIDTH = 32;
-`define DBG_COUNT_AXI(cntname, busname, ch)                                    \
-  logic [REPLAY_PKT_CNT_WIDTH-1:0] cntname;                                    \
-  always_ff @(posedge clk)                                                     \
-    if (!rstn)                                                                 \
-      cntname <= 0;                                                            \
-    else if (busname.``ch``valid && busname.``ch``ready)                       \
-      cntname <= cntname + 1
+`include "cl_fpgarr_dbg.svh"
 `DBG_COUNT_AXI(pcis_AW, pcis_replay_axi_bus, aw);       // probe 0
 `DBG_COUNT_AXI(pcis_W, pcis_replay_axi_bus, w);         // probe 1
 `DBG_COUNT_AXI(pcis_AR, pcis_replay_axi_bus, ar);       // probe 2
