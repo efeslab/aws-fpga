@@ -247,6 +247,7 @@ assign in.logb_almful_lo = fifo_almful_lo;
       end
 `endif
 
+`ifdef DEBUG_RECORD_CSR
 // for debugging packet loss for wb_record_inst
 if (in.LOGB_CHANNEL_CNT == 14) begin
    logic [63:0] bits_non_aligned;
@@ -287,4 +288,6 @@ if (in.LOGB_CHANNEL_CNT == 14) begin
    assign dbg_csr.chpkt_cnt.sda_W = chpkt_cnt[12];
    assign dbg_csr.chpkt_cnt.bar1_AR = chpkt_cnt[13];
 end
+`endif // DEBUG_RECORD_CSR
+
 endmodule
