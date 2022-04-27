@@ -435,3 +435,12 @@ with maxPendingAWAR
 app: axi_atop_filter
 buggy version +  CL_DISABLE_IRQ_PCIM + SYNTH_DEBUG_INTERCONNECT
 with maxPendingAWAR, with pcim_interconnect_ila
+
+22_04_27-042003.nohup.out (GEFEI)
+app: dram_dma
+new almful design
+
+22_04_27-042021.nohup.out (GEFEI)
+app: axi_atop_filter
+buggy version +  CL_DISABLE_IRQ_PCIM + SYNTH_DEBUG_INTERCONNECT
+with maxPendingAWAR, with pcim_interconnect_ila, with new almful design

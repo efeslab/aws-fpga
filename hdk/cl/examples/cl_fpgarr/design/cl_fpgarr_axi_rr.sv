@@ -18,12 +18,6 @@
 //     if is 0, then all channels will use logb_almful_lo
 //     if is 1, special mechanism will be applied to the PCIM-W/AW channel,
 //       which will use logb_almful_hi while others still use logb_almful_lo
-//     TODO: change twowayhandshake_logger to always log the CL-side logb even
-//       if the !logb_ready. In another word, !logb_ready only blocks the valid
-//       propagation from CL to Shell, but doesn't block the logging. For Shell
-//       to CL channel, the !logb_ready should block both the logging and the
-//       valid propagation. Such difference can be explained by the idea that
-//       I only cares the CL-side of view.
 //
 module axi_recorder #(
    parameter ENABLE_B_BUFFER = 0,
@@ -103,7 +97,7 @@ if (IS_CL_PCIM) begin : cl_pcim_gen
    localparam AW_W_MAX_DIFF = 8 * MAX_PCIM_WR_BURSTS;
    // need to account for +/- AW_W_MAX_DIFF
    localparam AW_W_CNT_WIDTH = $clog2(AW_W_MAX_DIFF) + 1;
-   logic [AW_W_CNT_WIDTH-1:0] aw_sub_w_cnt;
+   logic signed [AW_W_CNT_WIDTH-1:0] aw_sub_w_cnt;
    always_ff @(posedge clk)
       if (!sync_rst_n)
          aw_sub_w_cnt <= 0;
@@ -114,9 +108,20 @@ if (IS_CL_PCIM) begin : cl_pcim_gen
             aw_sub_w_cnt = aw_sub_w_cnt - 1;
       end
    assign AW_logb_almful_imme =
-      (aw_sub_w_cnt >= 0) && nonPCIM_logb_almful && enable_PCIM_workaround;
+      // Without almful_lo, since I can only maintain aw_sub_w_cnt after
+      // completing an AW transaction, I need to make the worse assumption that
+      // next aw might send the maximum burst of 8 W.
+      ( (aw_sub_w_cnt + 8 >= PCIM_PENDING_AW_W_THRESHOLD) ||
+      // With almful_lo, I want AW to match with W again
+        ((aw_sub_w_cnt >= 0) && nonPCIM_logb_almful)
+      ) && enable_PCIM_workaround;
    assign W_logb_almful_imme =
-      (aw_sub_w_cnt <= 0) && nonPCIM_logb_almful && enable_PCIM_workaround;
+      // Without almful_lo, I assume the worst case that each W that ahead of AW
+      // is an individual transaction and corresponds to one AW.
+      ( (aw_sub_w_cnt + PCIM_PENDING_AW_W_THRESHOLD <= 0) ||
+      // With almful_lo, I want W to match with AW again
+        ((aw_sub_w_cnt <= 0) && nonPCIM_logb_almful)
+      ) && enable_PCIM_workaround;
 end
 else begin : no_cl_pcim_gen
    assign PCIM_logb_almful = nonPCIM_logb_almful;
@@ -202,7 +207,6 @@ logic [$bits(S.bresp)-1:0] S_bresp;
 if (ENABLE_B_BUFFER) begin : B_buffer_gen
    localparam B_BUF_SIZE = 64;
    logic fifo_full;
-   logic fifo_bvalid;
    logic fifo_bready;
    logic [$bits(S.bid)-1:0] fifo_bid;
    logic [$bits(S.bresp)-1:0] fifo_bresp;

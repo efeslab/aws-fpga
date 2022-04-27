@@ -19,6 +19,11 @@ parameter REPLAYER_PIPE_DEPTH=4;
 parameter CSR_PIPE_DEPTH=2;
 parameter RECORD_FIFO_DEPTH=128;
 parameter REPLAY_FIFO_DEPTH=32;
+// Please refer to the documentation in `happenbefore_encoder.sv` to understand
+// the parameter PCIM_PENDING_AW_W_THRESHOLD.
+// In brief, it controls the buffer that is reserved to avoid pcim interconnect
+// deadlock
+parameter PCIM_PENDING_AW_W_THRESHOLD = 40;
 // index allocation of AXI channels
 //// For logging from master to slave
 parameter LOGB_AW=0;
