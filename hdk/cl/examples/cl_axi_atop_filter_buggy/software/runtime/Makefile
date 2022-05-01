@@ -46,8 +46,8 @@ AUTOMATE_TEST_OUT_DIR?=/mnt/output
 
 BIN=axi_atop_filter_hw.elf
 APP_NAME=axi_atop_filter
-APP_BUGGY_AGFI_ID=agfi-056ff917b35fcb904
-APP_FIXED_AGFI_ID=agfi-0a4fb9c5d18a0c39c
+APP_BUGGY_AGFI_ID=agfi-08e2007692a1ae9f4
+APP_FIXED_AGFI_ID=agfi-04a0ebace9cc20b1b
 all: $(BIN)
 $(BIN): $(LIBFPGARR_OBJ) $(LIB_OBJ)
 	$(CC) -o $@ $(CFLAGS) $(LIBFPGARR_OBJ) $(LIB_OBJ)$ $(LDFLAGS) $(LDLIBS)

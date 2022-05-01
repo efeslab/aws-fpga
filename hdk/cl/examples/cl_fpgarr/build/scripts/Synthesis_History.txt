@@ -444,3 +444,13 @@ new almful design
 app: axi_atop_filter
 buggy version +  CL_DISABLE_IRQ_PCIM + SYNTH_DEBUG_INTERCONNECT
 with maxPendingAWAR, with pcim_interconnect_ila, with new almful design
+
+22_04_27-225659.nohup.out (GEFEI)
+app: axi_atop_filter
+buggy version  CL_DISABLE_IRQ_PCIM
+with maxPendingAWAR, with new almful design
+
+22_04_27-225709.nohup.out (GEFEI)
+app: axi_atop_filter
+correct version CL_DISABLE_IRQ_PCIM + CORRECT_AXI_ATOP_FILTER
+with maxPendingAWAR, with new almful design
