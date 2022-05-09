@@ -103,7 +103,7 @@ int fpga_dma_burst_read(int fd, uint8_t *buffer, size_t xfer_sz,
  *
  * @returns 0 on success, non-zero on failure
  */
-int fpga_dma_burst_write(int fd, uint8_t *buffer, size_t xfer_sz,
+int fpga_dma_burst_write(int fd, const uint8_t *buffer, size_t xfer_sz,
     size_t address);
 
 /**
