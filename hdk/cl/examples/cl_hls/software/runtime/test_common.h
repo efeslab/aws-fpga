@@ -109,13 +109,13 @@ static inline int do_dma_write(uint8_t *buffer, size_t size,
 void hls_wait_task_complete(uint64_t ctl_reg_addr);
 void hls_peek_ocl(uint64_t addr, uint32_t *data);
 void hls_poke_ocl(uint64_t addr, uint32_t data);
-static inline void hls_peek_ocl64(uint64_t addr, uint32_t *data) {
+static inline void hls_peek_ocl64(uint64_t addr, uint64_t *data) {
     uint32_t lo, hi;
     hls_peek_ocl(addr, &lo);
     hls_peek_ocl(addr + 4, &hi);
     *data = (hi << 32) | lo;
 }
-static inline void hls_poke_ocl64(uint64_t addr, uint32_t data) {
+static inline void hls_poke_ocl64(uint64_t addr, uint64_t data) {
     hls_poke_ocl(addr, data & 0xffffffff);
     hls_poke_ocl(addr + 4, (data >> 32) & 0xffffffff);
 }

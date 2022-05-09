@@ -192,7 +192,9 @@ int slot_id = 0;
 
 int hls_init() {
     int rc = 0;
-    int pf_id = 0, bar_id = 0, fpga_attach_flags = 0;
+    int pf_id = 0;
+    int bar_id = 0; // bar_id == 0 means the OCL AXIL interface
+    int fpga_attach_flags = 0;
     int device_num = 0;
     errno = 0;
 #ifndef SV_TEST
