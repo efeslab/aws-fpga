@@ -21,9 +21,9 @@ CFLAGS = -DCONFIG_LOGLEVEL=4 -g $(INCLUDES)
 
 LDLIBS = -lfpga_mgmt
 
-#ALL_HLS_DESIGN = 3d_rendering bnn digit_recognition face_detection spam_filter optical_flow sssp sha256 mobilenet
-ALL_HLS_DESIGN = sha256
+ALL_HLS_DESIGN = 3d_rendering bnn digit_recognition face_detection spam_filter optical_flow sssp sha256 mobilenet nbody_2CU2Pipe
 
+# For HLS testing lib
 LIB_SRC = test_common.c
 LIB_HEADER = test_common.h
 LIB_ALL_FILES = $(LIB_SRC) $(LIB_HEADER)
@@ -54,9 +54,17 @@ BIN = $(HLS_DESIGN)_hw.elf
 CFLAGS += -I$(HLS_DESIGN)
 CXXFLAGS += -I$(HLS_DESIGN)
 include $(HLS_DESIGN)/Makefile.inc
+# For HLS OpenCL
+ifneq ($(HLS_DESIGN_USE_OPENCL),)
+    include libfpgarropencl/Makefile.inc
+    CFLAGS += -I$(LIBFPGARROPENCL_PATH)
+    LDFLAGS += $(LIBFPGARROPENCL_PATH)/libfpgarropencl.a
+    # ignore the test_common framework for OpenCL app
+    LIB_OBJ=
+endif
 all: $(BIN)
 $(BIN): $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
-	$(HLS_DESIGN_COMPILER) -o $@ $(CFLAGS) $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)$ $(LDFLAGS) $(LDLIBS)
+	$(HLS_DESIGN_COMPILER) -o $@ $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ) $(LDFLAGS) $(LDLIBS)
 .PHONY: test
 LOAD_AFI = $(call LOAD_AFI_TPL, $(HLS_DESIGN_AGFI_ID))
 CMDLINE = $(HLS_DESIGN_TEST_ENV) ./$(BIN) $(HLS_DESIGN_TEST_ARGS)
