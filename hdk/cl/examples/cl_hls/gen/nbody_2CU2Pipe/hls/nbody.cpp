@@ -307,28 +307,28 @@ void nbody(ap_uint<512> *p_x_0, ap_uint<512> *p_y_0, ap_uint<512> *p_z_0, ap_uin
 		ap_uint<512> *p_x_1, ap_uint<512> *p_y_1, ap_uint<512> *p_z_1, ap_uint<512> *a_x_1, ap_uint<512> *a_y_1, ap_uint<512> *a_z_1, ap_uint<512> *c_1, unsigned int *outer_tile_start_ptr_1, unsigned int *outer_tile_end_ptr_1,
 		my_type *EPS_ptr, unsigned int *tiling_factor_ptr){
 
-#pragma HLS INTERFACE m_axi port=p_x_0 offset=slave bundle=gmem0
-#pragma HLS INTERFACE m_axi port=p_y_0 offset=slave bundle=gmem0
-#pragma HLS INTERFACE m_axi port=p_z_0 offset=slave bundle=gmem0
-#pragma HLS INTERFACE m_axi port=a_x_0 offset=slave bundle=gmem0
-#pragma HLS INTERFACE m_axi port=a_y_0 offset=slave bundle=gmem0
-#pragma HLS INTERFACE m_axi port=a_z_0 offset=slave bundle=gmem0
-#pragma HLS INTERFACE m_axi port=c_0   offset=slave bundle=gmem0
-#pragma HLS INTERFACE m_axi port=outer_tile_start_ptr_0 offset=slave bundle=gmem1
-#pragma HLS INTERFACE m_axi port=outer_tile_end_ptr_0 offset=slave bundle=gmem1
+#pragma HLS INTERFACE m_axi port=p_x_0 offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=p_y_0 offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=p_z_0 offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=a_x_0 offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=a_y_0 offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=a_z_0 offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=c_0   offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=outer_tile_start_ptr_0 offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=outer_tile_end_ptr_0 offset=slave bundle=gmem
 
-#pragma HLS INTERFACE m_axi port=p_x_1 offset=slave bundle=gmem2
-#pragma HLS INTERFACE m_axi port=p_y_1 offset=slave bundle=gmem2
-#pragma HLS INTERFACE m_axi port=p_z_1 offset=slave bundle=gmem2
-#pragma HLS INTERFACE m_axi port=a_x_1 offset=slave bundle=gmem2
-#pragma HLS INTERFACE m_axi port=a_y_1 offset=slave bundle=gmem2
-#pragma HLS INTERFACE m_axi port=a_z_1 offset=slave bundle=gmem2
-#pragma HLS INTERFACE m_axi port=c_1   offset=slave bundle=gmem2
-#pragma HLS INTERFACE m_axi port=outer_tile_start_ptr_1 offset=slave bundle=gmem3
-#pragma HLS INTERFACE m_axi port=outer_tile_end_ptr_1 offset=slave bundle=gmem3
+#pragma HLS INTERFACE m_axi port=p_x_1 offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=p_y_1 offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=p_z_1 offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=a_x_1 offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=a_y_1 offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=a_z_1 offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=c_1   offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=outer_tile_start_ptr_1 offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=outer_tile_end_ptr_1 offset=slave bundle=gmem
 
-#pragma HLS INTERFACE m_axi port=EPS_ptr offset=slave bundle=gmem4
-#pragma HLS INTERFACE m_axi port=tiling_factor_ptr offset=slave bundle=gmem5
+#pragma HLS INTERFACE m_axi port=EPS_ptr offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=tiling_factor_ptr offset=slave bundle=gmem
 
 #pragma HLS INTERFACE s_axilite register port=p_x_0 bundle=control
 #pragma HLS INTERFACE s_axilite register port=p_y_0 bundle=control
