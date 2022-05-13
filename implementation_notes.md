@@ -23,3 +23,5 @@
 8. on hardware debug. start xilinx HW server on the f1 instance, then in vivado:
    `connect_hw_server -url efesfpga.ddns.net:3121 -allow_non_jtag`
    `open_hw_target -xvc_url 127.0.0.1:10201`
+9. Apply xilinx patch `https://support.xilinx.com/s/article/76960?language=en_US`
+10. Compile XRT with ubuntu 20.04 g++-7 to get rid of symbol `_ZNSt7__cxx1118basic_stringstreamIcSt11char_traitsIcESaIcEEC1Ev@@GLIBCXX_3.4.26`
