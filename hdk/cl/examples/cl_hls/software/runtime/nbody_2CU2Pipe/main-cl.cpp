@@ -27,6 +27,7 @@
 typedef float my_type;
 #define TILE_ELEM 60000
 #define BODIES 2
+#define C_KERNEL
 
 /*
  * Given an event, this function returns the kernel execution time in ms
@@ -578,9 +579,16 @@ void data_generation(int N_loc, particle_t **particles, float **m, params_t args
 }
 
 
+static char *test_argv_array[] = {
+  "test_nbody_2CU2Pipe.elf",
+  "-r",
+  "-N",
+  "8192"
+};
+REG_STATIC_ARGV(test_argv_array);
 
 int 
-main(int argc, char **argv)
+fpgarropencl_main(int argc, char **argv)
 {
 
 #if defined(SDX_PLATFORM) && !defined(TARGET_DEVICE)

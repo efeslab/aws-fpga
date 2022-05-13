@@ -34,11 +34,15 @@ export C_SRC_DIR  = $(CL_ROOT)/software/runtime
 
 export TEST_NAME =  $(CL_ROOT)/verif/tests/$(TEST).sv
 
+ifdef HLS_DESIGN
+  export HLS_DESIGN_ROOT = $(CL_ROOT)/design/hls_accel/$(HLS_DESIGN)
+endif
 ifeq ($(C_TEST),test_null)
   ifndef HLS_DESIGN
     export C_TEST_NAME = $(HDK_COMMON_DIR)/software/src/$(C_TEST).c
   else
-    export C_TEST_NAME = $(wildcard $(C_SRC_DIR)/$(HLS_DESIGN)/*.cpp) $(wildcard $(C_SRC_DIR)/$(HLS_DESIGN)/*.c)
+    # HLS runs will include Makefile.inc
+    export C_TEST_NAME =
   endif
 else
   export C_TEST_NAME = $(C_SRC_DIR)/$(C_TEST).c
@@ -90,13 +94,23 @@ export SH_INF_DIR  = $(HDK_SHELL_DESIGN_DIR)/interfaces
 export SH_SH_DIR   = $(HDK_SHELL_DESIGN_DIR)/sh_ddr/sim
 
 SV_TEST_LIST = test_hello_world
-C_FILES      = $(C_TEST_NAME) $(C_SDK_USR_UTILS_DIR)/sh_dpi_tasks.c $(C_COMMON_DIR)/src/fpga_pci_sv.c $(C_SRC_DIR)/test_common.c
+C_FILES      = $(C_SDK_USR_UTILS_DIR)/sh_dpi_tasks.c $(C_COMMON_DIR)/src/fpga_pci_sv.c
 
+# setup fpgarr
 include ${CL_FPGARR_ROOT}/software/runtime/libfpgarr/Makefile.inc
 C_FILES += $(LIBFPGARR_SRC)
 VCS_OPT = -CFLAGS "-I$(LIBFPGARR_PATH)"
 VCS_OPT += -CFLAGS "-I$(XILINX_HLS)/include"
+# setup libfpgarropencl
+include ${CL_ROOT}/software/runtime/libfpgarropencl/Makefile.inc
+C_FILES += $(LIBFPGARROPENCL_SRC)
+VCS_OPT += -CFLAGS "-I$(LIBFPGARROPENCL_INCLUDE) -I$(XILINX_XRT)/include"
 ifdef HLS_DESIGN
+  include ${C_SRC_DIR}/$(HLS_DESIGN)/Makefile.inc
+  C_FILES += $(HLS_DESIGN_SRC)
+  ifneq ($(HLS_DESIGN_USE_OPENCL),1)
+    C_FILES += $(C_SRC_DIR)/test_common.c
+  endif
   VCS_OPT += -CFLAGS "-DRR_POLLING_INTERVAL=100"
   VCS_OPT += -CFLAGS "-I$(C_SRC_DIR)/$(HLS_DESIGN)"
   VCS_OPT += -CXXFLAGS "-lminizip" -CXXFLAGS "-lz" -CXXFLAGS "-lstdc++" -CXXFLAGS "-lcrypto"
