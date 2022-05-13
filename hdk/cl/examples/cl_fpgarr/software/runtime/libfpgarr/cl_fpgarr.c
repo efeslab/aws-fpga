@@ -1,18 +1,19 @@
+#include "cl_fpgarr.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <fcntl.h>
-#include <utils/log.h>
-#include <unistd.h>
 #include <time.h>
+#include <unistd.h>
+#include <utils/log.h>
 
-#include "cl_fpgarr.h"
+#include "cl_fpgarr_cfg.h"
 #include "cl_fpgarr_csrs.h"
 #include "cl_fpgarr_csrs_decode.h"
 #include "cl_fpgarr_utils.h"
-#include "cl_fpgarr_cfg.h"
-
 
 rr_mode_t rr_mode = RR_MODE_INIT;
 
@@ -64,6 +65,8 @@ int init_rr(int slot_id) {
     printf("RR Buffer Size: %ldB\n", buffer_size);
     printf("SW RR_CSR_VERSION %d\n", RR_CSR_VERSION_INT);
 
+    // I experienced that random stuff left errno to nonzero before entering rr
+    errno = 0;
     int rc;
 #ifndef SV_TEST
     // init pci_bar1
