@@ -24,11 +24,12 @@ typedef struct {
 } particle_t;
 
 
+// get time in sec
 double get_time()
 {
-    struct timeval tv;
-    gettimeofday(&tv, 0);
-    return tv.tv_sec + tv.tv_usec * 1e-6;
+    struct timespec tv;
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    return tv.tv_sec + tv.tv_nsec * 1e-9;
 }
 
 #endif

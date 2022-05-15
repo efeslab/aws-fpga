@@ -148,7 +148,7 @@ void run_cpu(int N_loc, int nt, float EPS, const float *m,
     double time_it_start, time_it_end;
     double time_up_start, time_up_end;
     
-    //wall_time_start = get_time();
+    wall_time_start = get_time();
     
     for (int t = 0; t < nt; t++) {
         
@@ -164,9 +164,9 @@ void run_cpu(int N_loc, int nt, float EPS, const float *m,
 
     }
     
-    //wall_time_end = get_time();
+    wall_time_end = get_time();
     
-    //*time = wall_time_end - wall_time_start;
+    *time = wall_time_end - wall_time_start;
     
     memcpy(out_particles, p, N_loc * sizeof(particle_t));
     
@@ -583,7 +583,9 @@ static char *test_argv_array[] = {
   "test_nbody_2CU2Pipe.elf",
   "-r",
   "-N",
-  "8192"
+  "256",
+  "-t",
+  "20"
 };
 REG_STATIC_ARGV(test_argv_array);
 
@@ -780,20 +782,45 @@ fpgarropencl_main(int argc, char **argv)
 	cpu_particles = (particle_t *) malloc(N_loc * sizeof(particle_t));
 	printf("Running on CPU...\n");
 
-    double cpu_time = 0;
-    run_cpu(N_loc, nt, EPS, m, particles, cpu_particles, &cpu_time);
+    double cpu_time_ns = 0;
+    run_cpu(N_loc, nt, EPS, m, particles, cpu_particles, &cpu_time_ns);
 	
     printf("Done!\n");
+    printf("cpu execution time is %lf ms\n", cpu_time_ns * 1000);
 
     int mismatches = 0;
+    float p_x_maxdiff = .0f;
+    float p_y_maxdiff = .0f;
+    float p_z_maxdiff = .0f;
+    float v_x_maxdiff = .0f;
+    float v_y_maxdiff = .0f;
+    float v_z_maxdiff = .0f;
 
     for(int i =0; i < N_loc; i++){
-        if( abs(FPGA_particles[i].p.x - cpu_particles[i].p.x) > threshold ||
-                abs(FPGA_particles[i].p.y - cpu_particles[i].p.y) > threshold ||
-                abs(FPGA_particles[i].p.z - cpu_particles[i].p.z) > threshold ||
-                abs(FPGA_particles[i].v.x - cpu_particles[i].v.x) > threshold ||
-                abs(FPGA_particles[i].v.y - cpu_particles[i].v.y) > threshold ||
-                abs(FPGA_particles[i].v.z - cpu_particles[i].v.z) > threshold){
+        float p_x_diff = abs(FPGA_particles[i].p.x - cpu_particles[i].p.x);
+	float p_y_diff = abs(FPGA_particles[i].p.y - cpu_particles[i].p.y);
+	float p_z_diff = abs(FPGA_particles[i].p.z - cpu_particles[i].p.z);
+	float v_x_diff = abs(FPGA_particles[i].v.x - cpu_particles[i].v.x);
+	float v_y_diff = abs(FPGA_particles[i].v.y - cpu_particles[i].v.y);
+	float v_z_diff = abs(FPGA_particles[i].v.z - cpu_particles[i].v.z);
+	if (p_x_diff > p_x_maxdiff)
+	  p_x_maxdiff = p_x_diff;
+	if (p_y_diff > p_y_maxdiff)
+	  p_y_maxdiff = p_y_diff;
+	if (p_z_diff > p_z_maxdiff)
+	  p_z_maxdiff = p_z_diff;
+	if (v_x_diff > v_x_maxdiff)
+	  v_x_maxdiff = v_x_diff;
+	if (v_y_diff > v_y_maxdiff)
+	  v_y_maxdiff = v_y_diff;
+	if (v_z_diff > v_z_maxdiff)
+	  v_z_maxdiff = v_z_diff;
+        if( p_x_diff > threshold ||
+            p_y_diff > threshold ||
+            p_z_diff > threshold ||
+            v_x_diff > threshold ||
+            v_y_diff > threshold ||
+            v_z_diff > threshold){
 //            printf("ERROR \n");
 //            printf(" FPGA %f - CPU %f \n", FPGA_particles[i].p.x, cpu_particles[i].p.x);
 //            printf(" FPGA %f - CPU %f \n", FPGA_particles[i].p.y, cpu_particles[i].p.y);
@@ -811,13 +838,16 @@ fpgarropencl_main(int argc, char **argv)
     printf("Results Checked! \n");
 
     printf("Mismatches rate = %f\n", 100.0*mismatches/N_loc);
+    printf("p_x_maxdiff %f, p_y_maxdiff %f, p_z_maxdiff %f\n",
+	    p_x_maxdiff, p_y_maxdiff, p_z_maxdiff);
+    printf("v_x_maxdiff %f, v_y_maxdiff %f, v_z_maxdiff %f\n",
+	    v_x_maxdiff, v_y_maxdiff, v_z_maxdiff);
 
-
-	//Shutdown and cleanup
-		//
-	clReleaseProgram(program);
-	clReleaseKernel(kernel);
-	clReleaseCommandQueue(commands);
-	clReleaseContext(context);
-	return EXIT_SUCCESS;
+    // Shutdown and cleanup
+    //
+    clReleaseProgram(program);
+    clReleaseKernel(kernel);
+    clReleaseCommandQueue(commands);
+    clReleaseContext(context);
+    return EXIT_SUCCESS;
 }
