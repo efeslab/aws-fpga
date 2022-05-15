@@ -68,6 +68,8 @@ $(BIN): $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
 .PHONY: test
 LOAD_AFI = $(call LOAD_AFI_TPL, $(HLS_DESIGN_AGFI_ID))
 CMDLINE = $(HLS_DESIGN_TEST_ENV) ./$(BIN) $(HLS_DESIGN_TEST_ARGS)
+load_afi:
+	$(LOAD_AFI)
 test: $(BIN)
 	for i in `seq -w 1 $(NUM_TEST)`; do \
 	    $(LOAD_AFI); \
