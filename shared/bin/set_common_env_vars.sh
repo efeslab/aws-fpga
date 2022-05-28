@@ -81,3 +81,5 @@ export XILINX_ENABLE_AWS_WHITELIST=095707098027
 
 # setup FPGARR env
 export CL_FPGARR_ROOT=$HDK_DIR/cl/examples/cl_fpgarr
+# setup LIBFPGARROPENCL
+export CL_FPGARR_OPENCL_ROOT=$HDK_DIR/cl/examples/cl_hls/software/runtime/libfpgarropencl

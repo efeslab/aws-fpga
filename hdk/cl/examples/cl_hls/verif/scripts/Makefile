@@ -52,7 +52,7 @@ export SIM_ROOT = $(CL_ROOT)/verif/sim/$(SIMULATOR)
 
 ifeq ($(C_TEST),test_null)
   ifdef HLS_DESIGN
-    export SIM_DIR = $(SIM_ROOT)/test_$(HLS_DESIGN)
+    export SIM_DIR = $(SIM_ROOT)/test_$(subst /,_,$(HLS_DESIGN))
   else
     ifeq ($(AXI_MEMORY_MODEL), 1)
       ifeq ($(ECC_DIRECT), 1)
@@ -107,7 +107,13 @@ C_FILES += $(LIBFPGARROPENCL_SRC)
 VCS_OPT += -CFLAGS "-I$(LIBFPGARROPENCL_INCLUDE) -I$(XILINX_XRT)/include"
 ifdef HLS_DESIGN
   include ${C_SRC_DIR}/$(HLS_DESIGN)/Makefile.inc
-  C_FILES += $(HLS_DESIGN_SRC)
+  ifneq ($(HLS_DESIGN_SRC),)
+    C_FILES += $(HLS_DESIGN_SRC)
+  else
+    C_FILES += $(HLS_DESIGN_OBJ)
+clean::
+	rm -rf $(HLS_DESIGN_OBJ)
+  endif
   ifneq ($(HLS_DESIGN_USE_OPENCL),1)
     C_FILES += $(C_SRC_DIR)/test_common.c
   endif

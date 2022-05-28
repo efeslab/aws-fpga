@@ -15,7 +15,7 @@
 
 
 
-clean:
+clean::
 	cd $(SIM_ROOT)/.. && rm -rf *.jou
 	cd $(SIM_ROOT)/.. && rm -rf .cxl.vcs_mx.version
 	cd $(SIM_ROOT)/.. && rm -rf compile_simlib.log

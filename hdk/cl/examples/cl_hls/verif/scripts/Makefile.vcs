@@ -25,7 +25,7 @@
 
 export HLS_DATA_DIR = $(CL_ROOT)/design/hls_accel/$(HLS_DESIGN)/data
 
-compile: $(COMPLIB_DIR)
+compile: $(COMPLIB_DIR) $(C_FILES)
 	mkdir -p $(SIM_DIR)
 	if [ -d $(HLS_DATA_DIR) ]; then cp $(HLS_DATA_DIR)/* $(SIM_DIR)/ ; fi
 	cd ${SIM_DIR} && ln -s -f ../vcs_complib/synopsys_sim.setup 

@@ -17,11 +17,12 @@ INCLUDES = -I$(SDK_DIR)/userspace/include
 
 CC = gcc
 CXX = g++
+CMAKE ?= /usr/bin/cmake
 CFLAGS = -DCONFIG_LOGLEVEL=4 -g $(INCLUDES)
 
 LDLIBS = -lfpga_mgmt
 
-ALL_HLS_DESIGN = 3d_rendering bnn digit_recognition face_detection spam_filter optical_flow sssp sha256 mobilenet nbody_2CU2Pipe
+ALL_HLS_DESIGN = 3d_rendering bnn digit_recognition face_detection spam_filter optical_flow sssp sha256 mobilenet nbody_2CU2Pipe HPCC/STREAM
 
 # For HLS testing lib
 LIB_SRC = test_common.c
@@ -56,7 +57,7 @@ CXXFLAGS += -I$(HLS_DESIGN)
 include $(HLS_DESIGN)/Makefile.inc
 # For HLS OpenCL
 ifneq ($(HLS_DESIGN_USE_OPENCL),)
-    include libfpgarropencl/Makefile.inc
+    include $(CL_FPGARR_OPENCL_ROOT)/Makefile.inc
     CFLAGS += -I$(LIBFPGARROPENCL_PATH)
     LDFLAGS += $(LIBFPGARROPENCL_PATH)/libfpgarropencl.a
     # ignore the test_common framework for OpenCL app
