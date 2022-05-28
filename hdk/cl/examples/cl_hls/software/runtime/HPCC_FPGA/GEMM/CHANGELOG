@@ -1,0 +1,62 @@
+# Changelog
+
+This file contains all changes made to the source code for each release.
+
+## 1.3
+
+## Added:
+- Support for cl2.hpp header file by removing hard links to cl.hpp
+
+## 1.2
+
+## Added:
+- Support for Intel SVM and HBM using kernel attributes
+
+## 1.1
+
+#### Added:
+- MPI Support for embarrassingly parallel executions. Every rank will calculate on independent matrices. Measurement results will be averaged over all ranks.
+
+## 1.0
+
+#### Added:
+- Support for kernel replication for an arbitrary number of kernels (-r flag, NUM_REPLICATIONS)
+- Support for double precision (fp64) and half precision (fp16) (DATA_TYPE compile option)
+- Mixed precision support for single precision on host and half precision on device (ENABLE_MIXED_PRECISION)
+
+## 0.4
+
+#### Added:
+- Base implementation tests are now build and linked with the unit test binary
+- Support for custom kernel designs
+
+## 0.3
+
+#### Added:
+- Optimize Kernel for Xilinx
+- Add vendor specific code for Intel
+
+#### Changed:
+- Fix bugs in host code, add tests
+- Add new block size parameter -b to host code
+- Change -m to number of blocks instead of values
+
+## 0.2.2
+
+#### Changed:
+- Converted host code to new OO code
+
+## 0.2.1
+
+#### Added:
+- Support for Xilinx Vitis toolchain
+
+## 0.2
+
+#### Added:
+- Support for BLAS library in validation
+
+
+## 0.1
+
+Base version with cannon kernel

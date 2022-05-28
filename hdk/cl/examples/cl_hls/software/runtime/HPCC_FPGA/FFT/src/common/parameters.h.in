@@ -1,0 +1,39 @@
+#ifndef SRC_COMMON_PARAMETERS_H_
+#define SRC_COMMON_PARAMETERS_H_
+
+/**
+ * Host specific parameters
+ */
+#define VERSION "@PROJECT_VERSION@"
+#define DEFAULT_REPETITIONS @DEFAULT_REPETITIONS@
+#define DEFAULT_ITERATIONS @DEFAULT_ITERATIONS@
+#define NUM_REPLICATIONS @NUM_REPLICATIONS@
+#define DEFAULT_PLATFORM @DEFAULT_PLATFORM@
+#define DEFAULT_DEVICE @DEFAULT_DEVICE@
+#define HOST_DATA_TYPE @HOST_DATA_TYPE@
+#define FFT_KERNEL_NAME "@FFT_KERNEL_NAME@"
+#define FETCH_KERNEL_NAME "@FETCH_KERNEL_NAME@"
+#define STORE_KERNEL_NAME "@STORE_KERNEL_NAME@"
+
+/**
+ * Kernel Parameters
+ */
+#define LOG_FFT_SIZE @LOG_FFT_SIZE@
+#define FFT_UNROLL @FFT_UNROLL@
+
+#cmakedefine USE_SVM
+#cmakedefine USE_HBM
+/*
+Short description of the program.
+Moreover the version and build time is also compiled into the description.
+*/
+#define PROGRAM_DESCRIPTION "Implementation of the FFT benchmark"\
+                            " proposed in the HPCC benchmark suite for FPGA.\n"\
+                            "Version: " VERSION "\n"
+                            
+/**
+Output separator
+*/
+#define HLINE "-------------------------------------------------------------\n"
+
+#endif // SRC_COMMON_PARAMETERS_H_

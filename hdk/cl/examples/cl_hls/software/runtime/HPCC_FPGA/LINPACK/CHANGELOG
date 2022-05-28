@@ -1,0 +1,51 @@
+# Changelog
+
+This file contains all changes made to the source code for each release.
+
+## 2.6
+
+#### Added:
+- Support for FPGA grid sizes with P != Q for baseline and IEC implementation
+
+## 2.5
+
+#### Added:
+- MPI + PCIe base implementations compatible with Xilinx and Intel FPGAs
+## 2.4
+#### Added:
+- Support for double-precision floating-point
+
+## 2.3
+#### Changed:
+- Refactored the code to support different execution kernels and data distributions
+#### Added:
+- FPGA kernel with communication via PCIe and MPI 
+
+## 2.2
+
+#### Added:
+- LU facotrization kernel w/o pivoting in quadratic torus
+- Distributed calculation of GESL on CPU nodes and validation
+
+## 2.1
+
+#### Added:
+- Base implementation tests are now build and linked with the unit test binary
+- Support for custom kernel designs
+
+## 2.0.2
+
+#### Changed:
+- Converted host code to new OO code
+
+## 2.0.1
+
+#### Added:
+- Support for Xilinx Vitis toolchain
+- Tests are only partially supported for Xilinx because of failing compilation of lu_blocked_pvt_test
+
+## 2.0
+
+#### Added:
+- Replace Makefile with CMake as a build system
+- Add unit testing

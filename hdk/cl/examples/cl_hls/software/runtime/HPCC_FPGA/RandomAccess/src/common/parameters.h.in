@@ -1,0 +1,65 @@
+#ifndef SRC_COMMON_PARAMETERS_H_
+#define SRC_COMMON_PARAMETERS_H_
+
+/**
+ * Host specific parameters
+ */
+#define VERSION "@PROJECT_VERSION@"
+#define DEFAULT_ARRAY_LENGTH_LOG @DEFAULT_ARRAY_LENGTH_LOG@
+#define DEFAULT_PLATFORM @DEFAULT_PLATFORM@
+#define DEFAULT_DEVICE @DEFAULT_DEVICE@
+#define HOST_DATA_TYPE @HOST_DATA_TYPE@
+#define HOST_DATA_TYPE_SIGNED @HOST_DATA_TYPE_SIGNED@
+#define NUM_REPLICATIONS @NUM_REPLICATIONS@
+#define DEFAULT_REPETITIONS @DEFAULT_REPETITIONS@
+
+/**
+ * Device specific parameters
+ */
+#define DEVICE_DATA_TYPE @DEVICE_DATA_TYPE@
+#define DEVICE_DATA_TYPE_UNSIGNED @DEVICE_DATA_TYPE_UNSIGNED@
+#define BUFFER_SIZE_LOG @HPCC_FPGA_RA_DEVICE_BUFFER_SIZE_LOG@
+#define BUFFER_SIZE (1 << BUFFER_SIZE_LOG)
+#define HPCC_FPGA_RA_RNG_COUNT_LOG @HPCC_FPGA_RA_RNG_COUNT_LOG@
+#define HPCC_FPGA_RA_RNG_DISTANCE @HPCC_FPGA_RA_RNG_DISTANCE@
+#define GLOBAL_MEM_UNROLL_LOG @HPCC_FPGA_RA_GLOBAL_MEM_UNROLL_LOG@
+
+#cmakedefine HPCC_FPGA_RA_INTEL_USE_PRAGMA_IVDEP
+#cmakedefine SINGLE_KERNEL
+// Combine address calculation and data read loop to a single loop
+#cmakedefine HPCC_FPGA_RA_COMBINE_LOOPS
+#cmakedefine USE_SVM
+#cmakedefine USE_HBM
+
+/*
+Short description of the program.
+Moreover the version and build time is also compiled into the description.
+*/
+
+#define PROGRAM_DESCRIPTION "Implementation of the random access benchmark"\
+                            " proposed in the HPCC benchmark suite for FPGA.\n"\
+                            "Version: " VERSION "\n"
+
+/**
+Prefix of the function name of the used kernel.
+It will be used to construct the full function name for the case of replications.
+The full name will be
+*/
+#define RANDOM_ACCESS_KERNEL "accessMemory_"
+
+/**
+Constants used to verify benchmark results
+*/
+#define POLY 7
+#define PERIOD 1317624576693539401L
+
+#define BIT_SIZE (sizeof(HOST_DATA_TYPE) * 8)
+
+/**
+Output separator
+*/
+#define HLINE "-------------------------------------------------------------\n"
+
+
+
+#endif // SRC_COMMON_PARAMETERS_H_

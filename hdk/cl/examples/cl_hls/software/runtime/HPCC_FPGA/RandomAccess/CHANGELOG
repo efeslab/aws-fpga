@@ -1,0 +1,61 @@
+# Changelog
+
+This file contains all changes made to the source code for each release.
+
+## 2.5
+
+#### Changed:
+- Renamed all configuration parameters to start with `HPCC_FPGA_RA_`
+- Update the host code to use Log2 values as inputs for simplification
+
+#### Added:
+- Add support for multiple pseudo random number generators specified over `HPCC_FPGA_RA_RNG_COUNT_LOG`
+- Modify the number of steps in the shift register between the RNGs with `HPCC_FPGA_RA_RNG_DISTANCE`
+
+
+## 2.4
+
+#### Changed:
+- Make pragma ivdep optional for Intel devices using the new flag `INTEL_USE_PRAGMA_IVDEP`
+
+## 2.3
+
+#### Added:
+- Add MPI support for global execution
+
+## 2.2
+
+#### Added:
+- Base implementation tests are now build and linked with the unit test binary
+- Support for custom kernel designs
+
+## 2.1
+
+#### Added:
+- Support for Intel HBM using the USE_HBM flag. This will use the CL_MEM_HETEROGENEOUS_INTELFPGA flag to allocate OpenCL buffers.
+
+## 2.0.3
+
+#### Changed:
+- Converted host code to new OO code
+
+## 2.0.2.1
+
+##### Added:
+- Host side support for SVM
+
+## 2.0.2
+
+#### Changed:
+- OpenMP pragmas from single to master with explicit barriers
+
+## 2.0.1
+
+#### Added:
+- Unit tests for result validation and kernel execution
+- Add new boolean parameter `COMBINE_LOOPS` that allows to combine the address calculation and loading of the data into a single loop instead of two separate loops. This can improve the performance if the loops are executed sequentially because the outer loop can not be pipelined.
+
+## 2.0
+
+#### Added:
+- Replace Makefile with CMake as a build system

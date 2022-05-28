@@ -1,0 +1,42 @@
+# Changelog
+
+This file contains all changes made to the source code for each release.
+
+## 1.4
+
+## Changed:
+- Fix Intel HBM support in host code and add kernel configuration for 520N MX board
+
+## 1.3
+
+## Added:
+- Support for Intel SVM and HBM using kernel attributes
+
+## 1.2
+
+#### Added:
+- Optimized for Xilinx Vitis (Shift register implementation works for sizes <= 2^9)
+- Kernel replication support (-r flag, NUM_REPLICATIONS)
+
+## 1.1
+
+#### Added:
+- Base implementation tests are now build and linked with the unit test binary
+- Support for custom kernel designs
+
+## 1.0.2
+
+#### Changed:
+- Converted host code to new OO code
+- Unit tests and emulation kernels wrok now: Fail for Xilinx
+
+## 1.0.1
+
+#### Added:
+- Support for Xilinx Vitis toolchain
+
+## 1.0
+
+#### Added:
+- Host code and OpenCL kernel from Intel FPGA SDK AOC examples
+- Execution result for the Bittware 520N board with brief performance model
