@@ -5,11 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-// headers from current lib
-#include "cl_fpgarr.h"
-#include "cl_structs.h"
-#include "fpga_mem_mgr.h"
-#include "fpga_utils.h"
 
 // headers to deal with vendor lib
 #ifdef SV_TEST
@@ -21,6 +16,12 @@
 #include <fpga_pci.h>
 #include <utils/lcd.h>
 #endif
+
+// headers from current lib
+#include "cl_fpgarr.h"
+#include "cl_structs.h"
+#include "fpga_mem_mgr.h"
+#include "fpga_utils.h"
 
 struct _cl_device_id g_devid;
 cl_device_id g_cl_cxt_devs[] = {
@@ -37,32 +38,19 @@ struct _cl_context g_cl_cxt = {
     .refcnt = 0,
 };
 
-#undef fail_on_errret
-#undef fail_on
-#undef log_error
-#define log_error(...)          \
-  fprintf(stderr, __VA_ARGS__); \
-  fputc('\n', stderr)
-#define errcode_is(ERR) \
-  if (errcode_ret) *errcode_ret = ERR
-#define fail_on_errret(is_fail, label, errcode, ...) \
-  if (is_fail) {                                     \
-    errcode_is(errcode);                             \
-    log_error(__VA_ARGS__);                          \
-    goto label;                                      \
-  }
-#define fail_on(is_fail, label, ...) \
-  if (is_fail) {                     \
-    log_error(__VA_ARGS__);          \
-    goto label;                      \
-  }
-#undef min
-#define min(x, y) ((x < y) ? x : y)
 #define CL_GET_INFO(type, retvalue) \
   CL_GET_INFO_WITH_SIZE(type, retvalue, sizeof(type))
-#define CL_GET_INFO_WITH_SIZE(type, retvalue, retsize)          \
-  if (param_value_size < sizeof(type)) return CL_INVALID_VALUE; \
-  *((type *)param_value) = retvalue;                            \
+#define CL_GET_INFO_WITH_SIZE(type, retvalue, retsize)            \
+  if (param_value) {                                              \
+    if (param_value_size < sizeof(type)) return CL_INVALID_VALUE; \
+    *((type *)param_value) = retvalue;                            \
+  }                                                               \
+  if (param_value_size_ret) *param_value_size_ret = retsize
+#define CL_GET_INFO_MEMCPY(retptr, retsize)                  \
+  if (param_value) {                                         \
+    if (param_value_size < retsize) return CL_INVALID_VALUE; \
+    memcpy(param_value, retptr, retsize);                    \
+  }                                                          \
   if (param_value_size_ret) *param_value_size_ret = retsize
 cl_context clCreateContext(
     const cl_context_properties *properties, cl_uint num_devices,
@@ -219,8 +207,7 @@ struct _cl_platform_id g_platid = {
 #endif
 cl_int clGetPlatformIDs(cl_uint num_entries, cl_platform_id *platforms,
                         cl_uint *num_platforms) {
-  if (num_entries < 1) return CL_INVALID_VALUE;
-  platforms[0] = &g_platid;
+  if (num_entries >= 1) platforms[0] = &g_platid;
   if (num_platforms) *num_platforms = 1;
   return CL_SUCCESS;
 }
@@ -268,8 +255,7 @@ cl_int clGetDeviceIDs(cl_platform_id platform, cl_device_type device_type,
   if (platform != NULL && platform != &g_platid) return CL_INVALID_PLATFORM;
   if (device_type == CL_DEVICE_TYPE_CPU || device_type == CL_DEVICE_TYPE_GPU)
     return CL_INVALID_DEVICE_TYPE;
-  if (num_entries < 1) return CL_INVALID_VALUE;
-  devices[0] = &g_devid;
+  if (num_entries >= 1) devices[0] = &g_devid;
   if (num_devices) *num_devices = 1;
   return CL_SUCCESS;
 }
@@ -391,6 +377,7 @@ cl_int clGetProgramInfo(cl_program program, cl_program_info param_name,
                         size_t param_value_size, void *param_value,
                         size_t *param_value_size_ret) {
   static char empty_prog_src[] = "";
+  static char fake_kernel_names[] = "FPGARR_INTERCEPTED_KERNEL";
   if (!program) return CL_INVALID_PROGRAM;
   switch (param_name) {
     case CL_PROGRAM_REFERENCE_COUNT:
@@ -403,17 +390,17 @@ cl_int clGetProgramInfo(cl_program program, cl_program_info param_name,
       CL_GET_INFO(cl_uint, program->num_devs);
       break;
     case CL_PROGRAM_DEVICES:
-      CL_GET_INFO(cl_device_id*, program->devs);
+      CL_GET_INFO_MEMCPY(program->devs, sizeof(cl_device_id) * program->num_devs);
       break;
     case CL_PROGRAM_SOURCE:
     case CL_PROGRAM_IL:
-      CL_GET_INFO_WITH_SIZE(char*, empty_prog_src, sizeof(empty_prog_src));
+      CL_GET_INFO_MEMCPY(empty_prog_src, sizeof(empty_prog_src));
       break;
     case CL_PROGRAM_NUM_KERNELS:
       CL_GET_INFO(size_t, 1);
       break;
     case CL_PROGRAM_KERNEL_NAMES:
-      CL_GET_INFO(char*, "FPGARR_INTERCEPTED_KERNEL");
+      CL_GET_INFO_MEMCPY(fake_kernel_names, sizeof(fake_kernel_names));
       break;
     default:
       return CL_INVALID_VALUE;
@@ -561,6 +548,8 @@ cl_int clEnqueueReadBuffer(cl_command_queue command_queue, cl_mem buffer,
     if (!newev->event_wait_list) return CL_OUT_OF_HOST_MEMORY;
     memcpy(newev->event_wait_list, event_wait_list,
            sizeof(cl_event) * num_events_in_wait_list);
+    for (cl_uint i = 0; i < num_events_in_wait_list; ++i)
+      clRetainEvent(event_wait_list[i]);
   }
   cl_int ret;
   if (blocking_read == CL_TRUE) {
@@ -596,6 +585,8 @@ cl_int clEnqueueWriteBuffer(cl_command_queue command_queue, cl_mem buffer,
     if (!newev->event_wait_list) return CL_OUT_OF_HOST_MEMORY;
     memcpy(newev->event_wait_list, event_wait_list,
            sizeof(cl_event) * num_events_in_wait_list);
+    for (cl_uint i = 0; i < num_events_in_wait_list; ++i)
+      clRetainEvent(event_wait_list[i]);
   }
   cl_int ret;
   if (blocking_write == CL_TRUE) {
@@ -619,6 +610,7 @@ cl_int clEnqueueTask(cl_command_queue command_queue, cl_kernel kernel,
   newev->status = CL_QUEUED;
   newev->t = CL_COMMAND_NDRANGE_KERNEL;
   newev->argKernel.k = kernel;
+  clRetainKernel(kernel);
   if (num_events_in_wait_list) {
     if (!event_wait_list) return CL_INVALID_EVENT_WAIT_LIST;
     newev->event_wait_list =
@@ -626,6 +618,8 @@ cl_int clEnqueueTask(cl_command_queue command_queue, cl_kernel kernel,
     if (!newev->event_wait_list) return CL_OUT_OF_HOST_MEMORY;
     memcpy(newev->event_wait_list, event_wait_list,
            sizeof(cl_event) * num_events_in_wait_list);
+    for (cl_uint i = 0; i < num_events_in_wait_list; ++i)
+      clRetainEvent(event_wait_list[i]);
   }
   if (event) {
     *event = newev;
@@ -642,7 +636,8 @@ cl_int clEnqueueNDRangeKernel(
   if (work_dim != 1) return CL_INVALID_WORK_DIMENSION;
   if (global_work_offset != NULL) return CL_INVALID_GLOBAL_OFFSET;
   if (global_work_size[0] != 1) return CL_INVALID_GLOBAL_WORK_SIZE;
-  if (local_work_size != NULL) return CL_INVALID_WORK_ITEM_SIZE;
+  if (local_work_size != NULL && (*local_work_size != 1))
+    return CL_INVALID_WORK_ITEM_SIZE;
   return clEnqueueTask(command_queue, kernel, num_events_in_wait_list,
                        event_wait_list, event);
 }
@@ -676,7 +671,7 @@ cl_int clRetainEvent(cl_event event) {
 cl_int clReleaseEvent(cl_event event) {
   if (event->prev) clReleaseEvent(event->prev);
   if (event->next) clReleaseEvent(event->next);
-  if (event->cmdq) clReleaseCommandQueue(event->cmdq);
+  // do not manipulate cmdq->refcnt
   assert(event->refcnt > 0);
   event->refcnt--;
   if (!event->refcnt) {
@@ -684,19 +679,20 @@ cl_int clReleaseEvent(cl_event event) {
       clReleaseEvent(event->event_wait_list[i]);
     }
     free(event->event_wait_list);
-  }
-  switch (event->t) {
-    case CL_COMMAND_READ_BUFFER:
-      clReleaseMemObject(event->argWriteBuf.mem);
-      break;
-    case CL_COMMAND_WRITE_BUFFER:
-      clReleaseMemObject(event->argReadBuf.mem);
-      break;
-    case CL_COMMAND_NDRANGE_KERNEL:
-      clReleaseKernel(event->argKernel.k);
-      break;
-    default:
-      break;
+    switch (event->t) {
+      case CL_COMMAND_READ_BUFFER:
+        clReleaseMemObject(event->argWriteBuf.mem);
+        break;
+      case CL_COMMAND_WRITE_BUFFER:
+        clReleaseMemObject(event->argReadBuf.mem);
+        break;
+      case CL_COMMAND_NDRANGE_KERNEL:
+        clReleaseKernel(event->argKernel.k);
+        break;
+      default:
+        break;
+    }
+    free(event);
   }
   return CL_SUCCESS;
 }
@@ -711,10 +707,10 @@ cl_int clSetKernelArg(cl_kernel kernel, cl_uint arg_index, size_t arg_size,
     case KARG_CL_MEM:
       expected_arg_size = sizeof(cl_mem);
       break;
-    case KARG_U32:
+    case KARG_4B:
       expected_arg_size = sizeof(uint32_t);
       break;
-    case KARG_U64:
+    case KARG_8B:
       expected_arg_size = sizeof(uint64_t);
       break;
     default:
@@ -760,7 +756,6 @@ cl_event alloc_cl_event(cl_command_queue cmdq) {
   newev->profiling_info.ts_end = 0;
   newev->num_events_in_wait_list = 0;
   newev->event_wait_list = NULL;
-  if (cmdq) clRetainCommandQueue(cmdq); // else UserEvent, no cmdq
   return newev;
 }
 
@@ -825,11 +820,11 @@ cl_int cl_command_exec(cl_event event) {
             csr_offset += 8;
             break;
           }
-          case KARG_U32:
+          case KARG_4B:
             poke_ocl(cxt, csr_offset, *((uint32_t *)k->args_value[i]));
             csr_offset += 4;
             break;
-          case KARG_U64:
+          case KARG_8B:
             poke_ocl64(cxt, csr_offset, *((uint64_t *)k->args_value[i]));
             csr_offset += 8;
             break;
@@ -946,10 +941,11 @@ cl_int clGetContextInfo(cl_context context, cl_context_info param_name,
       CL_GET_INFO(cl_uint, context->num_devs);
       break;
     case CL_CONTEXT_DEVICES:
-      CL_GET_INFO(cl_device_id*, context->devs);
+      CL_GET_INFO_MEMCPY(context->devs,
+                         context->num_devs * sizeof(cl_device_id));
       break;
     case CL_CONTEXT_PROPERTIES:
-      CL_GET_INFO(cl_context_properties*, empty_cxt_props);
+      CL_GET_INFO_MEMCPY(&empty_cxt_props, sizeof(empty_cxt_props));
       break;
     default:
       return CL_INVALID_VALUE;

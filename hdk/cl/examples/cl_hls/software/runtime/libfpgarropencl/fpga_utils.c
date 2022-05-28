@@ -1,8 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "fpga_utils.h"
-#include "cl_fpgarr.h"
 #if defined(SV_TEST)
 #include <fpga_pci_sv.h>
 #include <utils/macros.h>
@@ -12,6 +10,9 @@
 # include <fpga_dma.h>
 #include <utils/lcd.h>
 #endif
+
+#include "cl_fpgarr.h"
+#include "fpga_utils.h"
 
 static const uint16_t AMZ_PCI_VENDOR_ID = 0x1D0F; /* Amazon PCI Vendor ID */
 static const uint16_t PCI_DEVICE_ID = 0xF001;
@@ -88,6 +89,7 @@ int do_dma_read(struct _cl_context *cxt, void *host_buffer, size_t size,
     while (transferred < size) {
         size_t curr_size = (size - transferred);
         if (curr_size > step) curr_size = step;
+        log_info("cl_to_buffer: host %#lx, size %ld, address %#lx", host_buffer, curr_size, address);
         sv_fpga_start_cl_to_buffer(cxt->slot_id, cxt->channel_id, curr_size,
                                    (uint64_t)host_buffer, address);
         transferred += step;
@@ -108,6 +110,7 @@ int do_dma_write(struct _cl_context *cxt, const void *host_buffer, size_t size,
   while (transferred < size) {
     size_t curr_size = (size - transferred);
     if (curr_size > step) curr_size = step;
+    log_info("buffer_to_cl: host %#lx, size %ld, address %#lx", host_buffer, curr_size, address);
     sv_fpga_start_buffer_to_cl(cxt->slot_id, cxt->channel_id, curr_size,
                                (uint64_t)host_buffer, address);
     transferred += step;

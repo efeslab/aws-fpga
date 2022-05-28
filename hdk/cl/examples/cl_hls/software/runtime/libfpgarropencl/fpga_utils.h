@@ -1,6 +1,7 @@
 #ifndef LIBFPGARROPENCL_FPGA_UTILS_H
 #define LIBFPGARROPENCL_FPGA_UTILS_H
 #include <stdint.h>
+#include <stdio.h>
 #include <time.h>
 
 #include "cl_structs.h"
@@ -19,4 +20,36 @@ static inline cl_ulong getWallTimens() {
   clock_gettime(CLOCK_MONOTONIC, &tp);
   return tp.tv_sec * 1000000000 + tp.tv_nsec;
 }
+
+#undef log_error
+#define log_error(...)          \
+  fprintf(stderr, __VA_ARGS__); \
+  fputc('\n', stderr)
+
+#undef log_info
+#ifdef DEBUG_FPGARROPENCL
+#define log_info(...)           \
+  fprintf(stdout, __VA_ARGS__); \
+  fputc('\n', stdout)
+#else
+#define log_info(...)
+#endif  // DEBUG_FPGARROPENCL
+
+#define errcode_is(ERR) \
+  if (errcode_ret) *errcode_ret = ERR
+#undef fail_on_errret
+#undef fail_on
+#define fail_on_errret(is_fail, label, errcode, ...) \
+  if (is_fail) {                                     \
+    errcode_is(errcode);                             \
+    log_error(__VA_ARGS__);                          \
+    goto label;                                      \
+  }
+#define fail_on(is_fail, label, ...) \
+  if (is_fail) {                     \
+    log_error(__VA_ARGS__);          \
+    goto label;                      \
+  }
+#undef min
+#define min(x, y) ((x < y) ? x : y)
 #endif  // LIBFPGARROPENCL_FPGA_UTILS_H

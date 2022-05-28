@@ -1,4 +1,7 @@
 include Makefile.inc
+ifeq ($(CL_FPGARR_ROOT),)
+	$(error "Need to source sdk_setup.sh")
+endif
 include ${CL_FPGARR_ROOT}/software/runtime/libfpgarr/Makefile.inc
 
 CC?= gcc

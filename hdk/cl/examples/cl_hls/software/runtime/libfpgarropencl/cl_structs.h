@@ -74,7 +74,7 @@ struct _cl_event {
   // double linked list
   cl_event prev; // the last event in the list
   cl_event next; // the first event in the list
-  cl_command_queue cmdq;
+  cl_command_queue cmdq; // does not count towards cmdq->refcnt
   cl_int status;
   cl_command_type t;
   union {
