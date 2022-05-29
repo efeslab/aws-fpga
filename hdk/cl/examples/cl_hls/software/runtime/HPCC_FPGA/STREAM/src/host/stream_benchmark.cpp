@@ -33,6 +33,7 @@ SOFTWARE.
 /* Project's headers */
 #include "execution.hpp"
 #include "parameters.h"
+#include "fpgarropencl.h"
 
 stream::StreamProgramSettings::StreamProgramSettings(cxxopts::ParseResult &results) : hpcc_base::BaseSettings(results),
     streamArraySize(results["s"].as<uint>()),
@@ -100,6 +101,20 @@ stream::StreamBenchmark::addAdditionalParseOptions(cxxopts::Options &options) {
             ("s", "Size of the data arrays",
              cxxopts::value<uint>()->default_value(std::to_string(DEFAULT_ARRAY_LENGTH)))
             ("multi-kernel", "Use the legacy multi kernel implementation");
+}
+typedef HOST_DATA_TYPE float16;
+static void cl_calc0_signature(const DEVICE_ARRAY_DATA_TYPE *in1,
+                               const DEVICE_ARRAY_DATA_TYPE *in2,
+                               DEVICE_ARRAY_DATA_TYPE *out,
+                               const DEVICE_SCALAR_DATA_TYPE scalar,
+                               const uint array_size,
+                               const uint operation_type) {}
+void
+stream::StreamBenchmark::getFPGARRProgramBinary(const void **binary, size_t *sizeB) {
+    static fake_program_spec_t fake_spec =
+        FakeProgramSpecBuilder::build(cl_calc0_signature);
+    *binary = (const void *)(&fake_spec);
+    *sizeB = sizeof(fake_spec);
 }
 
 std::unique_ptr<stream::StreamExecutionTimings>

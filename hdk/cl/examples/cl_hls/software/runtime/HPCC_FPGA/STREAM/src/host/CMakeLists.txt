@@ -29,3 +29,20 @@ if (Vitis_FOUND)
     target_compile_options(stream_xilinx PRIVATE "${OpenMP_CXX_FLAGS}")
     add_test(NAME test_xilinx_host_executable COMMAND $<TARGET_FILE:STREAM_FPGA_xilinx> -h)
 endif()
+
+if (USE_FPGARR)
+    add_library(stream_aws_fpgarr STATIC ${HOST_SOURCE})
+    target_include_directories(stream_aws_fpgarr PRIVATE ${HPCCBaseLibrary_INCLUDE_DIRS} ${CMAKE_BINARY_DIR}/src/common ${Vitis_INCLUDE_DIRS})
+    target_include_directories(stream_aws_fpgarr PUBLIC ${CMAKE_SOURCE_DIR}/src/host)
+    target_include_directories(stream_aws_fpgarr PUBLIC ${CL_FPGARR_OPENCL_INC})
+    target_link_libraries(stream_aws_fpgarr PUBLIC hpcc_fpga_base)
+    target_compile_definitions(stream_aws_fpgarr PRIVATE -DXILINX_FPGA)
+    add_library(stream_aws_fpgarr_main OBJECT main.cpp)
+    target_include_directories(stream_aws_fpgarr_main PUBLIC ${CL_FPGARR_OPENCL_INC})
+    target_link_libraries(stream_aws_fpgarr_main stream_aws_fpgarr)
+    add_custom_target(fpgarr_gen DEPENDS stream_aws_fpgarr
+        stream_aws_fpgarr_main hpcc_fpga_base)
+    add_custom_command(TARGET fpgarr_gen POST_BUILD COMMAND
+        ${CMAKE_COMMAND} -E copy $<TARGET_FILE:stream_aws_fpgarr>
+        $<TARGET_FILE:hpcc_fpga_base> $<TARGET_OBJECTS:stream_aws_fpgarr_main> ${CMAKE_BINARY_DIR})
+endif()

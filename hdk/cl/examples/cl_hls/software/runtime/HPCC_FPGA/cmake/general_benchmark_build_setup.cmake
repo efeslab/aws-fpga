@@ -1,10 +1,18 @@
 cmake_policy(VERSION 3.13)
 INCLUDE (CheckTypeSize)
 
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 14)
 
 # Download build dependencies
 add_subdirectory(${CMAKE_SOURCE_DIR}/../extern ${CMAKE_BINARY_DIR}/extern)
+
+# CL_FPGARR_OPENCL
+if (IS_DIRECTORY $ENV{CL_FPGARR_OPENCL_ROOT})
+    set(CL_FPGARR_OPENCL_INC $ENV{CL_FPGARR_OPENCL_ROOT} CACHE FILEPATH "Include directory of the libfpgarropencl")
+    message(STATUS "Use $ENV{CL_FPGARR_OPENCL_ROOT} as CL_FPGARR_OPENCL_ROOT")
+else()
+    message(FATAL_ERROR "Cannot find env CL_FPGARR_OPENCL_ROOT")
+endif()
 
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     enable_testing()

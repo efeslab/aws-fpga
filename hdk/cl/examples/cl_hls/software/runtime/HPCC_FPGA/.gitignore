@@ -30,3 +30,7 @@ docs/xml
 !requirements.txt
 # Do not ignore CSVs included in documentation
 !docs/source/**/*.csv
+
+*.swp
+*.elf
+*/build

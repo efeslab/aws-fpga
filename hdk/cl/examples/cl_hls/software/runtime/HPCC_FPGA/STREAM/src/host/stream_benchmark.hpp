@@ -161,6 +161,7 @@ protected:
      */
     void
     addAdditionalParseOptions(cxxopts::Options &options) override;
+    void getFPGARRProgramBinary(const void **binary, size_t *sizeB) override;
 
 public:
 
