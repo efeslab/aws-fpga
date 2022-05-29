@@ -129,7 +129,6 @@ Sets up the given FPGA with the kernel in the provided file.
     std::unique_ptr<cl::Program>
     fpgaSetup(const cl::Context *context, std::vector<cl::Device> deviceList,
               const std::string *usedKernelFile) {
-        int err;
         int world_rank = 0;
 
 #ifdef _USE_MPI_
@@ -154,13 +153,32 @@ Sets up the given FPGA with the kernel in the provided file.
         aocxStream.seekg(0, aocxStream.beg);
         std::vector<unsigned char> buf(file_size);
         aocxStream.read(reinterpret_cast<char *>(buf.data()), file_size);
+        return fpgaSetup(context, deviceList, buf.data(), buf.size());
+    }
+/*
+@param context The context used for the program
+@param program The devices used for the program
+@param binary The pointer to the binary data buffer
+@param sizeB The size of the binary in bytes
+*/
+    std::unique_ptr<cl::Program>
+    fpgaSetup(const cl::Context *context, std::vector<cl::Device> deviceList,
+              const void *binary, size_t sizeB) {
+        int err;
 
+        int world_rank = 0;
+
+#ifdef _USE_MPI_
+        MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+#endif
 
 #ifdef USE_DEPRECATED_HPP_HEADER
         cl::Program::Binaries mybinaries;
-        mybinaries.push_back({buf.data(), file_size});
+        mybinaries.push_back({binary, sizeB});
 #else
-        cl::Program::Binaries mybinaries{buf};
+        cl::Program::Binaries mybinaries = {std::vector<unsigned char>(
+            (const unsigned char *)binary,
+            ((const unsigned char *)binary) + sizeB)};
 #endif
 
         // Create the Program from the AOCX file.

@@ -268,6 +268,15 @@ protected:
     virtual void
     addAdditionalParseOptions(cxxopts::Options &options) = 0;
 
+    /**
+     * @brief Get the customized program binary info in the context of FPGARR
+     *
+     * @param binary will be used to return the pointer to a memory buffer containing the program binary (fake program spec)
+     * @param  sizeB will be used to return the size of the binary buffer
+     */
+    virtual void
+        getFPGARRProgramBinary(const void **binary, size_t *sizeB) = 0;
+
 
     /**
      * @brief The communication rank of a MPI setup
@@ -366,7 +375,7 @@ public:
         // Defining and parsing program options
         cxxopts::Options options(argv[0], ss.str());
         options.add_options()
-                ("f,file", "Kernel file name", cxxopts::value<std::string>())
+                ("f,file", "Kernel file name", cxxopts::value<std::string>()->default_value(""))
                 ("n", "Number of repetitions",
                 cxxopts::value<uint>()->default_value(std::to_string(DEFAULT_REPETITIONS)))
 #ifdef INTEL_FPGA
@@ -402,11 +411,6 @@ public:
                 // Just print help when argument is given
                 std::cout << options.help() << std::endl;
                 exit(0);
-            }
-
-            // Check parsed options and handle special cases
-            if (result.count("f") <= 0) {
-                throw fpga_setup::FpgaSetupException("Mandatory option is missing! Use -h to show all available options. ERROR: Kernel file must be given with option -f!");
             }
 
             // Create program settings from program arguments
@@ -481,8 +485,17 @@ public:
                                                                     programSettings->defaultDevice);
 
                 context = std::unique_ptr<cl::Context>(new cl::Context(*usedDevice));
-                program = fpga_setup::fpgaSetup(context.get(), {*usedDevice},
-                                                                    &programSettings->kernelFileName);
+                if (programSettings->kernelFileName.size() == 0) {
+                    const void *binary;
+                    size_t sizeB;
+                    this->getFPGARRProgramBinary(&binary, &sizeB);
+                    program = fpga_setup::fpgaSetup(
+                        context.get(), {*usedDevice}, binary, sizeB);
+                } else {
+                    program =
+                        fpga_setup::fpgaSetup(context.get(), {*usedDevice},
+                                              &programSettings->kernelFileName);
+                }
             }
 
             executionSettings = std::unique_ptr<ExecutionSettings<TSettings>>(new ExecutionSettings<TSettings>(std::move(programSettings), std::move(usedDevice), 

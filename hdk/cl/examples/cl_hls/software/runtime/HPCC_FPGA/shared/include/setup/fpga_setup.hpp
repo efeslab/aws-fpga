@@ -127,6 +127,17 @@ Sets up the given FPGA with the kernel in the provided file.
 
 @param context The context used for the program
 @param program The devices used for the program
+@param binary The pointer to the binary data buffer
+@param sizeB The size of the binary in bytes
+@return The program that is used to create the benchmark kernels
+*/
+    std::unique_ptr<cl::Program>
+    fpgaSetup(const cl::Context *context, std::vector<cl::Device> deviceList,
+            const void *binary, size_t sizeB);
+
+/**
+@param context The context used for the program
+@param program The devices used for the program
 @param usedKernelFile The path to the kernel file
 @return The program that is used to create the benchmark kernels
 */
