@@ -2634,7 +2634,7 @@ module sh_bfm #(
         DMA_OP dop;
         static int byte_cnt[4];
         
-        for (int chan = 0; chan < 4; chan++) begin
+        for (int chan = 0; chan < 4; chan++) begin: c2h_data_dma_gen
           if((cl_sh_rd_data.size() > 0) && (c2h_dma_started[chan] != 1'b0)) begin
             if(chan == cl_sh_rd_data[0].id) begin
               dop = c2h_data_dma_list[chan].pop_front();            
@@ -2697,11 +2697,11 @@ module sh_bfm #(
          aligned_addr = 0;
          last_beat = 0;
 
-         for (int chan = 0; chan < 4; chan++) begin
+         for (int chan = 0; chan < 4; chan++) begin: c2h_dma_gen
            if ((c2h_dma_started[chan] != 1'b0) && (c2h_dma_list[chan].size() > 0)) begin
               dop = c2h_dma_list[chan].pop_front();
               if (dop.cl_addr[5:0] !== 6'h00) begin
-                 $fatal("Address in a CL->SH transfer should be aligned to 64 byte boundary");
+                 $fatal("Address %x in a CL->SH transfer should be aligned to 64 byte boundary", dop.cl_addr);
               end
               num_of_data_beats = ((dop.len + dop.cl_addr[5:0] - 1)/64) + 1;
               aligned_addr =  {dop.cl_addr[63:6], 6'h00};
