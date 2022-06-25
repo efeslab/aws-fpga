@@ -285,9 +285,12 @@ module dbg_print_rr_logging_bus_CW (
    rr_logging_bus_t validate_bus
 );
 int fd;
-parameter string DBG_FILE="tree.dbg.txt";
+`ifndef EXPORT_MERGE_TREE_INFO_FILE
+  `define EXPORT_MERGE_TREE_INFO_FILE tree.dbg.txt
+`endif
+parameter string FILE_PATH = `"`EXPORT_MERGE_TREE_INFO_FILE`";
 initial begin
-   fd = $fopen(DBG_FILE, "w");
+   fd = $fopen(FILE_PATH, "w");
    $fdisplay(fd, "%s,%d,%d,%d,%h,%h,%h", "record",
       record_bus.LOGB_CHANNEL_CNT, record_bus.LOGE_CHANNEL_CNT,
       $clog2(record_bus.FULL_WIDTH+1),
@@ -299,7 +302,7 @@ initial begin
       validate_bus.CHANNEL_WIDTHS,
       validate_bus.LOGB_CHANNEL_NAMES, validate_bus.LOGE_CHANNEL_NAMES);
    $fclose(fd);
-   $display("Please see %s for tree structure debugging info", DBG_FILE);
+   $display("Please see %s for tree structure debugging info", FILE_PATH);
    $finish;
 end
 endmodule
@@ -346,4 +349,48 @@ always_ff @(posedge clk)
       cnt <= 0;
    else if (valid && ready)
       cnt <= cnt + 1;
+endmodule
+
+// drop all axi transactions
+module axi_slv_blackhole (
+  rr_axi_bus_t.master outS
+);
+  assign outS.awready = 1;
+  assign outS.wready = 1;
+  assign outS.bvalid = 0;
+  assign outS.arready = 1;
+  assign outS.rvalid = 0;
+endmodule
+
+// drive silent axi master with no transactions
+module axi_mstr_whitehole (
+  rr_axi_bus_t.slave outM
+);
+  assign outM.awvalid = 0;
+  assign outM.wvalid = 0;
+  assign outM.bready = 1;
+  assign outM.arvalid = 0;
+  assign outM.rready = 1;
+endmodule
+
+// drop all axil transactions
+module axil_slv_blackhole (
+  rr_axi_lite_bus_t.master outS
+);
+  assign outS.awready = 1;
+  assign outS.wready = 1;
+  assign outS.bvalid = 0;
+  assign outS.arready = 1;
+  assign outS.rvalid = 0;
+endmodule
+
+// drive silent axil master with no transactions
+module axil_mstr_whitehole (
+  rr_axi_lite_bus_t.slave outM
+);
+  assign outM.awvalid = 0;
+  assign outM.wvalid = 0;
+  assign outM.bready = 1;
+  assign outM.arvalid = 0;
+  assign outM.rready = 1;
 endmodule

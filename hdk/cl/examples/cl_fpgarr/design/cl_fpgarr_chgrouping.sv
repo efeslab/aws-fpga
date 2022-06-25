@@ -139,3 +139,94 @@ generate
 endgenerate
 
 endmodule
+
+// drop any logging content
+module rr_logging_bus_blackhole (
+  rr_logging_bus_t.C in
+);
+  assign in.logb_almful_hi = 0;
+  assign in.logb_almful_lo = 0;
+endmodule
+
+// pass through (aka. rename) a logging_bus
+module rr_logging_bus_pt (
+  rr_logging_bus_t.C in,
+  rr_logging_bus_t.P out
+);
+  // parameter check
+  if (in.LOGB_CHANNEL_CNT != out.LOGB_CHANNEL_CNT)
+    $error("LOGB_CHANNEL_CNT mismatches: in %d, out %d\n",
+      in.LOGB_CHANNEL_CNT, out.LOGB_CHANNEL_CNT
+    );
+  if (in.LOGE_CHANNEL_CNT != out.LOGE_CHANNEL_CNT)
+    $error("LOGE_CHANNEL_CNT mismatches: in %d, out %d\n",
+      in.LOGE_CHANNEL_CNT, out.LOGE_CHANNEL_CNT
+    );
+  if (in.CHANNEL_WIDTHS != out.CHANNEL_WIDTHS)
+    $error("CHANNEL_WIDTHS mismatches: in %d, out %d\n",
+      in.CHANNEL_WIDTHS, out.CHANNEL_WIDTHS
+    );
+  if (in.LOGB_CHANNEL_NAMES != out.LOGB_CHANNEL_NAMES)
+    $error("LOGB_CHANNEL_NAMES mismatches");
+  if (in.LOGE_CHANNEL_NAMES != out.LOGE_CHANNEL_NAMES)
+    $error("LOGE_CHANNEL_NAMES mismatches");
+  for (genvar i = 0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin: logb
+    assign out.logb_valid[i] = in.logb_valid[i];
+  end
+  for (genvar i = 0; i < in.LOGE_CHANNEL_CNT; i=i+1) begin: loge
+    assign out.loge_valid[i] = in.loge_valid[i];
+  end
+  assign out.logb_data = in.logb_data;
+  assign in.logb_almful_hi = out.logb_almful_hi;
+  assign in.logb_almful_lo = out.logb_almful_lo;
+endmodule
+
+// drive fake replay data out of nowhere
+module rr_replay_bus_whitehole (
+  rr_replay_bus_t.P out
+);
+  for (genvar i = 0; i < out.LOGB_CHANNEL_CNT; i=i+1) begin: logb
+    assign out.valid[i] = 0;
+    assign out.logb_valid[i] = 0;
+    assign out.loge_valid[i] = 0;
+  end
+  for (genvar i = 0; i < out.NUM_AXI_INTF; i=i+1) begin: axi
+    assign out.rdyrply_valid[i] = 0;
+    assign out.rdyrply_loge_valid[i] = 0;
+  end
+  assign out.logb_data = 0;
+endmodule
+
+// pass through (aka. rename) a replay_bus
+module rr_replay_bus_pt (
+  rr_replay_bus_t.C in,
+  rr_replay_bus_t.P out
+);
+  // parameter check
+  if (in.LOGB_CHANNEL_CNT != out.LOGB_CHANNEL_CNT)
+    $error("LOGB_CHANNEL_CNT mismatches: in %d, out %d\n",
+      in.LOGB_CHANNEL_CNT, out.LOGB_CHANNEL_CNT
+    );
+  if (in.LOGE_CHANNEL_CNT != out.LOGE_CHANNEL_CNT)
+    $error("LOGE_CHANNEL_CNT mismatches: in %d, out %d\n",
+      in.LOGE_CHANNEL_CNT, out.LOGE_CHANNEL_CNT
+    );
+  if (in.CHANNEL_WIDTHS != out.CHANNEL_WIDTHS)
+    $error("CHANNEL_WIDTHS mismatches");
+  if (in.NUM_AXI_INTF != out.NUM_AXI_INTF)
+    $error("NUM_AXI_INTF mismatches: in %d, out %d\n",
+      in.NUM_AXI_INTF, out.NUM_AXI_INTF
+    );
+  for (genvar i = 0; i < in.LOGB_CHANNEL_CNT; i=i+1) begin: logb
+    assign out.valid[i] = in.valid[i];
+    assign out.logb_valid[i] = in.logb_valid[i];
+    assign out.loge_valid[i] = in.loge_valid[i];
+  end
+  for (genvar i = 0; i < in.NUM_AXI_INTF; i=i+1) begin: axi
+    assign out.rdyrply_valid[i] = in.rdyrply_valid[i];
+    assign out.rdyrply_loge_valid[i] = in.rdyrply_loge_valid[i];
+  end
+  assign out.logb_data = in.logb_data;
+  assign in.almful = out.almful;
+  assign in.rdyrply_almful = out.rdyrply_almful;
+endmodule

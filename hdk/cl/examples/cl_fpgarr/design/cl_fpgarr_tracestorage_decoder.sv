@@ -339,6 +339,11 @@ localparam PACKET_ALIGNMENT_WIDTH = $clog2(PACKET_ALIGNMENT);
 localparam ALIGNED_OFFSET_WIDTH = OFFSET_WIDTH - PACKET_ALIGNMENT_WIDTH;
 localparam AXI_ALIGNED_WIDTH = AXI_WIDTH / PACKET_ALIGNMENT;
 localparam AXI_ALIGNED_OFFSET_WIDTH = AXI_OFFSET_WIDTH - PACKET_ALIGNMENT_WIDTH;
+// introduced for AXI_OFFSET_WIDTH >= OFFSET_WIDTH
+localparam SAFE_OFFSET_WIDTH = (AXI_OFFSET_WIDTH >= OFFSET_WIDTH) ?
+                               AXI_OFFSET_WIDTH + 1 :
+                               OFFSET_WIDTH;
+localparam SAFE_ALIGNED_OFFSET_WIDTH = SAFE_OFFSET_WIDTH - PACKET_ALIGNMENT_WIDTH;
 
 // parameter check
 generate
@@ -346,8 +351,14 @@ generate
         $error("WIDTH mismatch: OFFSET_WIDTH %d, LOGGING_UNIT_WIDTH %d\n",
             OFFSET_WIDTH, LOGGING_UNIT_WIDTH);
     // one assumption is that the logging unit is longer than an AXI transfer
+    // note that the following check was changed from an $error to $warning
+    // because I want to do a resource overhead sweeping over configurable axi
+    // interfaces to track.
+    // When only small interfaces (e.g. sda, ocl, bar1) are tracked, the
+    // following check will fail but I do not need to actually run those
+    // configs.
     if (AXI_OFFSET_WIDTH >= OFFSET_WIDTH)
-        $error("Invalid AXI_OFFSET_WIDTH %d OR Invalid OFFSET_WIDTH %d\n",
+        $warning("Invalid AXI_OFFSET_WIDTH %d OR Invalid OFFSET_WIDTH %d\n",
             AXI_OFFSET_WIDTH, OFFSET_WIDTH);
     if ((LOGGING_UNIT_WIDTH % PACKET_ALIGNMENT) != 0)
         $error("Invalid alignment: LOGGING_UNIT_WIDTH %d, PACKET_ALIGNMENT %d\n",
@@ -423,7 +434,7 @@ assign lo_out_data = shift_buf_aligned[lo_valid_off_bugfix +: AXI_ALIGNED_WIDTH]
 // 2. LO_BODY (from a register)
 // NOTE that in the following usage, lo_remain_len is only used when lo_out,
 // which guarantees lo_remain_len has valid data.
-logic [ALIGNED_OFFSET_WIDTH-1:0] lo_remain_len;
+logic [SAFE_ALIGNED_OFFSET_WIDTH-1:0] lo_remain_len;
 // lo_exhaust means all (valid) LO data has been transmitted to the ASM buffer
 // lo_exhaust is only valid when lo_out
 //
@@ -435,7 +446,7 @@ logic [ALIGNED_OFFSET_WIDTH-1:0] lo_remain_len;
 //
 // To prevent integer addition overflow, I cast both of them to higher widths.
 localparam EXHAUST_CHECK_WIDTH =
-   ALIGNED_OFFSET_WIDTH + AXI_ALIGNED_OFFSET_WIDTH;
+   SAFE_ALIGNED_OFFSET_WIDTH + AXI_ALIGNED_OFFSET_WIDTH;
 logic lo_exhaust;
 assign lo_exhaust =
     (EXHAUST_CHECK_WIDTH'(lo_remain_len) + EXHAUST_CHECK_WIDTH'(lo_valid_off))

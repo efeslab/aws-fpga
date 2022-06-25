@@ -14,7 +14,6 @@ file copy -force $CL_FPGARR_ROOT/design/transkidbuf_pipeline.sv            $TARG
 file copy -force $CL_FPGARR_ROOT/design/axichannel_logger.sv               $TARGET_DIR
 file copy -force $CL_FPGARR_ROOT/design/axichannel_replayer.sv             $TARGET_DIR
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_packing.sv               $TARGET_DIR
-file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_packing_cfg.svh          $TARGET_DIR
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_happenbefore_encoder.sv  $TARGET_DIR
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_csrs.sv                  $TARGET_DIR
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_tracedecoder.sv          $TARGET_DIR
@@ -22,6 +21,12 @@ file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_chgrouping.sv            $TARG
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_rr_sel.sv                $TARGET_DIR
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_rt_loge_crossbar.sv      $TARGET_DIR
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_int_to_pcim.sv           $TARGET_DIR
+## auto-generated files
+file copy -force $CL_FPGARR_ROOT/design/gen/cl_fpgarr_packing_cfg.svh      $TARGET_DIR
+file copy -force $CL_FPGARR_ROOT/design/gen/cl_fpgarr_autogroup_cfg.svh    $TARGET_DIR
+file copy -force $CL_FPGARR_ROOT/design/gen/cl_fpgarr_autogroup_record.svh $TARGET_DIR
+file copy -force $CL_FPGARR_ROOT/design/gen/cl_fpgarr_autogroup_validate.svh $TARGET_DIR
+file copy -force $CL_FPGARR_ROOT/design/gen/cl_fpgarr_autoungroup_replay.svh $TARGET_DIR
 ## fpgarr tracestorage files
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_tracestorage_axi.sv      $TARGET_DIR
 file copy -force $CL_FPGARR_ROOT/design/cl_fpgarr_tracestorage_wrapper.sv  $TARGET_DIR

@@ -11,6 +11,11 @@
 // the autogeneration script (treegen.py)
 // 6. TEST_REPLAY: Connect record trace writeback directly to replay trace
 // readback. Used in test_rr_parse_replay_trace unit test.
+// 7. EXPORT_MERGE_TREE_INFO: Export the leaf nodes of the merge tree. These
+// info will be used to auto-gen the merge tree structure via the script
+// `cl_fpgarr_treegen.py`
+// 8. EXPORT_MERGE_TREE_INFO_FILE: Specify the output file of the tree info.
+// (default is 'tree.info.txt')
 ////////////////////////////////////////////////////////////////////////////////
 // register pipeline related configuration
 parameter RECORDER_PIPE_DEPTH=4;
@@ -468,7 +473,9 @@ package AWSF1_INTF_RRCFG;
   parameter int LOGE_PER_AXI = 5;
   // The order of the PLACEMENT_VEC is determined by the above INTF_ORDER
   // which is in turn from the merged_logging_bus: sda ocl bar1 pcim pcis
-  parameter int PLACEMENT_VEC[NUM_INTF-1:0] = '{
+  // NOTE: this is currently moved to scripts/cl_fpgarr_autogrouping.py in hope
+  // of avoiding xilinx segfault
+  parameter int PLACEMENT_VEC[0:NUM_INTF-1] = '{
     1, // sda
     1, // ocl
     0, // bar1

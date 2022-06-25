@@ -205,6 +205,12 @@ parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
     .CHANNEL_WIDTHS({outB.CHANNEL_WIDTHS, outA.CHANNEL_WIDTHS}), \
     .LOGE_CHANNEL_CNT(outA.LOGE_CHANNEL_CNT), \
     .NUM_AXI_INTF(outA.NUM_AXI_INTF + outB.NUM_AXI_INTF)) name()
+`define REPLAY_BUS_DUP(src, dup) \
+  rr_replay_bus_t #( \
+    .LOGB_CHANNEL_CNT(src.LOGB_CHANNEL_CNT), \
+    .CHANNEL_WIDTHS(src.CHANNEL_WIDTHS), \
+    .LOGE_CHANNEL_CNT(src.LOGE_CHANNEL_CNT), \
+    .NUM_AXI_INTF(src.NUM_AXI_INTF)) dup()
 `define AXI_MSTR_REPLAY_BUS(name, NLOGE) \
   rr_replay_bus_t #( \
     .LOGB_CHANNEL_CNT(3), \

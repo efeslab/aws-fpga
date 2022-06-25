@@ -1,6 +1,7 @@
 `include "cl_fpgarr_defs.svh"
 `include "cl_fpgarr_types.svh"
 `include "cl_fpgarr_packing_cfg.svh"
+`include "cl_fpgarr_autogroup_cfg.svh"
 
 `ifndef CL_NAME
 `define CL_NAME unnamed_top_module
@@ -230,9 +231,11 @@ axil_recorder bar1_bus_recorder (
 ////////////////////////////////////////////////////////////////////////////////
 // Pack the SH2CL logging bus (for replay)
 ////////////////////////////////////////////////////////////////////////////////
-// the merging tree of rr_logging_bus_t
-// Note that there is a benefit to postpone the merge of wide buses.
-// This kind of optimization is handled in top_group.
+// An example of the channel grouping tree for rr_logging_bus_t
+// Other channel (un)grouping trees follow a similar pattern.
+// Channel (un)grouping trees are very simple, as they only consist of wires
+// with the goal of concatenating individual buses to a wider bus.
+//
 //         merged bus
 //              |
 //          *-- top ---*
@@ -243,34 +246,38 @@ axil_recorder bar1_bus_recorder (
 //   /  \     / \      |
 //  /    \   /   \     |
 // sda  ocl bar1 pcim pcis
+// 
+// Note that the packing tree later also has a merging tree structure, but there
+// features channel shuffling (to benefit from delaying the merge of wide buses)
+// and compressing.
 //////////////////////////
-`UNPACKED_LOGGING_BUS_GROUP2(
-  p0, rr_sda_SH2CL_logging_bus, rr_ocl_SH2CL_logging_bus);
-`UNPACKED_LOGGING_BUS_GROUP2(
-  p1, rr_bar1_SH2CL_logging_bus, rr_pcim_SH2CL_logging_bus);
-`UNPACKED_LOGGING_BUS_GROUP2(p2, p0, p1);
-`UNPACKED_LOGGING_BUS_GROUP2(
-  merged_SH2CL_logging_bus, p2, rr_dma_pcis_SH2CL_logging_bus);
+`include "cl_fpgarr_autogroup_record.svh"
+// the above header will define a new `merged_SH2CL_logging_bus` for later use
 `LOGGING_BUS_DUP(merged_SH2CL_logging_bus, unpacked_record_bus);
 rr_logging_bus_switch record_switch (
   .en(rr_mode_csr.recordEn),
   .in(merged_SH2CL_logging_bus),
   .out(unpacked_record_bus)
 );
+
 // the merging tree of the rr_packed_logging_bus_t is automatically generated
 `LOGGING_BUS_UNPACK2PACK(unpacked_record_bus, packed_logging_bus);
-rr_logging_bus_unpack2pack #(
-  .MERGE_TREE_HEIGHT(record_pkg::MERGE_TREE_HEIGHT),
-  .MERGE_TREE_MAX_NODES(record_pkg::MERGE_TREE_MAX_NODES),
-  .NODES_PER_LAYER(record_pkg::NODES_PER_LAYER),
-  .MERGE_PLAN(record_pkg::MERGE_PLAN),
-  .NAME("record_merge_tree")
-) top_record_group (
-  .clk(clk),
-  .rstn(rstn),
-  .in(unpacked_record_bus),
-  .out(packed_logging_bus)
-);
+`ifndef EXPORT_MERGE_TREE_INFO
+  // skip packing tree generation when exporting tree info, as the packing
+  // configurations are not yet ready.
+  rr_logging_bus_unpack2pack #(
+    .MERGE_TREE_HEIGHT(record_pkg::MERGE_TREE_HEIGHT),
+    .MERGE_TREE_MAX_NODES(record_pkg::MERGE_TREE_MAX_NODES),
+    .NODES_PER_LAYER(record_pkg::NODES_PER_LAYER),
+    .MERGE_PLAN(record_pkg::MERGE_PLAN),
+    .NAME("record_merge_tree")
+  ) top_record_group (
+    .clk(clk),
+    .rstn(rstn),
+    .in(unpacked_record_bus),
+    .out(packed_logging_bus)
+  );
+`endif
 `PACKED_LOGGING_BUS_TO_WBBUS(packed_logging_bus, record_bus);
 rr_packed2writeback_bus #(
   .MERGE_TREE_HEIGHT(record_pkg::MERGE_TREE_HEIGHT)
@@ -286,13 +293,8 @@ rr_packed2writeback_bus #(
 ////////////////////////////////////////////////////////////////////////////////
 // Pack the CL2SH logging bus (for output validation)
 ////////////////////////////////////////////////////////////////////////////////
-`UNPACKED_LOGGING_BUS_GROUP2(
-  pv0, rr_sda_CL2SH_logging_bus, rr_ocl_CL2SH_logging_bus);
-`UNPACKED_LOGGING_BUS_GROUP2(
-  pv1, rr_bar1_CL2SH_logging_bus, rr_pcim_CL2SH_logging_bus);
-`UNPACKED_LOGGING_BUS_GROUP2(pv2, pv0, pv1);
-`UNPACKED_LOGGING_BUS_GROUP2(
-  merged_CL2SH_logging_bus, pv2, rr_dma_pcis_CL2SH_logging_bus);
+`include "cl_fpgarr_autogroup_validate.svh"
+// the above header will define a new `merged_CL2SH_logging_bus` for later use
 `LOGGING_BUS_DUP(merged_CL2SH_logging_bus, unpacked_validate_bus);
 rr_logging_bus_switch validate_switch (
   .en(rr_mode_csr.outputValidateEn),
@@ -300,25 +302,24 @@ rr_logging_bus_switch validate_switch (
   .out(unpacked_validate_bus)
 );
 
-`ifdef DEBUG_MERGE_TREE_STRUCTURE
-// WARN: You need to run the simulation (for a short time) to see the results
-dbg_print_rr_logging_bus_CW
-  dbg_tree_structure (unpacked_record_bus, unpacked_validate_bus);
-`endif
 // the merging tree of the rr_packed_logging_bus_t is automatically generated
 `LOGGING_BUS_UNPACK2PACK(unpacked_validate_bus, packed_validate_bus);
-rr_logging_bus_unpack2pack #(
-  .MERGE_TREE_HEIGHT(validate_pkg::MERGE_TREE_HEIGHT),
-  .MERGE_TREE_MAX_NODES(validate_pkg::MERGE_TREE_MAX_NODES),
-  .NODES_PER_LAYER(validate_pkg::NODES_PER_LAYER),
-  .MERGE_PLAN(validate_pkg::MERGE_PLAN),
-  .NAME("validate_merge_tree")
-) top_validate_group (
-  .clk(clk),
-  .rstn(rstn),
-  .in(unpacked_validate_bus),
-  .out(packed_validate_bus)
-);
+`ifndef EXPORT_MERGE_TREE_INFO
+  // skip packing tree generation when exporting tree info, as the packing
+  // configurations are not yet ready.
+  rr_logging_bus_unpack2pack #(
+    .MERGE_TREE_HEIGHT(validate_pkg::MERGE_TREE_HEIGHT),
+    .MERGE_TREE_MAX_NODES(validate_pkg::MERGE_TREE_MAX_NODES),
+    .NODES_PER_LAYER(validate_pkg::NODES_PER_LAYER),
+    .MERGE_PLAN(validate_pkg::MERGE_PLAN),
+    .NAME("validate_merge_tree")
+  ) top_validate_group (
+    .clk(clk),
+    .rstn(rstn),
+    .in(unpacked_validate_bus),
+    .out(packed_validate_bus)
+  );
+`endif
 `PACKED_LOGGING_BUS_TO_WBBUS(packed_validate_bus, validate_bus);
 rr_packed2writeback_bus #(
   .MERGE_TREE_HEIGHT(validate_pkg::MERGE_TREE_HEIGHT)
@@ -332,11 +333,24 @@ rr_packed2writeback_bus #(
 );
 
 ////////////////////////////////////////////////////////////////////////////////
+// (Debugging) Exporting the packing merge tree structure to a file
+// This is to generate the merging plans and this is supposed to run in
+// simulation
+////////////////////////////////////////////////////////////////////////////////
+`ifdef EXPORT_MERGE_TREE_INFO
+  // WARN: You need to run the simulation (for a short time) to see the results
+  dbg_print_rr_logging_bus_CW
+    dbg_tree_structure (unpacked_record_bus, unpacked_validate_bus);
+`endif
+////////////////////////////////////////////////////////////////////////////////
 // Unpack the replay bus
 ////////////////////////////////////////////////////////////////////////////////
 localparam LOGE_PER_AXI = AWSF1_INTF_RRCFG::LOGE_PER_AXI;
-localparam AWSF1_NUM_INTERFACES = AWSF1_INTF_RRCFG::NUM_INTF;
-parameter int REPLAY_NLOGE = LOGE_PER_AXI * AWSF1_NUM_INTERFACES;
+if (RR_NUM_TRACKED_AXI > AWSF1_INTF_RRCFG::NUM_INTF)
+  $error("Invalid number of interfaces traced by RR: %d (max %d)\n",
+    RR_NUM_TRACKED_AXI, AWSF1_INTF_RRCFG::NUM_INTF
+  );
+parameter int REPLAY_NLOGE = LOGE_PER_AXI * RR_NUM_TRACKED_AXI;
 // Declare the rr_replay_bus for all channels
 `AXI_SLV_REPLAY_BUS(rr_pcim_replay_bus, REPLAY_NLOGE);
 `AXI_MSTR_REPLAY_BUS(rr_dma_pcis_replay_bus, REPLAY_NLOGE);
@@ -344,24 +358,8 @@ parameter int REPLAY_NLOGE = LOGE_PER_AXI * AWSF1_NUM_INTERFACES;
 `AXIL_MSTR_REPLAY_BUS(rr_ocl_replay_bus, REPLAY_NLOGE);
 `AXIL_MSTR_REPLAY_BUS(rr_bar1_replay_bus, REPLAY_NLOGE);
 // This is just a reverse of the above rr_logging_bus_t merging tree
-`REPLAY_BUS_JOIN2(rp0, rr_sda_replay_bus, rr_ocl_replay_bus);
-rr_replay_bus_ungroup2 p0_ungroup(
-  .in(rp0),
-  .outA(rr_sda_replay_bus),
-  .outB(rr_ocl_replay_bus)
-);
-`REPLAY_BUS_JOIN2(rp1, rr_bar1_replay_bus, rr_pcim_replay_bus);
-rr_replay_bus_ungroup2 p1_ungroup(
-  .in(rp1),
-  .outA(rr_bar1_replay_bus),
-  .outB(rr_pcim_replay_bus)
-);
-`REPLAY_BUS_JOIN2(rp2, rp0, rp1);
-rr_replay_bus_ungroup2 p2_ungroup(.in(rp2), .outA(rp0), .outB(rp1));
-`REPLAY_BUS_JOIN2(unpacked_replay_bus, rp2, rr_dma_pcis_replay_bus);
-rr_replay_bus_ungroup2 top_ungroup(
-  .in(unpacked_replay_bus),
-  .outA(rp2), .outB(rr_dma_pcis_replay_bus));
+`include "cl_fpgarr_autoungroup_replay.svh"
+// the above header will define a new `unpacked_replay_bus` for later use
 
 assign rr_state_csr_next.rt.almful.replay_bus.almful = unpacked_replay_bus.almful;
 assign rr_state_csr_next.rt.almful.replay_bus.rdyrply_almful = unpacked_replay_bus.rdyrply_almful;
@@ -381,95 +379,135 @@ import AWSF1_INTF_RRCFG::BAR1;
 // Note that this is a logical aggregation, not a physically aggregation.
 // The loge_valid of each channel should still stay close to each interface and
 // get distributed via the crossbar
-logic [LOGE_PER_AXI-1:0] rt_loge_valid_agg [AWSF1_NUM_INTERFACES-1:0];
+logic [LOGE_PER_AXI-1:0] rt_loge_valid_agg [RR_NUM_TRACKED_AXI-1:0];
 // The distributed realtime loge_valid of all channels. The logically aggregated
 // loge_valid above will go through a crossbar and get distributed to all
 // channels.
-logic [AWSF1_NUM_INTERFACES-1:0] [LOGE_PER_AXI-1:0]
-  rt_loge_valid_dist [AWSF1_NUM_INTERFACES-1:0];
+logic [RR_NUM_TRACKED_AXI-1:0] [LOGE_PER_AXI-1:0]
+  rt_loge_valid_dist [RR_NUM_TRACKED_AXI-1:0];
 
 // PCIM bus
 rr_axi_bus_t pcim_replay_axi_bus();
-axi_slv_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, PCIM,
-  /*DBG_B*/ 1, /*DBG_R*/ 1, /*DBG_RDY*/ 1)
-  pcim_bus_replayer (
-  .clk(clk), .sync_rst_n(rstn),
-  .rbus(rr_pcim_replay_bus),
-  .outS(pcim_replay_axi_bus),
-  .i_rt_loge_valid(rt_loge_valid_dist[PCIM]),
-  .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.pcim_replayer),
-  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.pcim_replayer)
-);
+localparam PCIM_LOGE_INTF_IDX = RR_TRACKED_LOGE_INTF_IDX[PCIM];
+if (PCIM_LOGE_INTF_IDX != -1) begin: pcim_rply
+  axi_slv_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI, PCIM_LOGE_INTF_IDX,
+    /*DBG_B*/ 1, /*DBG_R*/ 1, /*DBG_RDY*/ 1)
+    pcim_bus_replayer (
+    .clk(clk), .sync_rst_n(rstn),
+    .rbus(rr_pcim_replay_bus),
+    .outS(pcim_replay_axi_bus),
+    .i_rt_loge_valid(rt_loge_valid_dist[PCIM_LOGE_INTF_IDX]),
+    .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.pcim_replayer),
+    .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.pcim_replayer)
+  );
+end else begin: pcim_rply
+  axi_slv_blackhole bh(pcim_replay_axi_bus);
+end
+
 // PCIS bus
 rr_axi_bus_t pcis_replay_axi_bus();
-axi_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, PCIS,
-  /*DBG_AW*/ 0, /*DBG_W*/ 0, /*DBG_AR*/ 0, /*DBG_RDY*/ 1)
-  pcis_bus_replayer (
-  .clk(clk), .sync_rst_n(rstn),
-  .rbus(rr_dma_pcis_replay_bus),
-  .outM(pcis_replay_axi_bus),
-  .i_rt_loge_valid(rt_loge_valid_dist[PCIS]),
-  .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.pcis_replayer),
-  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.pcis_replayer)
-);
+localparam PCIS_LOGE_INTF_IDX = RR_TRACKED_LOGE_INTF_IDX[PCIS];
+if (PCIS_LOGE_INTF_IDX != -1) begin: pcis_rply
+  axi_mstr_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI, PCIS_LOGE_INTF_IDX,
+    /*DBG_AW*/ 0, /*DBG_W*/ 0, /*DBG_AR*/ 0, /*DBG_RDY*/ 1)
+    pcis_bus_replayer (
+    .clk(clk), .sync_rst_n(rstn),
+    .rbus(rr_dma_pcis_replay_bus),
+    .outM(pcis_replay_axi_bus),
+    .i_rt_loge_valid(rt_loge_valid_dist[PCIS_LOGE_INTF_IDX]),
+    .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.pcis_replayer),
+    .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.pcis_replayer)
+  );
+end else begin: pcis_rply
+  axi_mstr_whitehole wh(pcis_replay_axi_bus);
+end
+
 // SDA bus
 rr_axi_lite_bus_t sda_replay_axil_bus();
-axil_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, SDA)
-  sda_bus_replayer (
-  .clk(clk), .sync_rst_n(rstn),
-  .rbus(rr_sda_replay_bus),
-  .outM(sda_replay_axil_bus),
-  .i_rt_loge_valid(rt_loge_valid_dist[SDA]),
-  .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.sda_replayer),
-  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.sda_replayer)
-);
+localparam SDA_LOGE_INTF_IDX = RR_TRACKED_LOGE_INTF_IDX[SDA];
+if (SDA_LOGE_INTF_IDX != -1) begin: sda_rply
+  axil_mstr_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI, SDA_LOGE_INTF_IDX)
+    sda_bus_replayer (
+    .clk(clk), .sync_rst_n(rstn),
+    .rbus(rr_sda_replay_bus),
+    .outM(sda_replay_axil_bus),
+    .i_rt_loge_valid(rt_loge_valid_dist[SDA_LOGE_INTF_IDX]),
+    .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.sda_replayer),
+    .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.sda_replayer)
+  );
+end else begin: sda_rply
+  axil_mstr_whitehole wh(sda_replay_axil_bus);
+end
+
 // OCL bus
 rr_axi_lite_bus_t ocl_replay_axil_bus();
-axil_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, OCL)
-  ocl_bus_replayer (
-  .clk(clk), .sync_rst_n(rstn),
-  .rbus(rr_ocl_replay_bus),
-  .outM(ocl_replay_axil_bus),
-  .i_rt_loge_valid(rt_loge_valid_dist[OCL]),
-  .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.ocl_replayer),
-  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.ocl_replayer)
-);
+localparam OCL_LOGE_INTF_IDX = RR_TRACKED_LOGE_INTF_IDX[OCL];
+if (OCL_LOGE_INTF_IDX != -1) begin: ocl_rply
+  axil_mstr_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI, OCL_LOGE_INTF_IDX)
+    ocl_bus_replayer (
+    .clk(clk), .sync_rst_n(rstn),
+    .rbus(rr_ocl_replay_bus),
+    .outM(ocl_replay_axil_bus),
+    .i_rt_loge_valid(rt_loge_valid_dist[OCL_LOGE_INTF_IDX]),
+    .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.ocl_replayer),
+    .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.ocl_replayer)
+  );
+end else begin: ocl_rply
+  axil_mstr_whitehole wh(ocl_replay_axil_bus);
+end
+
 // BAR1 bus
 rr_axi_lite_bus_t bar1_replay_axil_bus();
-axil_mstr_replayer #(AWSF1_NUM_INTERFACES, LOGE_PER_AXI, BAR1)
-  bar1_bus_replayer (
-  .clk(clk), .sync_rst_n(rstn),
-  .rbus(rr_bar1_replay_bus),
-  .outM(bar1_replay_axil_bus),
-  .i_rt_loge_valid(rt_loge_valid_dist[BAR1]),
-  .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.bar1_replayer),
-  .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.bar1_replayer)
-);
+localparam BAR1_LOGE_INTF_IDX = RR_TRACKED_LOGE_INTF_IDX[BAR1];
+if (BAR1_LOGE_INTF_IDX != -1) begin: bar1_rply
+  axil_mstr_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI, BAR1_LOGE_INTF_IDX)
+    bar1_bus_replayer (
+    .clk(clk), .sync_rst_n(rstn),
+    .rbus(rr_bar1_replay_bus),
+    .outM(bar1_replay_axil_bus),
+    .i_rt_loge_valid(rt_loge_valid_dist[BAR1_LOGE_INTF_IDX]),
+    .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.bar1_replayer),
+    .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.bar1_replayer)
+  );
+end else begin: bar1_rply
+  axil_mstr_whitehole wh(bar1_replay_axil_bus);
+end
+
 // the distribution crossbar
-rr_axi_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_pcim (
-  .in(rr_irq_pcim_bus),
-  .o_rt_loge_valid(rt_loge_valid_agg[PCIM])
-);
-rr_axi_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_pcis (
-  .in(rr_dma_pcis_bus),
-  .o_rt_loge_valid(rt_loge_valid_agg[PCIS])
-);
-rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_sda (
-  .in(rr_sda_bus),
-  .o_rt_loge_valid(rt_loge_valid_agg[SDA])
-);
-rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_ocl (
-  .in(rr_ocl_bus),
-  .o_rt_loge_valid(rt_loge_valid_agg[OCL])
-);
-rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_bar1 (
-  .in(rr_bar1_bus),
-  .o_rt_loge_valid(rt_loge_valid_agg[BAR1])
-);
+if (PCIM_LOGE_INTF_IDX != -1) begin
+  rr_axi_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_pcim (
+    .in(rr_irq_pcim_bus),
+    .o_rt_loge_valid(rt_loge_valid_agg[PCIM_LOGE_INTF_IDX])
+  );
+end
+if (PCIS_LOGE_INTF_IDX != -1) begin
+  rr_axi_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_pcis (
+    .in(rr_dma_pcis_bus),
+    .o_rt_loge_valid(rt_loge_valid_agg[PCIS_LOGE_INTF_IDX])
+  );
+end
+if (SDA_LOGE_INTF_IDX != -1) begin
+  rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_sda (
+    .in(rr_sda_bus),
+    .o_rt_loge_valid(rt_loge_valid_agg[SDA_LOGE_INTF_IDX])
+  );
+end
+if (OCL_LOGE_INTF_IDX != -1) begin
+  rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_ocl (
+    .in(rr_ocl_bus),
+    .o_rt_loge_valid(rt_loge_valid_agg[OCL_LOGE_INTF_IDX])
+  );
+end
+if (BAR1_LOGE_INTF_IDX != -1) begin
+  rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_bar1 (
+    .in(rr_bar1_bus),
+    .o_rt_loge_valid(rt_loge_valid_agg[BAR1_LOGE_INTF_IDX])
+  );
+end
 rr_rt_loge_crossbar #(
   .LOGE_PER_INTERFACE(LOGE_PER_AXI),
-  .NUM_INTERFACES(AWSF1_NUM_INTERFACES),
-  .PLACEMENT_VEC(AWSF1_INTF_RRCFG::PLACEMENT_VEC)
+  .NUM_INTERFACES(RR_NUM_TRACKED_AXI),
+  .PLACEMENT_VEC(RR_TRACKED_AXI_PLACEMENT_VEC)
 ) rt_loge_crossbar (
   .clk(clk), .rstn(rstn),
   .rt_loge_in(rt_loge_valid_agg),
@@ -553,33 +591,38 @@ rr_stream_bus_t #(.FULL_WIDTH(record_bus.FULL_WIDTH)) packed_replay_bus();
 logic storage_backend_irq_req, storage_backend_irq_ack;
 assign storage_backend_irq_ack = sh_cl_apppf_irq_ack[15];
 
-rr_storage_backend_axi #(
-  .LOGB_CHANNEL_CNT(unpacked_record_bus.LOGB_CHANNEL_CNT),
-  .CHANNEL_WIDTHS(unpacked_record_bus.CHANNEL_WIDTHS),
-  .LOGE_CHANNEL_CNT(unpacked_record_bus.LOGE_CHANNEL_CNT)
-) trace_storage (
-  .clk(clk), .rstn(rstn),
-  .storage_backend_bus(rr_storage_bus),
-  .validate_wb_bus(rr_validation_bus),
-  .record_bus(record_bus),
-  .replay_bus(packed_replay_bus),
-  .validate_bus(validate_bus),
-  .csr(storage_axi_write_csr),
-  .counter(storage_axi_read_csr),
-  .storage_backend_irq_ack,
-  .storage_backend_irq_req
-);
+`ifndef EXPORT_MERGE_TREE_INFO
+  // Skip the storage backend and tracedecoder because they rely on a valid
+  // packing merge tree configuration to generate code correctly.
+  // When exporting tree info, the packing configurations are not yet ready.
+  rr_storage_backend_axi #(
+    .LOGB_CHANNEL_CNT(unpacked_record_bus.LOGB_CHANNEL_CNT),
+    .CHANNEL_WIDTHS(unpacked_record_bus.CHANNEL_WIDTHS),
+    .LOGE_CHANNEL_CNT(unpacked_record_bus.LOGE_CHANNEL_CNT)
+  ) trace_storage (
+    .clk(clk), .rstn(rstn),
+    .storage_backend_bus(rr_storage_bus),
+    .validate_wb_bus(rr_validation_bus),
+    .record_bus(record_bus),
+    .replay_bus(packed_replay_bus),
+    .validate_bus(validate_bus),
+    .csr(storage_axi_write_csr),
+    .counter(storage_axi_read_csr),
+    .storage_backend_irq_ack,
+    .storage_backend_irq_req
+  );
 
-rr_tracedecoder #(
-  .MERGE_TREE_HEIGHT(record_pkg::MERGE_TREE_HEIGHT),
-  .MERGE_TREE_MAX_NODES(record_pkg::MERGE_TREE_MAX_NODES),
-  .NODES_PER_LAYER(record_pkg::NODES_PER_LAYER),
-  .MERGE_PLAN(record_pkg::MERGE_PLAN)
-) top_decoder (
-  .clk(clk), .rstn(rstn),
-  .packed_replay_bus(packed_replay_bus),
-  .replay_bus(unpacked_replay_bus)
-);
+  rr_tracedecoder #(
+    .MERGE_TREE_HEIGHT(record_pkg::MERGE_TREE_HEIGHT),
+    .MERGE_TREE_MAX_NODES(record_pkg::MERGE_TREE_MAX_NODES),
+    .NODES_PER_LAYER(record_pkg::NODES_PER_LAYER),
+    .MERGE_PLAN(record_pkg::MERGE_PLAN)
+  ) top_decoder (
+    .clk(clk), .rstn(rstn),
+    .packed_replay_bus(packed_replay_bus),
+    .replay_bus(unpacked_replay_bus)
+  );
+`endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
