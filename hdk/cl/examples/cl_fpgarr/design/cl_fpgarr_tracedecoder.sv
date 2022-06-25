@@ -120,9 +120,8 @@ parameter LOGB_DATA_WIDTH = GET_LOGB_DATA_WIDTH();
 localparam LOGE_CHANNEL_CNT = replay_bus.LOGE_CHANNEL_CNT;
 if (LOGB_CHANNEL_CNT + LOGE_CHANNEL_CNT + LOGB_DATA_WIDTH !=
     packed_replay_bus.FULL_WIDTH)
-  $error("Trace Decode FULL_WIDTH mismatch: logb W%d, loge W%d, ",
+  $error("Trace Decode FULL_WIDTH mismatch: logb W%d, loge W%d, logb_data W%d, packed_replay_bus W%d\n",
          LOGB_CHANNEL_CNT, LOGE_CHANNEL_CNT,
-         "logb_data W%d, packed_replay_bus W%d\n",
          LOGB_DATA_WIDTH, packed_replay_bus.FULL_WIDTH);
 
 ////////////////////////////////////////////////////////////////////////////////

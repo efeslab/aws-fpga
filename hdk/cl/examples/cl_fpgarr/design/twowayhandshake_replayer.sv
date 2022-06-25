@@ -206,9 +206,8 @@ for (genvar i=0; i < LOGE_CHANNEL_CNT; i=i+1) begin: rt_loge_cnt_gen
 end
 
 // Maintain replay packet counter
-genvar i;
 generate
-  for (i=0; i < LOGE_CHANNEL_CNT; i=i+1)
+  for (genvar i=0; i < LOGE_CHANNEL_CNT; i=i+1)
     assign loge_cnt_next[i] = loge_cnt[i] + loge_valid[i];
 endgenerate
 always @(posedge clk)

@@ -1,4 +1,5 @@
 `include "cl_fpgarr_defs.svh"
+`include "cl_fpgarr_packing_cfg.svh"
 
 // There should be a single storage backend module.
 // It is configured via an AXI Lite bus.

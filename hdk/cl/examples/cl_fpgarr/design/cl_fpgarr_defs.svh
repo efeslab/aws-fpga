@@ -7,8 +7,8 @@
 // simulation and synthesis
 // 3. SIMULATION_AVOID_X: enforce alignment padding to be all zero in simulation
 // 4. WRITEBACK_DEBUG: print out record and validate writeback in simulation
-// 5. DEBUG_MERGE_TREE_STRUCTURE: print out merge tree structure to be used in
-// the autogeneration script (treegen.py)
+// 5. DEBUG_MERGE_TREE_STRUCTURE: print out verbose merge tree structure
+// details, normally used to debug the sv-part of the treegen.
 // 6. TEST_REPLAY: Connect record trace writeback directly to replay trace
 // readback. Used in test_rr_parse_replay_trace unit test.
 // 7. EXPORT_MERGE_TREE_INFO: Export the leaf nodes of the merge tree. These
