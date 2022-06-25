@@ -117,3 +117,8 @@ patches/*
 *.out
 *.dump
 *.elf
+
+# Synthesis and simulation related files
+DVEfiles
+iter*CongestedCLBsAndNets.txt
+tight_setup_hold_pins.txt
