@@ -173,10 +173,8 @@ parameter AXIL_RR_SLV_WIDTH = AXIL_RR_B_WIDTH + AXIL_RR_R_WIDTH;
     /*{MSB, LSB }*/                                                            \
     .CHANNEL_WIDTHS({inB.CHANNEL_WIDTHS, inA.CHANNEL_WIDTHS}),                 \
     .LOGE_CHANNEL_CNT(inA.LOGE_CHANNEL_CNT + inB.LOGE_CHANNEL_CNT),            \
-    .LOGB_CHANNEL_NAMES({inB.LOGB_CHANNEL_NAMES, inA.LOGB_CHANNEL_NAMES}),    \
-    /*{inB.LOGB_CHANNEL_NAMES, inA.LOGB_CHANNEL_NAMES}), */ \
-    .LOGE_CHANNEL_NAMES({inB.LOGE_CHANNEL_NAMES, inA.LOGE_CHANNEL_NAMES})) \
-    /*{inB.LOGE_CHANNEL_NAMES, inA.LOGE_CHANNEL_NAMES})) */ \
+    .LOGB_CHANNEL_NAMES({inB.LOGB_CHANNEL_NAMES, inA.LOGB_CHANNEL_NAMES}),     \
+    .LOGE_CHANNEL_NAMES({inB.LOGE_CHANNEL_NAMES, inA.LOGE_CHANNEL_NAMES}))     \
     name()
 `define UNPACKED_LOGGING_BUS_GROUP2(name, _inA, _inB)                          \
   `LOGGING_BUS_JOIN2(name, _inA, _inB);                                        \
