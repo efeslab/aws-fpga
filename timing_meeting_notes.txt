@@ -1,0 +1,9 @@
+Meeting happened before 2021-09-30
+# Bowen Huang
+RR draw pblock around the shell/CL interface
+Try timing optimized vivado strategy
+# Tutu
+Try ILA=0
+Search ILA+DDR support
+Data is not important in terms of debugging
+make data logging optional
