@@ -462,7 +462,7 @@ generate
    if (LOGE_PER_AXI != 5)
       $error("Wrong LOGE_PER_AXI %d\n", LOGE_PER_AXI);
    if (LOGE_CHANNEL_CNT != NUM_INTERFACES * LOGE_PER_AXI)
-      $error("Wrong LOGE_CHANNEL_CN %d, NUM_INTERFACES %d, LOGE_PER_AXI %d\n",
+      $error("Wrong LOGE_CHANNEL_CNT %d, NUM_INTERFACES %d, LOGE_PER_AXI %d\n",
          LOGE_CHANNEL_CNT, NUM_INTERFACES, LOGE_PER_AXI);
    if (rbus.NUM_AXI_INTF != 1)
       $error("Replay bus wrong NUM_AXI_INTF %d", rbus.NUM_AXI_INTF);

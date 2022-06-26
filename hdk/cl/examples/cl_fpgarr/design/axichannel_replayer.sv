@@ -141,8 +141,8 @@ endmodule
 //
 // Parameters:
 // LOGE_CHANNEL_CNT is number of loge_valid to enforce happen-before in total,
-// i.e. total number of channels
-// READY_CNT is the number of ready signals this module needs to generate.
+// i.e. total number of channels under RR's tracking
+// NUM_RDYRPLY is the number of ready signals this module needs to generate.
 // LOGE_IDX is the index of the channel, which  I need to generate ready for,
 // among the total LOGE_CHANNEL_CNT channels
 //
