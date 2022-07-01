@@ -458,3 +458,34 @@ with maxPendingAWAR, with new almful design
 22_05_13-175738.nohup.out (GEFEI)
 app: nbody_2CU2Pipe
 first trial
+
+22_05_30-215229.nohup.out (GEFEI)
+app: hpcc_stream
+first trial
+
+22_06_26-041253.nohup.out (GEFEI)
+app: dram_dma
+MICRO'22 resource overhead sweep (and all followings)
+--sda --no-ocl --no-bar1 --no-pcim --no-dma_pcis
+
+22_06_26-131929.nohup.out (GEFEI)
+--sda --ocl --no-bar1 --no-pcim --no-dma_pcis
+22_06_26-134359.nohup.out (GEFEI)
+--sda --ocl --bar1 --no-pcim --no-dma_pcis
+22_06_28-035704.nohup.out (GEFEI)
+--no-sda --no-ocl --no-bar1 --pcim --no-dma_pcis
+22_06_28-050150.nohup.out (GEFEI)
+--sda --no-ocl --no-bar1 --pcim --no-dma_pcis
+22_06_28-052116.nohup.out (GEFEI)
+--sda --ocl --no-bar1 --pcim --no-dma_pcis
+22_06_26-141449.nohup.out (GEFEI)
+--sda --ocl --bar1 --pcim --no-dma_pcis
+22_06_28-053205.nohup.out (GEFEI)
+--no-sda --no-ocl --no-bar1 --pcim --dma_pcis
+22_06_28-054119.nohup.out (GEFEI)
+--sda --no-ocl --no-bar1 --pcim --dma_pcis
+22_06_28-055119.nohup.out (GEFEI)
+--sda --ocl --no-bar1 --pcim --dma_pcis
+22_06_26-210743.nohup.out (GEFEI)
+--sda --ocl --bar1 --pcim --dma_pcis
+
