@@ -9,12 +9,14 @@
 
 template <typename BUSCFG>
 class Decoder {
+ public:
+  typedef typename VIDITrace<BUSCFG>::trace_size_t trace_size_t;
+
  private:
   // shortcut to trace typedefs
   typedef typename VIDITrace<BUSCFG>::pktsize_t pktsize_t;
   typedef typename VIDITrace<BUSCFG>::logb_valid_t logb_valid_t;
   typedef typename VIDITrace<BUSCFG>::loge_valid_t loge_valid_t;
-  typedef typename VIDITrace<BUSCFG>::trace_size_t trace_size_t;
 
   FILE *fp = nullptr;
   const char *filepath = nullptr;
@@ -37,6 +39,7 @@ class Decoder {
   }
 
   void parse_trace(VIDITrace<BUSCFG> &T);
+  trace_size_t get_trace_bits() const { return trace_bits; }
 };
 #include "cl_fpgarr_decoder_impl.hpp"
 #endif  // CL_FPGARR_DECODER_H

@@ -201,6 +201,8 @@ class VIDITrace {
                           bool verbose = false, bool enableHBVer2 = false);
   // return the total size of exported trace in bits
   trace_size_t exportTrace(obitstream &obits) const;
+  // return the total number of logging units
+  size_t getLUNum() const { return logb_valid_vec.size(); }
 };
 #include "cl_fpgarr_trace_impl.hpp"
 #endif  // CL_FPGARR_TRACE_H

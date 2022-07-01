@@ -17,7 +17,9 @@ void print_help() {
       "-a for analyse (take one file),\n"
       "-c for compare (take two files)\n"
       "-m for mutation, FILE1 is record_trace, FILE2 is the validate_trace. "
-        "-o to specify output file\n");
+        "-o to specify output file\n"
+      "--phyts-sim FILE for simulating physical timestamps cost."
+      );
 }
 
 template <typename BUSCFG>
@@ -65,12 +67,38 @@ int MutationCmdExec(const argoptions_t &options) {
   return 0;
 }
 
+template <typename BUSCFG>
+int PhyTSSimCmdExec(const argoptions_t &options) {
+  // simulate for a 64-bit cycle-counter
+  // generate the report of simulating the storage overhead when physical
+  // timestamps (i.e. cycle-counters) were used instead of current
+  // happens-before encoding mechanism
+  constexpr size_t phyts_bits = 64;
+  assert(options.op_type == argoptions_t::OP_PHYTS_SIM);
+  VIDITrace<BUSCFG> T;
+  Decoder<BUSCFG> d(options.phyts_sim_filepath);
+  d.parse_trace(T);
+  auto original_trace_bits = d.get_trace_bits();
+  auto additional_bits = T.getLUNum() * phyts_bits;
+  fprintf(stdout,
+          "Simulating %ldb counters, Baseline(bits) %ld, additional_cost(bits) "
+          "%ld, %f%%\n",
+          phyts_bits, original_trace_bits, additional_bits,
+          static_cast<double>(additional_bits) / original_trace_bits * 100);
+  return 0;
+}
+
 #define GETOPT_STRING "rva:c:m:o:d"
 enum optEnum {
-  OPT_HBVER2 = 0x100, // random value as the base to avoid ascii
+  // random value as the base to avoid ascii
+  OPT_HBVER2 = 0x100,  // option that enables the transaction start/end <-> end
+                       // happens-before reasoning
+  OPT_OP_PHYTS_SIM = 0x101,  // option that select the physical timestamp trace
+                             // size simulation op-mode
 };
 static struct option long_options[] = {
   {"hbver2", no_argument, 0, OPT_HBVER2},
+  {"phyts-sim", required_argument, 0, OPT_OP_PHYTS_SIM},
   {0, 0, 0, 0}
 };
 void parse_args(int argc, char *const argv[], argoptions_t *options) {
@@ -95,6 +123,10 @@ void parse_args(int argc, char *const argv[], argoptions_t *options) {
         else
           options->comp_filepaths[1] = optarg;
         break;
+      case OPT_OP_PHYTS_SIM:
+        options->op_type = argoptions_t::OP_PHYTS_SIM;
+        options->phyts_sim_filepath = optarg;
+        break;
       case 'd':
         options->isVerbose = true;
         break;
@@ -117,6 +149,19 @@ void parse_args(int argc, char *const argv[], argoptions_t *options) {
   }
 }
 
+#define SWITCH_CFG_TYPE(cmd_exec_handler, ...)            \
+  switch (options.cfg_type) {                             \
+    case argoptions_t::CFG_RECORD:                        \
+      rc = cmd_exec_handler<record_bus_t>(__VA_ARGS__);   \
+      break;                                              \
+    case argoptions_t::CFG_VERIF:                         \
+      rc = cmd_exec_handler<validate_bus_t>(__VA_ARGS__); \
+      break;                                              \
+    default:                                              \
+      fprintf(stderr, "Invalid cfg type\n");              \
+      rc = -1;                                            \
+  }
+
 int main(int argc, char *argv[]) {
   int rc;
   argoptions_t options;
@@ -124,20 +169,13 @@ int main(int argc, char *argv[]) {
   switch (options.op_type) {
     case argoptions_t::OP_ANLYS:
     case argoptions_t::OP_COMP:
-      switch (options.cfg_type) {
-        case argoptions_t::CFG_RECORD:
-          rc = DecoderCmdExec<record_bus_t>(options);
-          break;
-        case argoptions_t::CFG_VERIF:
-          rc = DecoderCmdExec<validate_bus_t>(options);
-          break;
-        default:
-          fprintf(stderr, "Invalid cfg type\n");
-          rc = -1;
-      }
+      SWITCH_CFG_TYPE(DecoderCmdExec, options);
       break;
     case argoptions_t::OP_MUTATE:
       rc = MutationCmdExec<record_bus_t, validate_bus_t>(options);
+      break;
+    case argoptions_t::OP_PHYTS_SIM:
+      SWITCH_CFG_TYPE(PhyTSSimCmdExec, options);
       break;
     default:
       fprintf(stderr, "Invalid op_code\n");

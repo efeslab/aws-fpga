@@ -308,12 +308,13 @@ void VIDITrace<BUSCFG>::dump_parsed_text(FILE *fp) {
     ++pkt_id;
   }
 }
+
 template <typename BUSCFG>
 void VIDITrace<BUSCFG>::dump_statistics(FILE *fp) {
   fputs("###############################################\n", fp);
   fputs("################### Statistics ################\n", fp);
   fputs("###############################################\n", fp);
-  fprintf(fp, "In total %ld logging units\n", logb_valid_vec.size());
+  fprintf(fp, "In total %ld logging units\n", getLUNum());
 
   fputs("## logging unit size distribution\n", fp);
   fprintf(fp, "%" PROPNAME_MAX_LEN "s: ", "LU Bits");
