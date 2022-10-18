@@ -13,6 +13,8 @@
 // implied. See the License for the specific language governing permissions and
 // limitations under the License.
 
+`include "cl_fpgarr_defs.svh"
+
 module cl_dram_dma #(parameter NUM_DDR=4)
 
 (
@@ -72,6 +74,8 @@ axi_bus_t cl_axi_mstr_bus();
 
 axi_bus_t cl_sh_pcim_bus();
 axi_bus_t cl_sh_ddr_bus();
+
+axi_bus_t cl_sh_ddr_bus_2();
 
 axi_bus_t sda_cl_bus();
 axi_bus_t sh_ocl_bus();
@@ -297,8 +301,10 @@ cl_dma_pcis_slv #(.SCRB_BURST_LEN_MINUS1(DDR_SCRB_BURST_LEN_MINUS1),
 
     .sh_cl_dma_pcis_q(sh_cl_dma_pcis_q),
 
-    .cl_sh_ddr_bus     (cl_sh_ddr_bus)
+    .cl_sh_ddr_bus     (cl_sh_ddr_bus_2)
   );
+
+`RR_AXI_CONNECT_M_TO_S(cl_sh_ddr_bus_2, cl_sh_ddr_bus, ddrc);
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////// DMA PCIS SLAVE module ///////////////////////////////

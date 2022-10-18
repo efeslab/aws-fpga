@@ -265,6 +265,52 @@ endfunction
   .s``_``m``pfx``rvalid(b.rvalid),                                             \
   .m``_``s``pfx``rready(b.rready)
 
+`define AXI_CONNECT_M_TO_S(m, s)                                              \
+  assign s.awid    = m.awid;                                                  \
+  assign s.awaddr  = m.awaddr;                                                \
+  assign s.awlen   = m.awlen;                                                 \
+  assign s.awsize  = m.awsize;                                                \
+  assign s.awvalid = m.awvalid;                                               \
+  assign m.awready = s.awready;                                               \
+  assign s.wid    = m.wid;                                                    \
+  assign s.wdata  = m.wdata;                                                  \
+  assign s.wstrb  = m.wstrb;                                                  \
+  assign s.wlast  = m.wlast;                                                  \
+  assign s.wvalid = m.wvalid;                                                 \
+  assign m.wready = s.wready;                                                 \
+  assign m.bid    = s.bid;                                                    \
+  assign m.bresp  = s.bresp;                                                  \
+  assign m.bvalid = s.bvalid;                                                 \
+  assign s.bready = m.bready;                                                 \
+  assign s.arid    = m.arid;                                                  \
+  assign s.araddr  = m.araddr;                                                \
+  assign s.arlen   = m.arlen;                                                 \
+  assign s.arsize  = m.arsize;                                                \
+  assign s.arvalid = m.arvalid;                                               \
+  assign m.arready = s.arready;                                               \
+  assign m.rid    = s.rid;                                                    \
+  assign m.rdata  = s.rdata;                                                  \
+  assign m.rresp  = s.rresp;                                                  \
+  assign m.rlast  = s.rlast;                                                  \
+  assign m.rvalid = s.rvalid;                                                 \
+  assign s.rready = m.rready
+
+`define RR_EXIST
+
+`define RR_AXI_CONNECT_M_TO_S(m, s, pfx)                                      \
+  `ifdef RR_EXIST                                                             \
+    rr_axi_bus_t pfx``_rr_m();                                                \
+    rr_axi_bus_t pfx``_rr_s();                                                \
+    `AXI_CONNECT_M_TO_S(m, pfx``_rr_m);                                       \
+    `AXI_CONNECT_M_TO_S(pfx``_rr_s, s);                                       \
+  `else                                                                       \
+    `AXI_CONNECT_M_TO_S(m, s);                                                \
+  `endif
+
+`define RR_GET_PFX_M(pfx) pfx``_rr_m
+`define RR_GET_PFX_S(pfx) pfx``_rr_s
+    
+
 // RR CSRS
 
 ////////////////////////////////////////////////////////////////////////////////
