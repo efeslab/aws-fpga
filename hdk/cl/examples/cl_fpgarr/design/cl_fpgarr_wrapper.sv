@@ -233,6 +233,8 @@ axi_recorder dma_pcis_bus_recorder (
   .log_S2M(rr_PCIS_CL2SH_logging_bus),
   .B_fifo_almful(), .B_fifo_overflow(), .B_fifo_underflow() // not used
 );
+`REG_AXI_MSTR_INTF_RR(CL.cl_sh_ddr_bus_pre_record_rr_axi,
+  CL.cl_sh_ddr_bus_rr_axi, DDRC, "ddrc");
 ////////////////////////////////////////////////////////////////////////////////
 // LOG AXIL bus
 ////////////////////////////////////////////////////////////////////////////////

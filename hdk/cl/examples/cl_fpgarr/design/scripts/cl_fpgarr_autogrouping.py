@@ -37,9 +37,14 @@ INTFCFG = {
     "dma_pcis": {
         "INTF_ENUM": "PCIS",
         "PLACEMENT": 1,
-    }
+    },
+    "ddrc": {
+        "INTF_ENUM": "DDRC",
+        "PLACEMENT": 0,
+    },
 }
-INTFNAMES = ["sda", "ocl", "bar1", "pcim", "dma_pcis"]
+# INTFNAMES enforces an order across all interfaces that support RR
+INTFNAMES = ["sda", "ocl", "bar1", "pcim", "dma_pcis", "ddrc"]
 
 intf_toggles = parser.add_argument_group("Interface Toggles")
 for intfname in INTFNAMES:
