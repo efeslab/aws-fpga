@@ -201,6 +201,8 @@ rr_axi_lite_bus_t rr_bar1_bus();
 //  preserved across record and replay.
 ////////////////////////////////////////////////////////////////////////////////
 // PCIM bus
+// PCIM is complex, also used for trace management. Manual code instead of using
+// MACRO
 rr_axi_bus_t rr_pcim_record_bus();
 `AXI_SLV_LOGGING_BUS(rr_PCIM_SH2CL_logging_bus, "pcim");
 `AXI_MSTR_LOGGING_BUS(rr_PCIM_CL2SH_logging_bus, "pcim");
@@ -221,59 +223,17 @@ axi_recorder #(
   .B_fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.pcimB_buf)
 );
 // PCIS bus
-rr_axi_bus_t rr_dma_pcis_record_bus();
-`AXI_MSTR_LOGGING_BUS(rr_PCIS_SH2CL_logging_bus, "pcis");
-`AXI_SLV_LOGGING_BUS(rr_PCIS_CL2SH_logging_bus, "pcis");
-axi_recorder dma_pcis_bus_recorder (
-  .clk(clk),
-  .sync_rst_n(rstn),
-  .M(rr_dma_pcis_record_bus),
-  .S(rr_dma_pcis_bus),
-  .log_M2S(rr_PCIS_SH2CL_logging_bus),
-  .log_S2M(rr_PCIS_CL2SH_logging_bus),
-  .B_fifo_almful(), .B_fifo_overflow(), .B_fifo_underflow() // not used
-);
+`REG_AXI_MSTR_INTF_RR(dma_pcis_bus_q, rr_dma_pcis_bus, PCIS, "pcis");
+// SDA AXIL
+`REG_AXIL_MSTR_INTF_RR(sda_bus_q, rr_sda_bus, SDA, "sda");
+// OCL AXIL
+`REG_AXIL_MSTR_INTF_RR(ocl_bus_q, rr_ocl_bus, OCL, "ocl");
+// BAR1 AXIL
+// cl_bar1_bus is the lower half of bar1 kept for the CL
+`REG_AXIL_MSTR_INTF_RR(cl_bar1_bus, rr_bar1_bus, BAR1, "bar1");
+// app-internal DDRC
 `REG_AXI_MSTR_INTF_RR(CL.cl_sh_ddr_bus_pre_record_rr_axi,
   CL.cl_sh_ddr_bus_rr_axi, DDRC, "ddrc");
-////////////////////////////////////////////////////////////////////////////////
-// LOG AXIL bus
-////////////////////////////////////////////////////////////////////////////////
-// SDA AXIL
-rr_axi_lite_bus_t rr_sda_record_bus();
-`AXIL_MSTR_LOGGING_BUS(rr_SDA_SH2CL_logging_bus, "sda");
-`AXIL_SLV_LOGGING_BUS(rr_SDA_CL2SH_logging_bus, "sda");
-axil_recorder sda_bus_recorder (
-  .clk(clk),
-  .sync_rst_n(rstn),
-  .M(rr_sda_record_bus),
-  .S(rr_sda_bus),
-  .log_M2S(rr_SDA_SH2CL_logging_bus),
-  .log_S2M(rr_SDA_CL2SH_logging_bus)
-);
-// OCL AXIL
-rr_axi_lite_bus_t rr_ocl_record_bus();
-`AXIL_MSTR_LOGGING_BUS(rr_OCL_SH2CL_logging_bus, "ocl");
-`AXIL_SLV_LOGGING_BUS(rr_OCL_CL2SH_logging_bus, "ocl");
-axil_recorder ocl_bus_recorder (
-  .clk(clk),
-  .sync_rst_n(rstn),
-  .M(rr_ocl_record_bus),
-  .S(rr_ocl_bus),
-  .log_M2S(rr_OCL_SH2CL_logging_bus),
-  .log_S2M(rr_OCL_CL2SH_logging_bus)
-);
-// BAR1 AXIL
-rr_axi_lite_bus_t rr_bar1_record_bus();
-`AXIL_MSTR_LOGGING_BUS(rr_BAR1_SH2CL_logging_bus, "bar1");
-`AXIL_SLV_LOGGING_BUS(rr_BAR1_CL2SH_logging_bus, "bar1");
-axil_recorder bar1_bus_recorder (
-  .clk(clk),
-  .sync_rst_n(rstn),
-  .M(rr_bar1_record_bus),
-  .S(rr_bar1_bus),
-  .log_M2S(rr_BAR1_SH2CL_logging_bus),
-  .log_S2M(rr_BAR1_CL2SH_logging_bus)
-);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pack the SH2CL logging bus (for replay)
@@ -394,10 +354,6 @@ rr_packed2writeback_bus #(
 ////////////////////////////////////////////////////////////////////////////////
 // Declare the rr_replay_bus for all channels
 `AXI_SLV_REPLAY_BUS(rr_PCIM_replay_bus, REPLAY_NLOGE);
-`AXI_MSTR_REPLAY_BUS(rr_PCIS_replay_bus, REPLAY_NLOGE);
-`AXIL_MSTR_REPLAY_BUS(rr_SDA_replay_bus, REPLAY_NLOGE);
-`AXIL_MSTR_REPLAY_BUS(rr_OCL_replay_bus, REPLAY_NLOGE);
-`AXIL_MSTR_REPLAY_BUS(rr_BAR1_replay_bus, REPLAY_NLOGE);
 // This is just a reverse of the above rr_logging_bus_t merging tree
 `include "cl_fpgarr_autoungroup_replay.svh"
 // the above header will define a new `unpacked_replay_bus` for later use
@@ -407,15 +363,10 @@ assign rr_state_csr_next.rt.almful.replay_bus.rdyrply_almful = unpacked_replay_b
 ////////////////////////////////////////////////////////////////////////////////
 // Replay logic
 ////////////////////////////////////////////////////////////////////////////////
-import AWSF1_INTF_RRCFG::PCIS;
-import AWSF1_INTF_RRCFG::PCIM;
-import AWSF1_INTF_RRCFG::SDA;
-import AWSF1_INTF_RRCFG::OCL;
-import AWSF1_INTF_RRCFG::BAR1;
 // PCIM bus
+`ifdef RR_ENABLE_PCIM
 rr_axi_bus_t pcim_replay_axi_bus();
 localparam PCIM_LOGE_INTF_IDX = RR_TRACKED_LOGE_INTF_IDX[PCIM];
-if (PCIM_LOGE_INTF_IDX != -1) begin: pcim_rply
   axi_slv_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI, PCIM_LOGE_INTF_IDX,
     /*DBG_B*/ 1, /*DBG_R*/ 1, /*DBG_RDY*/ 1)
     pcim_bus_replayer (
@@ -426,110 +377,13 @@ if (PCIM_LOGE_INTF_IDX != -1) begin: pcim_rply
     .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.pcim_replayer),
     .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.pcim_replayer)
   );
-end else begin: pcim_rply
-  axi_slv_blackhole bh(pcim_replay_axi_bus);
-end
-
-// PCIS bus
-rr_axi_bus_t pcis_replay_axi_bus();
-localparam PCIS_LOGE_INTF_IDX = RR_TRACKED_LOGE_INTF_IDX[PCIS];
-if (PCIS_LOGE_INTF_IDX != -1) begin: pcis_rply
-  axi_mstr_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI, PCIS_LOGE_INTF_IDX,
-    /*DBG_AW*/ 0, /*DBG_W*/ 0, /*DBG_AR*/ 0, /*DBG_RDY*/ 1)
-    pcis_bus_replayer (
-    .clk(clk), .sync_rst_n(rstn),
-    .rbus(rr_PCIS_replay_bus),
-    .outM(pcis_replay_axi_bus),
-    .i_rt_loge_valid(rt_loge_valid_dist[PCIS_LOGE_INTF_IDX]),
-    .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.pcis_replayer),
-    .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.pcis_replayer)
-  );
-end else begin: pcis_rply
-  axi_mstr_whitehole wh(pcis_replay_axi_bus);
-end
-
-// SDA bus
-rr_axi_lite_bus_t sda_replay_axil_bus();
-localparam SDA_LOGE_INTF_IDX = RR_TRACKED_LOGE_INTF_IDX[SDA];
-if (SDA_LOGE_INTF_IDX != -1) begin: sda_rply
-  axil_mstr_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI, SDA_LOGE_INTF_IDX)
-    sda_bus_replayer (
-    .clk(clk), .sync_rst_n(rstn),
-    .rbus(rr_SDA_replay_bus),
-    .outM(sda_replay_axil_bus),
-    .i_rt_loge_valid(rt_loge_valid_dist[SDA_LOGE_INTF_IDX]),
-    .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.sda_replayer),
-    .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.sda_replayer)
-  );
-end else begin: sda_rply
-  axil_mstr_whitehole wh(sda_replay_axil_bus);
-end
-
-// OCL bus
-rr_axi_lite_bus_t ocl_replay_axil_bus();
-localparam OCL_LOGE_INTF_IDX = RR_TRACKED_LOGE_INTF_IDX[OCL];
-if (OCL_LOGE_INTF_IDX != -1) begin: ocl_rply
-  axil_mstr_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI, OCL_LOGE_INTF_IDX)
-    ocl_bus_replayer (
-    .clk(clk), .sync_rst_n(rstn),
-    .rbus(rr_OCL_replay_bus),
-    .outM(ocl_replay_axil_bus),
-    .i_rt_loge_valid(rt_loge_valid_dist[OCL_LOGE_INTF_IDX]),
-    .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.ocl_replayer),
-    .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.ocl_replayer)
-  );
-end else begin: ocl_rply
-  axil_mstr_whitehole wh(ocl_replay_axil_bus);
-end
-
-// BAR1 bus
-rr_axi_lite_bus_t bar1_replay_axil_bus();
-localparam BAR1_LOGE_INTF_IDX = RR_TRACKED_LOGE_INTF_IDX[BAR1];
-if (BAR1_LOGE_INTF_IDX != -1) begin: bar1_rply
-  axil_mstr_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI, BAR1_LOGE_INTF_IDX)
-    bar1_bus_replayer (
-    .clk(clk), .sync_rst_n(rstn),
-    .rbus(rr_BAR1_replay_bus),
-    .outM(bar1_replay_axil_bus),
-    .i_rt_loge_valid(rt_loge_valid_dist[BAR1_LOGE_INTF_IDX]),
-    .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.bar1_replayer),
-    .fifo_underflow(rr_state_csr_next.oneoff.xpm_underflow.bar1_replayer)
-  );
-end else begin: bar1_rply
-  axil_mstr_whitehole wh(bar1_replay_axil_bus);
-end
-
-// the distribution crossbar
-if (PCIM_LOGE_INTF_IDX != -1) begin
   rr_axi_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_pcim (
     .in(rr_irq_pcim_bus),
     .o_rt_loge_valid(rt_loge_valid_agg[PCIM_LOGE_INTF_IDX])
   );
-end
-if (PCIS_LOGE_INTF_IDX != -1) begin
-  rr_axi_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_pcis (
-    .in(rr_dma_pcis_bus),
-    .o_rt_loge_valid(rt_loge_valid_agg[PCIS_LOGE_INTF_IDX])
-  );
-end
-if (SDA_LOGE_INTF_IDX != -1) begin
-  rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_sda (
-    .in(rr_sda_bus),
-    .o_rt_loge_valid(rt_loge_valid_agg[SDA_LOGE_INTF_IDX])
-  );
-end
-if (OCL_LOGE_INTF_IDX != -1) begin
-  rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_ocl (
-    .in(rr_ocl_bus),
-    .o_rt_loge_valid(rt_loge_valid_agg[OCL_LOGE_INTF_IDX])
-  );
-end
-if (BAR1_LOGE_INTF_IDX != -1) begin
-  rr_axil_rt_loge #(.LOGE_PER_AXI(LOGE_PER_AXI)) rt_loge_bar1 (
-    .in(rr_bar1_bus),
-    .o_rt_loge_valid(rt_loge_valid_agg[BAR1_LOGE_INTF_IDX])
-  );
-end
+`endif
+
+// the distribution crossbar
 rr_rt_loge_crossbar #(
   .LOGE_PER_INTERFACE(LOGE_PER_AXI),
   .NUM_INTERFACES(RR_NUM_TRACKED_AXI),
@@ -573,40 +427,14 @@ rr_axi_bus_t rr_validation_bus();
 ////////////////////////////////////////////////////////////////////////////////
 // rr_mode_csr.replayEn decides
 // rr_irq_pcim or pcim_replay_axi_bus ?
-rr_axi_slv_sel pcim_sel (
-  .sel(rr_mode_csr.replayEn),
-  .inAM(cl_pcim_bus),
-  .inBM(pcim_replay_axi_bus),
-  .outS(rr_pcim_record_bus)
-);
-// dma_pcis_bus_q or pcis_replay_axi_bus ?
-rr_axi_mstr_sel pcis_sel (
-  .sel(rr_mode_csr.replayEn),
-  .inAS(dma_pcis_bus_q),
-  .inBS(pcis_replay_axi_bus),
-  .outM(rr_dma_pcis_record_bus)
-);
-// sda_bus_q or sda_replay_axil_bus ?
-rr_axil_mstr_sel sda_sel (
-  .sel(rr_mode_csr.replayEn),
-  .inAS(sda_bus_q),
-  .inBS(sda_replay_axil_bus),
-  .outM(rr_sda_record_bus)
-);
-// ocl_bus_q or ocl_replay_axil_bus ?
-rr_axil_mstr_sel ocl_sel (
-  .sel(rr_mode_csr.replayEn),
-  .inAS(ocl_bus_q),
-  .inBS(ocl_replay_axil_bus),
-  .outM(rr_ocl_record_bus)
-);
-// cl_bar1_bus or bar1_replay_axil_bus ?
-rr_axil_mstr_sel bar1_sel (
-  .sel(rr_mode_csr.replayEn),
-  .inAS(cl_bar1_bus),
-  .inBS(bar1_replay_axil_bus),
-  .outM(rr_bar1_record_bus)
-);
+`ifdef RR_ENABLE_PCIM
+  rr_axi_slv_sel pcim_sel (
+    .sel(rr_mode_csr.replayEn),
+    .inAM(cl_pcim_bus),
+    .inBM(pcim_replay_axi_bus),
+    .outS(rr_pcim_record_bus)
+  );
+`endif
 ////////////////////////////////////////////////////////////////////////////////
 // Connect packed record and replay bus to the storage backend
 ////////////////////////////////////////////////////////////////////////////////

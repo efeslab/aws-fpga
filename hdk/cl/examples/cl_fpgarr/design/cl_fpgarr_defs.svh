@@ -295,17 +295,32 @@ endfunction
   assign m.rvalid = s.rvalid;                                                  \
   assign s.rready = m.rready
 
+`define AXIL_CONNECT_M_TO_S(m, s)                                              \
+  assign s.awaddr  = m.awaddr;                                                 \
+  assign s.awvalid = m.awvalid;                                                \
+  assign m.awready = s.awready;                                                \
+  assign s.wdata  = m.wdata;                                                   \
+  assign s.wstrb  = m.wstrb;                                                   \
+  assign s.wvalid = m.wvalid;                                                  \
+  assign m.wready = s.wready;                                                  \
+  assign m.bresp  = s.bresp;                                                   \
+  assign m.bvalid = s.bvalid;                                                  \
+  assign s.bready = m.bready;                                                  \
+  assign s.araddr  = m.araddr;                                                 \
+  assign s.arvalid = m.arvalid;                                                \
+  assign m.arready = s.arready;                                                \
+  assign m.rdata  = s.rdata;                                                   \
+  assign m.rresp  = s.rresp;                                                   \
+  assign m.rvalid = s.rvalid;                                                  \
+  assign s.rready = m.rready
+
 `define RR_AXI_CONNECT_M_TO_S(m, s, intfid)                                    \
-  `ifdef RR_ENABLE_``intfid \
-    /* rr_axi_m is the type-casted master intf */                              \
-    rr_axi_bus_t m``_rr_axi();                                                 \
-    /* rr_axi_s is the type-casted slave intf */                               \
-    rr_axi_bus_t s``_rr_axi();                                                 \
-    `AXI_CONNECT_M_TO_S(m, m``_rr_axi);                                        \
-    `AXI_CONNECT_M_TO_S(s``_rr_axi, s);                                        \
-  `else \
-    `AXI_CONNECT_M_TO_S(m, s);                                                 \
-  `endif
+  /* rr_axi_m is the type-casted master intf */                                \
+  rr_axi_bus_t m``_rr_axi();                                                   \
+  /* rr_axi_s is the type-casted slave intf */                                 \
+  rr_axi_bus_t s``_rr_axi();                                                   \
+  `AXI_CONNECT_M_TO_S(m, m``_rr_axi);                                          \
+  `AXI_CONNECT_M_TO_S(s``_rr_axi, s)
 
 
 // RR CSRS
@@ -561,6 +576,7 @@ parameter int MAX_PCIM_ARID_WIDTH = $clog2(MAX_PCIM_RD_BURSTS);
 
 // Automate registering interfaces for RR
 `define REG_AXI_MSTR_INTF_RR(pre_record, post_record, intf_id, intf_str)       \
+`ifdef RR_ENABLE_``intf_id                                                     \
   `AXI_MSTR_LOGGING_BUS(rr_``intf_id``_SH2CL_logging_bus, intf_str);           \
   `AXI_SLV_LOGGING_BUS(rr_``intf_id``_CL2SH_logging_bus, intf_str);            \
   rr_axi_bus_t intf_id``_to_record();                                          \
@@ -591,8 +607,13 @@ parameter int MAX_PCIM_ARID_WIDTH = $clog2(MAX_PCIM_RD_BURSTS);
     .inAS(pre_record),                                                         \
     .inBS(intf_id``_replay),                                                   \
     .outM(intf_id``_to_record)                                                 \
-  )
+  );                                                                           \
+`else                                                                          \
+  `AXI_CONNECT_M_TO_S(pre_record, post_record);                                \
+`endif
+
 `define REG_AXIL_MSTR_INTF_RR(pre_record, post_record, intf_id, intf_str)      \
+`ifdef RR_ENABLE_``intf_id                                                     \
   `AXIL_MSTR_LOGGING_BUS(rr_``intf_id``_SH2CL_logging_bus, intf_str);          \
   `AXIL_SLV_LOGGING_BUS(rr_``intf_id``_CL2SH_logging_bus, intf_str);           \
   rr_axi_lite_bus_t intf_id``_to_record();                                     \
@@ -608,14 +629,14 @@ parameter int MAX_PCIM_ARID_WIDTH = $clog2(MAX_PCIM_RD_BURSTS);
   `AXIL_MSTR_REPLAY_BUS(rr_``intf_id``_replay_bus, REPLAY_NLOGE);              \
   rr_axi_lite_bus_t intf_id``_replay();                                        \
   axil_mstr_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI,                       \
-    intf_id``_LOGE_INTF_IDX, 0, 0, 0, 0) intf_id``_replayer (                  \
+    intf_id``_LOGE_INTF_IDX) intf_id``_replayer (                              \
     .clk(clk), .sync_rst_n(rstn),                                              \
     .rbus(rr_``intf_id``_replay_bus),                                          \
     .outM(intf_id``_replay),                                                   \
     .i_rt_loge_valid(rt_loge_valid_dist[intf_id``_LOGE_INTF_IDX])              \
   );                                                                           \
   rr_axil_rt_loge #(LOGE_PER_AXI) rt_loge_``intf_id (                          \
-    .in(S),                                                                    \
+    .in(post_record),                                                          \
     .o_rt_loge_valid(rt_loge_valid_agg[intf_id``_LOGE_INTF_IDX])               \
   );                                                                           \
   rr_axil_mstr_sel intf_id``_sel (                                             \
@@ -623,6 +644,9 @@ parameter int MAX_PCIM_ARID_WIDTH = $clog2(MAX_PCIM_RD_BURSTS);
     .inAS(pre_record),                                                         \
     .inBS(intf_id``_replay),                                                   \
     .outM(intf_id``_to_record)                                                 \
-  )
+  );                                                                           \
+`else                                                                          \
+  `AXIL_CONNECT_M_TO_S(pre_record, post_record);                               \
+`endif
 
 `endif // CL_FPGARR_DEFS
