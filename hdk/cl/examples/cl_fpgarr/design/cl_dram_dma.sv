@@ -304,7 +304,6 @@ cl_dma_pcis_slv #(.SCRB_BURST_LEN_MINUS1(DDR_SCRB_BURST_LEN_MINUS1),
     .cl_sh_ddr_bus     (cl_sh_ddr_bus_pre_record)
   );
 
-`RR_AXI_CONNECT_M_TO_S(cl_sh_ddr_bus_pre_record, cl_sh_ddr_bus, DDRC);
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////// DMA PCIS SLAVE module ///////////////////////////////

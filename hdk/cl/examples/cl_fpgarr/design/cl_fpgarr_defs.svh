@@ -316,11 +316,11 @@ endfunction
 
 `define RR_AXI_CONNECT_M_TO_S(m, s, intfid)                                    \
   /* rr_axi_m is the type-casted master intf */                                \
-  rr_axi_bus_t m``_rr_axi();                                                   \
+  rr_axi_bus_t intfid``_rr_axi_m();                                            \
   /* rr_axi_s is the type-casted slave intf */                                 \
-  rr_axi_bus_t s``_rr_axi();                                                   \
-  `AXI_CONNECT_M_TO_S(m, m``_rr_axi);                                          \
-  `AXI_CONNECT_M_TO_S(s``_rr_axi, s)
+  rr_axi_bus_t intfid``_rr_axi_s();                                            \
+  `AXI_CONNECT_M_TO_S(m, intfid``_rr_axi_m);                                   \
+  `AXI_CONNECT_M_TO_S(intfid``_rr_axi_s, s)
 
 
 // RR CSRS

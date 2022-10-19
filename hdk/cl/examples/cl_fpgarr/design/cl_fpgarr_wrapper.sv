@@ -232,8 +232,12 @@ axi_recorder #(
 // cl_bar1_bus is the lower half of bar1 kept for the CL
 `REG_AXIL_MSTR_INTF_RR(cl_bar1_bus, rr_bar1_bus, BAR1, "bar1");
 // app-internal DDRC
-`REG_AXI_MSTR_INTF_RR(CL.cl_sh_ddr_bus_pre_record_rr_axi,
-  CL.cl_sh_ddr_bus_rr_axi, DDRC, "ddrc");
+// NOTE: in Vivado, empirically, assign to cross-module-referenced interfaces
+// work. Passing cross-module-referenced interfaces to other modules as
+// input/output does not work as expected.
+// As a result, type-casting is moved to this top-level wrapper
+`RR_AXI_CONNECT_M_TO_S(CL.cl_sh_ddr_bus_pre_record, CL.cl_sh_ddr_bus, DDRC);
+`REG_AXI_MSTR_INTF_RR(DDRC_rr_axi_m, DDRC_rr_axi_s, DDRC, "ddrc");
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pack the SH2CL logging bus (for replay)
