@@ -265,51 +265,48 @@ endfunction
   .s``_``m``pfx``rvalid(b.rvalid),                                             \
   .m``_``s``pfx``rready(b.rready)
 
-`define AXI_CONNECT_M_TO_S(m, s)                                              \
-  assign s.awid    = m.awid;                                                  \
-  assign s.awaddr  = m.awaddr;                                                \
-  assign s.awlen   = m.awlen;                                                 \
-  assign s.awsize  = m.awsize;                                                \
-  assign s.awvalid = m.awvalid;                                               \
-  assign m.awready = s.awready;                                               \
-  assign s.wid    = m.wid;                                                    \
-  assign s.wdata  = m.wdata;                                                  \
-  assign s.wstrb  = m.wstrb;                                                  \
-  assign s.wlast  = m.wlast;                                                  \
-  assign s.wvalid = m.wvalid;                                                 \
-  assign m.wready = s.wready;                                                 \
-  assign m.bid    = s.bid;                                                    \
-  assign m.bresp  = s.bresp;                                                  \
-  assign m.bvalid = s.bvalid;                                                 \
-  assign s.bready = m.bready;                                                 \
-  assign s.arid    = m.arid;                                                  \
-  assign s.araddr  = m.araddr;                                                \
-  assign s.arlen   = m.arlen;                                                 \
-  assign s.arsize  = m.arsize;                                                \
-  assign s.arvalid = m.arvalid;                                               \
-  assign m.arready = s.arready;                                               \
-  assign m.rid    = s.rid;                                                    \
-  assign m.rdata  = s.rdata;                                                  \
-  assign m.rresp  = s.rresp;                                                  \
-  assign m.rlast  = s.rlast;                                                  \
-  assign m.rvalid = s.rvalid;                                                 \
+`define AXI_CONNECT_M_TO_S(m, s)                                               \
+  assign s.awid    = m.awid;                                                   \
+  assign s.awaddr  = m.awaddr;                                                 \
+  assign s.awlen   = m.awlen;                                                  \
+  assign s.awsize  = m.awsize;                                                 \
+  assign s.awvalid = m.awvalid;                                                \
+  assign m.awready = s.awready;                                                \
+  assign s.wid    = m.wid;                                                     \
+  assign s.wdata  = m.wdata;                                                   \
+  assign s.wstrb  = m.wstrb;                                                   \
+  assign s.wlast  = m.wlast;                                                   \
+  assign s.wvalid = m.wvalid;                                                  \
+  assign m.wready = s.wready;                                                  \
+  assign m.bid    = s.bid;                                                     \
+  assign m.bresp  = s.bresp;                                                   \
+  assign m.bvalid = s.bvalid;                                                  \
+  assign s.bready = m.bready;                                                  \
+  assign s.arid    = m.arid;                                                   \
+  assign s.araddr  = m.araddr;                                                 \
+  assign s.arlen   = m.arlen;                                                  \
+  assign s.arsize  = m.arsize;                                                 \
+  assign s.arvalid = m.arvalid;                                                \
+  assign m.arready = s.arready;                                                \
+  assign m.rid    = s.rid;                                                     \
+  assign m.rdata  = s.rdata;                                                   \
+  assign m.rresp  = s.rresp;                                                   \
+  assign m.rlast  = s.rlast;                                                   \
+  assign m.rvalid = s.rvalid;                                                  \
   assign s.rready = m.rready
 
-`define RR_EXIST
-
-`define RR_AXI_CONNECT_M_TO_S(m, s, pfx)                                      \
-  `ifdef RR_EXIST                                                             \
-    rr_axi_bus_t pfx``_rr_m();                                                \
-    rr_axi_bus_t pfx``_rr_s();                                                \
-    `AXI_CONNECT_M_TO_S(m, pfx``_rr_m);                                       \
-    `AXI_CONNECT_M_TO_S(pfx``_rr_s, s);                                       \
-  `else                                                                       \
-    `AXI_CONNECT_M_TO_S(m, s);                                                \
+`define RR_AXI_CONNECT_M_TO_S(m, s, intfid)                                    \
+  `ifdef RR_ENABLE_``intfid \
+    /* rr_axi_m is the type-casted master intf */                              \
+    rr_axi_bus_t m``_rr_axi();                                                 \
+    /* rr_axi_s is the type-casted slave intf */                               \
+    rr_axi_bus_t s``_rr_axi();                                                 \
+    `AXI_CONNECT_M_TO_S(m, m``_rr_axi);                                        \
+    `AXI_CONNECT_M_TO_S(s``_rr_axi, s);                                        \
+  `else \
+    `AXI_CONNECT_M_TO_S(m, s);                                                 \
   `endif
 
-`define RR_GET_PFX_M(pfx) pfx``_rr_m
-`define RR_GET_PFX_S(pfx) pfx``_rr_s
-    
 
 // RR CSRS
 
@@ -517,17 +514,10 @@ package AWSF1_INTF_RRCFG;
   parameter int NUM_INTF = 5;
   enum int { SDA=0, OCL, BAR1, PCIM, PCIS } INTF_ORDER;
   parameter int LOGE_PER_AXI = 5;
-  // The order of the PLACEMENT_VEC is determined by the above INTF_ORDER
-  // which is in turn from the merged_logging_bus: sda ocl bar1 pcim pcis
-  // NOTE: this is currently moved to scripts/cl_fpgarr_autogrouping.py in hope
-  // of avoiding xilinx segfault
-  parameter int PLACEMENT_VEC[0:NUM_INTF-1] = '{
-    1, // sda
-    1, // ocl
-    0, // bar1
-    0, // pcim
-    1  // pcis
-  };
+  // NOTE: The PLACEMENT_VEC array is moved to scripts/cl_fpgarr_autogrouping.py
+  // to avoid vivado segfault
+  // It is used to specify the phyiscal distance between interfaces, so that a
+  // proper number of registers can be inserted automatically
 endpackage
 // The alignment of packets
 `ifndef OVERRIDE_PACKET_ALIGNMENT
@@ -568,4 +558,71 @@ parameter int MAX_PCIM_ARID_WIDTH = $clog2(MAX_PCIM_RD_BURSTS);
   lib_pipe #(.WIDTH($bits(typename)), .STAGES(NSTAGES))                        \
     pipe``_``varname(.clk(_clk), .rst_n(_rstn),                                \
       .in_bus(varname), .out_bus(varname``suffix))
+
+// Automate registering interfaces for RR
+`define REG_AXI_MSTR_INTF_RR(pre_record, post_record, intf_id, intf_str)       \
+  `AXI_MSTR_LOGGING_BUS(rr_``intf_id``_SH2CL_logging_bus, intf_str);           \
+  `AXI_SLV_LOGGING_BUS(rr_``intf_id``_CL2SH_logging_bus, intf_str);            \
+  rr_axi_bus_t intf_id``_to_record();                                          \
+  axi_recorder intf_id``_recorder (                                            \
+    .clk(clk),                                                                 \
+    .sync_rst_n(rstn),                                                         \
+    .S(post_record),                                                           \
+    .M(intf_id``_to_record),                                                   \
+    .log_M2S(rr_``intf_id``_SH2CL_logging_bus),                                \
+    .log_S2M(rr_``intf_id``_CL2SH_logging_bus)                                 \
+  );                                                                           \
+  localparam intf_id``_LOGE_INTF_IDX = RR_TRACKED_LOGE_INTF_IDX[intf_id];      \
+  `AXI_MSTR_REPLAY_BUS(rr_``intf_id``_replay_bus, REPLAY_NLOGE);               \
+  rr_axi_bus_t intf_id``_replay();                                             \
+  axi_mstr_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI,                        \
+    intf_id``_LOGE_INTF_IDX, 0, 0, 0, 0) intf_id``_replayer (                  \
+    .clk(clk), .sync_rst_n(rstn),                                              \
+    .rbus(rr_``intf_id``_replay_bus),                                          \
+    .outM(intf_id``_replay),                                                   \
+    .i_rt_loge_valid(rt_loge_valid_dist[intf_id``_LOGE_INTF_IDX])              \
+  );                                                                           \
+  rr_axi_rt_loge #(LOGE_PER_AXI) rt_loge_``intf_id (                           \
+    .in(post_record),                                                          \
+    .o_rt_loge_valid(rt_loge_valid_agg[intf_id``_LOGE_INTF_IDX])               \
+  );                                                                           \
+  rr_axi_mstr_sel intf_id``_sel (                                              \
+    .sel(rr_mode_csr.replayEn),                                                \
+    .inAS(pre_record),                                                         \
+    .inBS(intf_id``_replay),                                                   \
+    .outM(intf_id``_to_record)                                                 \
+  )
+`define REG_AXIL_MSTR_INTF_RR(pre_record, post_record, intf_id, intf_str)      \
+  `AXIL_MSTR_LOGGING_BUS(rr_``intf_id``_SH2CL_logging_bus, intf_str);          \
+  `AXIL_SLV_LOGGING_BUS(rr_``intf_id``_CL2SH_logging_bus, intf_str);           \
+  rr_axi_lite_bus_t intf_id``_to_record();                                     \
+  axil_recorder intf_id``_recorder (                                           \
+    .clk(clk),                                                                 \
+    .sync_rst_n(rstn),                                                         \
+    .S(post_record),                                                           \
+    .M(intf_id``_to_record),                                                   \
+    .log_M2S(rr_``intf_id``_SH2CL_logging_bus),                                \
+    .log_S2M(rr_``intf_id``_CL2SH_logging_bus)                                 \
+  );                                                                           \
+  localparam intf_id``_LOGE_INTF_IDX = RR_TRACKED_LOGE_INTF_IDX[intf_id];      \
+  `AXIL_MSTR_REPLAY_BUS(rr_``intf_id``_replay_bus, REPLAY_NLOGE);              \
+  rr_axi_lite_bus_t intf_id``_replay();                                        \
+  axil_mstr_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI,                       \
+    intf_id``_LOGE_INTF_IDX, 0, 0, 0, 0) intf_id``_replayer (                  \
+    .clk(clk), .sync_rst_n(rstn),                                              \
+    .rbus(rr_``intf_id``_replay_bus),                                          \
+    .outM(intf_id``_replay),                                                   \
+    .i_rt_loge_valid(rt_loge_valid_dist[intf_id``_LOGE_INTF_IDX])              \
+  );                                                                           \
+  rr_axil_rt_loge #(LOGE_PER_AXI) rt_loge_``intf_id (                          \
+    .in(S),                                                                    \
+    .o_rt_loge_valid(rt_loge_valid_agg[intf_id``_LOGE_INTF_IDX])               \
+  );                                                                           \
+  rr_axil_mstr_sel intf_id``_sel (                                             \
+    .sel(rr_mode_csr.replayEn),                                                \
+    .inAS(pre_record),                                                         \
+    .inBS(intf_id``_replay),                                                   \
+    .outM(intf_id``_to_record)                                                 \
+  )
+
 `endif // CL_FPGARR_DEFS

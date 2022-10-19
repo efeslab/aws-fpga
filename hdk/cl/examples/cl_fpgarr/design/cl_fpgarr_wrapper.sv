@@ -23,33 +23,32 @@ assign rstn = rst_main_n;
 //
 //              (AXI interconnect)
 //
-// *-------*            *---*   cl_pcim  *-----------*   rr_pcim   *-------*
-// |       |           /   S| <=?======= |M subord  S| <========== |M      |
-// |       |  sh_pcim *     |   ˄        |  logging  |             |       |
-// |      S| <========|     |   ‖        *-----------*             |       |
-// |       |          *     |   ‖   *-------*      ‖               |       |
-// |       |           \   S| <==== |storage| <====+               |       |
-// |       |            *---*   ‖   *-------*      ‖               |       |
-// |       |                    ‖       ‖          ‖               |       |
-// |       |                    ‖  *----˅---*      ‖               |       |
-// |       |                    ‖  |replayer|      ‖               |       |
-// | Shell |     +====replay?==>?  *--------*      ‖               |  CL   |
-// |       |     ‖              ‖       ‖          ‖               |       |
-// |       |  *------*          +=======+          ‖               |       |
-// |       |  |  rr  |==================record?===>?               |       |
-// |       |  | csrs |==replay?=====?              ‖               |       |
-// |       |  *--˄---*              ‖              ‖               |       |
-// |       |     +========+         ‖              ‖               |       |
-// |       |     bar1(hi) ‖         ‖              ‖               |       |
-// |       |      *--*    ‖         ‖              ‖               |       |
-// |       |     /  M|====+         ‖     *-----------*            |       |
-// |      M| ===>|S  |              ˅     |    mstr   |            |       |
-// |       |     \  M|==============?===> |M logging S| =========> |S      |
-// |       |      *--*       ocl/         *-----------*   rr_xxx   |       |
-// *-------*                 sda/                                  *-------*
+// *-------*            *---*   cl_pcim  *-----------*  rr_(irq_)pcim  *-------*
+// |       |           /   S| <=?======= |S subord  M| <=============  |M      |
+// |       |  sh_pcim *     |   ˄        |  logging  |                 |       |
+// |      S| <========|     |   ‖        *-----------*                 |       |
+// |       |          *     |   ‖   *-------*      ‖                   |       |
+// |       |           \   S| <==== |storage| <====+                   |       |
+// |       |            *---*   ‖   *-------*      ‖                   |       |
+// |       |                    ‖       ‖          ‖                   |       |
+// |       |                    ‖  *----˅---*      ‖                   |       |
+// |       |                    ‖  |replayer|      ‖                   |       |
+// | Shell |     +====replay?==>?  *--------*      ‖                   |  CL   |
+// |       |     ‖              ‖       ‖          ‖                   |       |
+// |       |  *------*          +=======+          ‖                   |       |
+// |       |  |  rr  |==================record?===>?                   |       |
+// |       |  | csrs |==replay?=====?              ‖                   |       |
+// |       |  *--˄---*              ‖              ‖                   |       |
+// |       |     +========+         ‖              ‖                   |       |
+// |       |     bar1(hi) ‖         ‖              ‖                   |       |
+// |       |      *--*    ‖         ‖              ‖                   |       |
+// |       |     /  M|====+         ‖     *-----------*                |       |
+// |      M| ===>|S  |              ˅     |    mstr   |                |       |
+// |       |     \  M|==============?===> |M logging S| ============>  |S      |
+// |       |      *--*       ocl/         *-----------*   rr_xxx       |       |
+// *-------*                 sda/                                      *-------*
 //                           bar1(lo)/
 //                           pcis
-
 ////////////////////////////////////////////////////////////////////////////////
 // Abstract signals from the Shell
 ////////////////////////////////////////////////////////////////////////////////
@@ -95,6 +94,7 @@ rr_axi_bus_t irq_pcim_bus();
 // logged then passed through to an axi interconnect together with the logging
 // traffic
 rr_axi_bus_t rr_pcim_bus();
+assign rr_pcim_bus.wid = 0; // clear unused signals
 // Both rr_pcim_bus and irq_pcim_bus are considered CL pcim traffics that should
 // be record and replay.
 // rr_irq_pcim_bus merges the above two pcim buses and will be merged later with
@@ -136,6 +136,55 @@ always_ff @(posedge clk)
 rr_packed2wb_dbg_csr_t wb_record_dbg_csr;
 pcim_interconnect_dbg_csr_t pcim_interconnect_dbg_csr;
 ////////////////////////////////////////////////////////////////////////////////
+// Forward Declaration for Replay
+////////////////////////////////////////////////////////////////////////////////
+import AWSF1_INTF_RRCFG::*;
+if (RR_NUM_TRACKED_AXI > AWSF1_INTF_RRCFG::NUM_INTF)
+  $error("Invalid number of interfaces traced by RR: %d (max %d)\n",
+    RR_NUM_TRACKED_AXI, AWSF1_INTF_RRCFG::NUM_INTF
+  );
+parameter int REPLAY_NLOGE = LOGE_PER_AXI * RR_NUM_TRACKED_AXI;
+// The rt_loge_valid should be ordered to comply with the previous merge trees
+// The AWSF1_INTF_ORDER is used.
+// i.e.: sda  ocl bar1 pcim pcis
+//
+// The aggregation of all realtime loge_valid info of all channels
+// Note that this is a logical aggregation, not a physically aggregation.
+// The loge_valid of each channel should still stay close to each interface and
+// get distributed via the crossbar
+logic [LOGE_PER_AXI-1:0] rt_loge_valid_agg [RR_NUM_TRACKED_AXI-1:0];
+// The distributed realtime loge_valid of all channels. The logically aggregated
+// loge_valid above will go through a crossbar and get distributed to all
+// channels.
+logic [RR_NUM_TRACKED_AXI-1:0] [LOGE_PER_AXI-1:0]
+  rt_loge_valid_dist [RR_NUM_TRACKED_AXI-1:0];
+////////////////////////////////////////////////////////////////////////////////
+// Forward Declaration for Interrupt Handling
+////////////////////////////////////////////////////////////////////////////////
+logic [15:0] cl_irq_req, cl_irq_ack;
+////////////////////////////////////////////////////////////////////////////////
+// Forward Declaration for Recording
+////////////////////////////////////////////////////////////////////////////////
+rr_axi_bus_t rr_dma_pcis_bus();
+rr_axi_lite_bus_t rr_sda_bus();
+rr_axi_lite_bus_t rr_ocl_bus();
+rr_axi_lite_bus_t rr_bar1_bus();
+////////////////////////////////////////////////////////////////////////////////
+// Connect the original top module
+////////////////////////////////////////////////////////////////////////////////
+// the instance name CL is to match the instance name assigned to the top CL
+// module by AWS building scripts
+`CL_NAME #(NUM_DDR) CL (
+  `AXI_CONNECT_BUS2WIRE(rr_pcim_bus, cl, sh, _pcim_),
+  `AXI_CONNECT_BUS2WIRE(rr_dma_pcis_bus, sh, cl, _dma_pcis_),
+  `AXIL_CONNECT_BUS2WIRE(rr_sda_bus, sda, cl, _),
+  `AXIL_CONNECT_BUS2WIRE(rr_ocl_bus, sh, ocl, _),
+  `AXIL_CONNECT_BUS2WIRE(rr_bar1_bus, sh, bar1, _),
+  .cl_sh_apppf_irq_req(cl_irq_req),
+  .sh_cl_apppf_irq_ack(cl_irq_ack),
+  .*
+);
+////////////////////////////////////////////////////////////////////////////////
 // LOG AXI bus
 // The rr_XXX_record_bus are the axi(l) bus going into each logging module
 // Note that the record bus should pick between bus connected to the shell or
@@ -153,8 +202,8 @@ pcim_interconnect_dbg_csr_t pcim_interconnect_dbg_csr;
 ////////////////////////////////////////////////////////////////////////////////
 // PCIM bus
 rr_axi_bus_t rr_pcim_record_bus();
-`AXI_SLV_LOGGING_BUS(rr_pcim_SH2CL_logging_bus, "pcim");
-`AXI_MSTR_LOGGING_BUS(rr_pcim_CL2SH_logging_bus, "pcim");
+`AXI_SLV_LOGGING_BUS(rr_PCIM_SH2CL_logging_bus, "pcim");
+`AXI_MSTR_LOGGING_BUS(rr_PCIM_CL2SH_logging_bus, "pcim");
 axi_recorder #(
   .ENABLE_B_BUFFER(1),
   .IS_CL_PCIM(1)
@@ -163,8 +212,8 @@ axi_recorder #(
   .sync_rst_n(rstn),
   .S(rr_pcim_record_bus),
   .M(rr_irq_pcim_bus),
-  .log_M2S(rr_pcim_CL2SH_logging_bus),
-  .log_S2M(rr_pcim_SH2CL_logging_bus),
+  .log_M2S(rr_PCIM_CL2SH_logging_bus),
+  .log_S2M(rr_PCIM_SH2CL_logging_bus),
   .enable_B_buffer(rr_mode_csr.enable_PCIM_B_buffer),
   .enable_PCIM_workaround(rr_mode_csr.enable_PCIM_workaround),
   .B_fifo_almful(rr_state_csr_next.rt.almful.pcimB_buf),
@@ -173,16 +222,15 @@ axi_recorder #(
 );
 // PCIS bus
 rr_axi_bus_t rr_dma_pcis_record_bus();
-rr_axi_bus_t rr_dma_pcis_bus();
-`AXI_MSTR_LOGGING_BUS(rr_dma_pcis_SH2CL_logging_bus, "pcis");
-`AXI_SLV_LOGGING_BUS(rr_dma_pcis_CL2SH_logging_bus, "pcis");
+`AXI_MSTR_LOGGING_BUS(rr_PCIS_SH2CL_logging_bus, "pcis");
+`AXI_SLV_LOGGING_BUS(rr_PCIS_CL2SH_logging_bus, "pcis");
 axi_recorder dma_pcis_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
   .M(rr_dma_pcis_record_bus),
   .S(rr_dma_pcis_bus),
-  .log_M2S(rr_dma_pcis_SH2CL_logging_bus),
-  .log_S2M(rr_dma_pcis_CL2SH_logging_bus),
+  .log_M2S(rr_PCIS_SH2CL_logging_bus),
+  .log_S2M(rr_PCIS_CL2SH_logging_bus),
   .B_fifo_almful(), .B_fifo_overflow(), .B_fifo_underflow() // not used
 );
 ////////////////////////////////////////////////////////////////////////////////
@@ -190,42 +238,39 @@ axi_recorder dma_pcis_bus_recorder (
 ////////////////////////////////////////////////////////////////////////////////
 // SDA AXIL
 rr_axi_lite_bus_t rr_sda_record_bus();
-rr_axi_lite_bus_t rr_sda_bus();
-`AXIL_MSTR_LOGGING_BUS(rr_sda_SH2CL_logging_bus, "sda");
-`AXIL_SLV_LOGGING_BUS(rr_sda_CL2SH_logging_bus, "sda");
+`AXIL_MSTR_LOGGING_BUS(rr_SDA_SH2CL_logging_bus, "sda");
+`AXIL_SLV_LOGGING_BUS(rr_SDA_CL2SH_logging_bus, "sda");
 axil_recorder sda_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
   .M(rr_sda_record_bus),
   .S(rr_sda_bus),
-  .log_M2S(rr_sda_SH2CL_logging_bus),
-  .log_S2M(rr_sda_CL2SH_logging_bus)
+  .log_M2S(rr_SDA_SH2CL_logging_bus),
+  .log_S2M(rr_SDA_CL2SH_logging_bus)
 );
 // OCL AXIL
 rr_axi_lite_bus_t rr_ocl_record_bus();
-rr_axi_lite_bus_t rr_ocl_bus();
-`AXIL_MSTR_LOGGING_BUS(rr_ocl_SH2CL_logging_bus, "ocl");
-`AXIL_SLV_LOGGING_BUS(rr_ocl_CL2SH_logging_bus, "ocl");
+`AXIL_MSTR_LOGGING_BUS(rr_OCL_SH2CL_logging_bus, "ocl");
+`AXIL_SLV_LOGGING_BUS(rr_OCL_CL2SH_logging_bus, "ocl");
 axil_recorder ocl_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
   .M(rr_ocl_record_bus),
   .S(rr_ocl_bus),
-  .log_M2S(rr_ocl_SH2CL_logging_bus),
-  .log_S2M(rr_ocl_CL2SH_logging_bus)
+  .log_M2S(rr_OCL_SH2CL_logging_bus),
+  .log_S2M(rr_OCL_CL2SH_logging_bus)
 );
 // BAR1 AXIL
 rr_axi_lite_bus_t rr_bar1_record_bus();
-rr_axi_lite_bus_t rr_bar1_bus();
-`AXIL_MSTR_LOGGING_BUS(rr_bar1_SH2CL_logging_bus, "bar1");
-`AXIL_SLV_LOGGING_BUS(rr_bar1_CL2SH_logging_bus, "bar1");
+`AXIL_MSTR_LOGGING_BUS(rr_BAR1_SH2CL_logging_bus, "bar1");
+`AXIL_SLV_LOGGING_BUS(rr_BAR1_CL2SH_logging_bus, "bar1");
 axil_recorder bar1_bus_recorder (
   .clk(clk),
   .sync_rst_n(rstn),
   .M(rr_bar1_record_bus),
   .S(rr_bar1_bus),
-  .log_M2S(rr_bar1_SH2CL_logging_bus),
-  .log_S2M(rr_bar1_CL2SH_logging_bus)
+  .log_M2S(rr_BAR1_SH2CL_logging_bus),
+  .log_S2M(rr_BAR1_CL2SH_logging_bus)
 );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -345,18 +390,12 @@ rr_packed2writeback_bus #(
 ////////////////////////////////////////////////////////////////////////////////
 // Unpack the replay bus
 ////////////////////////////////////////////////////////////////////////////////
-localparam LOGE_PER_AXI = AWSF1_INTF_RRCFG::LOGE_PER_AXI;
-if (RR_NUM_TRACKED_AXI > AWSF1_INTF_RRCFG::NUM_INTF)
-  $error("Invalid number of interfaces traced by RR: %d (max %d)\n",
-    RR_NUM_TRACKED_AXI, AWSF1_INTF_RRCFG::NUM_INTF
-  );
-parameter int REPLAY_NLOGE = LOGE_PER_AXI * RR_NUM_TRACKED_AXI;
 // Declare the rr_replay_bus for all channels
-`AXI_SLV_REPLAY_BUS(rr_pcim_replay_bus, REPLAY_NLOGE);
-`AXI_MSTR_REPLAY_BUS(rr_dma_pcis_replay_bus, REPLAY_NLOGE);
-`AXIL_MSTR_REPLAY_BUS(rr_sda_replay_bus, REPLAY_NLOGE);
-`AXIL_MSTR_REPLAY_BUS(rr_ocl_replay_bus, REPLAY_NLOGE);
-`AXIL_MSTR_REPLAY_BUS(rr_bar1_replay_bus, REPLAY_NLOGE);
+`AXI_SLV_REPLAY_BUS(rr_PCIM_replay_bus, REPLAY_NLOGE);
+`AXI_MSTR_REPLAY_BUS(rr_PCIS_replay_bus, REPLAY_NLOGE);
+`AXIL_MSTR_REPLAY_BUS(rr_SDA_replay_bus, REPLAY_NLOGE);
+`AXIL_MSTR_REPLAY_BUS(rr_OCL_replay_bus, REPLAY_NLOGE);
+`AXIL_MSTR_REPLAY_BUS(rr_BAR1_replay_bus, REPLAY_NLOGE);
 // This is just a reverse of the above rr_logging_bus_t merging tree
 `include "cl_fpgarr_autoungroup_replay.svh"
 // the above header will define a new `unpacked_replay_bus` for later use
@@ -371,21 +410,6 @@ import AWSF1_INTF_RRCFG::PCIM;
 import AWSF1_INTF_RRCFG::SDA;
 import AWSF1_INTF_RRCFG::OCL;
 import AWSF1_INTF_RRCFG::BAR1;
-// The rt_loge_valid should be ordered to comply with the previous merge trees
-// The AWSF1_INTF_ORDER is used.
-// i.e.: sda  ocl bar1 pcim pcis
-//
-// The aggregation of all realtime loge_valid info of all channels
-// Note that this is a logical aggregation, not a physically aggregation.
-// The loge_valid of each channel should still stay close to each interface and
-// get distributed via the crossbar
-logic [LOGE_PER_AXI-1:0] rt_loge_valid_agg [RR_NUM_TRACKED_AXI-1:0];
-// The distributed realtime loge_valid of all channels. The logically aggregated
-// loge_valid above will go through a crossbar and get distributed to all
-// channels.
-logic [RR_NUM_TRACKED_AXI-1:0] [LOGE_PER_AXI-1:0]
-  rt_loge_valid_dist [RR_NUM_TRACKED_AXI-1:0];
-
 // PCIM bus
 rr_axi_bus_t pcim_replay_axi_bus();
 localparam PCIM_LOGE_INTF_IDX = RR_TRACKED_LOGE_INTF_IDX[PCIM];
@@ -394,7 +418,7 @@ if (PCIM_LOGE_INTF_IDX != -1) begin: pcim_rply
     /*DBG_B*/ 1, /*DBG_R*/ 1, /*DBG_RDY*/ 1)
     pcim_bus_replayer (
     .clk(clk), .sync_rst_n(rstn),
-    .rbus(rr_pcim_replay_bus),
+    .rbus(rr_PCIM_replay_bus),
     .outS(pcim_replay_axi_bus),
     .i_rt_loge_valid(rt_loge_valid_dist[PCIM_LOGE_INTF_IDX]),
     .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.pcim_replayer),
@@ -412,7 +436,7 @@ if (PCIS_LOGE_INTF_IDX != -1) begin: pcis_rply
     /*DBG_AW*/ 0, /*DBG_W*/ 0, /*DBG_AR*/ 0, /*DBG_RDY*/ 1)
     pcis_bus_replayer (
     .clk(clk), .sync_rst_n(rstn),
-    .rbus(rr_dma_pcis_replay_bus),
+    .rbus(rr_PCIS_replay_bus),
     .outM(pcis_replay_axi_bus),
     .i_rt_loge_valid(rt_loge_valid_dist[PCIS_LOGE_INTF_IDX]),
     .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.pcis_replayer),
@@ -429,7 +453,7 @@ if (SDA_LOGE_INTF_IDX != -1) begin: sda_rply
   axil_mstr_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI, SDA_LOGE_INTF_IDX)
     sda_bus_replayer (
     .clk(clk), .sync_rst_n(rstn),
-    .rbus(rr_sda_replay_bus),
+    .rbus(rr_SDA_replay_bus),
     .outM(sda_replay_axil_bus),
     .i_rt_loge_valid(rt_loge_valid_dist[SDA_LOGE_INTF_IDX]),
     .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.sda_replayer),
@@ -446,7 +470,7 @@ if (OCL_LOGE_INTF_IDX != -1) begin: ocl_rply
   axil_mstr_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI, OCL_LOGE_INTF_IDX)
     ocl_bus_replayer (
     .clk(clk), .sync_rst_n(rstn),
-    .rbus(rr_ocl_replay_bus),
+    .rbus(rr_OCL_replay_bus),
     .outM(ocl_replay_axil_bus),
     .i_rt_loge_valid(rt_loge_valid_dist[OCL_LOGE_INTF_IDX]),
     .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.ocl_replayer),
@@ -463,7 +487,7 @@ if (BAR1_LOGE_INTF_IDX != -1) begin: bar1_rply
   axil_mstr_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI, BAR1_LOGE_INTF_IDX)
     bar1_bus_replayer (
     .clk(clk), .sync_rst_n(rstn),
-    .rbus(rr_bar1_replay_bus),
+    .rbus(rr_BAR1_replay_bus),
     .outM(bar1_replay_axil_bus),
     .i_rt_loge_valid(rt_loge_valid_dist[BAR1_LOGE_INTF_IDX]),
     .fifo_overflow(rr_state_csr_next.oneoff.xpm_overflow.bar1_replayer),
@@ -631,7 +655,6 @@ assign storage_backend_irq_ack = sh_cl_apppf_irq_ack[15];
 ////////////////////////////////////////////////////////////////////////////////
 // irq_req[15] is reserved for rr buffer management (not implemented yet)
 localparam CL_IRQ_ENABLED_NUM = 15;
-logic [15:0] cl_irq_req, cl_irq_ack;
 assign cl_sh_apppf_irq_req = {
   storage_backend_irq_req,
   cl_irq_req[CL_IRQ_ENABLED_NUM-1:0]};
@@ -700,25 +723,6 @@ rr_cfg_bar1_interconnect bar1_interconnect (
   .to_cl_bar1_bus(cl_bar1_bus),
   .rr_cfg_bus(rr_cfg_bus)
 );
-
-////////////////////////////////////////////////////////////////////////////////
-// connect the original top module
-////////////////////////////////////////////////////////////////////////////////
-// the instance name CL is to match the instance name assigned to the top CL
-// module by AWS building scripts
-`CL_NAME #(NUM_DDR) CL (
-  `AXI_CONNECT_BUS2WIRE(rr_pcim_bus, cl, sh, _pcim_),
-  `AXI_CONNECT_BUS2WIRE(rr_dma_pcis_bus, sh, cl, _dma_pcis_),
-  `AXIL_CONNECT_BUS2WIRE(rr_sda_bus, sda, cl, _),
-  `AXIL_CONNECT_BUS2WIRE(rr_ocl_bus, sh, ocl, _),
-  `AXIL_CONNECT_BUS2WIRE(rr_bar1_bus, sh, bar1, _),
-  .cl_sh_apppf_irq_req(cl_irq_req),
-  .sh_cl_apppf_irq_ack(cl_irq_ack),
-  .*
-);
-assign rr_pcim_bus.wid = 0;
-
-`AXI_CONNECT_M_TO_S(CL.`RR_GET_PFX_M(ddrc), CL.`RR_GET_PFX_S(ddrc));
 
 ////////////////////////////////////////////////////////////////////////////////
 // Debug ILA Core
