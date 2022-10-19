@@ -238,6 +238,10 @@ axi_recorder #(
 // As a result, type-casting is moved to this top-level wrapper
 `RR_AXI_CONNECT_M_TO_S(CL.cl_sh_ddr_bus_pre_record, CL.cl_sh_ddr_bus, DDRC);
 `REG_AXI_MSTR_INTF_RR(DDRC_rr_axi_m, DDRC_rr_axi_s, DDRC, "ddrc");
+// app-internal axi master
+`RR_AXI_CONNECT_M_TO_S(CL.cl_axi_mstr_bus_pre_record, CL.cl_axi_mstr_bus, APP_AXIM);
+`REG_AXI_MSTR_INTF_RR(APP_AXIM_rr_axi_m, APP_AXIM_rr_axi_s, APP_AXIM,
+  "app_axim");
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pack the SH2CL logging bus (for replay)

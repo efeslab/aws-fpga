@@ -72,6 +72,7 @@ axi_bus_t sh_cl_dma_pcis_bus();
 axi_bus_t sh_cl_dma_pcis_q();
 
 axi_bus_t cl_axi_mstr_bus();
+axi_bus_t cl_axi_mstr_bus_pre_record(); // added to record replay app_axim
 
 axi_bus_t cl_sh_pcim_bus();
 axi_bus_t cl_sh_ddr_bus();
@@ -315,11 +316,10 @@ cl_dma_pcis_slv #(.SCRB_BURST_LEN_MINUS1(DDR_SCRB_BURST_LEN_MINUS1),
 cl_dram_dma_axi_mstr  CL_DRAM_DMA_AXI_MSTR (
     .aclk(clk),
     .aresetn(dma_pcis_slv_sync_rst_n),
-    .cl_axi_mstr_bus(cl_axi_mstr_bus),
+    .cl_axi_mstr_bus(cl_axi_mstr_bus_pre_record),
     .axi_mstr_cfg_bus(axi_mstr_cfg_bus),
     .done_irq_req(cl_sh_apppf_irq_req[14])
   );
-
 ///////////////////////////////////////////////////////////////////////
 ///////////////// DDR traffic counting logic //////////////////////////
 ///////////////////////////////////////////////////////////////////////

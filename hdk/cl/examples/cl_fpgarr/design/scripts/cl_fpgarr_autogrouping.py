@@ -48,9 +48,14 @@ INTFCFG = {
         "PLACEMENT": 0,
         "DEFAULT_ENABLED": False,
     },
+    "app_axim": {
+        "INTF_ENUM": "APP_AXIM",
+        "PLACEMENT": 0,
+        "DEFAULT_ENABLED": False,
+    },
 }
 # INTFNAMES enforces an order across all interfaces that support RR
-INTFNAMES = ["sda", "ocl", "bar1", "pcim", "pcis", "ddrc"]
+INTFNAMES = ["sda", "ocl", "bar1", "pcim", "pcis", "ddrc", "app_axim"]
 
 class AXIIntf(object):
     def __init__(self, intfname):

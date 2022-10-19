@@ -526,8 +526,7 @@ package AWSF1_INTF_RRCFG;
   //       DDR STAT0
   //       DDR STAT1
   //       SDA
-  parameter int NUM_INTF = 6;
-  enum int { SDA=0, OCL, BAR1, PCIM, PCIS, DDRC} INTF_ORDER;
+  enum int { SDA=0, OCL, BAR1, PCIM, PCIS, DDRC, APP_AXIM, NUM_INTF} INTF_ORDER;
   parameter int LOGE_PER_AXI = 5;
   // NOTE: The PLACEMENT_VEC array is moved to scripts/cl_fpgarr_autogrouping.py
   // to avoid vivado segfault
