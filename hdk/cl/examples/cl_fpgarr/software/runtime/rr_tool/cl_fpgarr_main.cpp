@@ -80,11 +80,12 @@ int PhyTSSimCmdExec(const argoptions_t &options) {
   d.parse_trace(T);
   auto original_trace_bits = d.get_trace_bits();
   auto additional_bits = T.getLUNum() * phyts_bits;
-  fprintf(stdout,
-          "Simulating %ldb counters, Baseline(bits) %ld, additional_cost(bits) "
-          "%ld, %f%%\n",
-          phyts_bits, original_trace_bits, additional_bits,
-          static_cast<double>(additional_bits) / original_trace_bits * 100);
+  fprintf(
+      stdout,
+      "Simulating %ld-bit counters, Baseline(bits) %ld, additional_cost(bits) "
+      "%ld, %f%%\n",
+      phyts_bits, original_trace_bits, additional_bits,
+      static_cast<double>(additional_bits) / original_trace_bits * 100);
   return 0;
 }
 

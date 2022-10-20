@@ -1,100 +1,200 @@
-Simulating 64b counters, Baseline(bits) 1826168, additional_cost(bits) 1454400, 79.642180%
-Simulating 64b counters, Baseline(bits) 1824200, additional_cost(bits) 1451776, 79.584256%
-Simulating 64b counters, Baseline(bits) 1823912, additional_cost(bits) 1451392, 79.575769%
-Simulating 64b counters, Baseline(bits) 1828424, additional_cost(bits) 1457408, 79.708426%
-Simulating 64b counters, Baseline(bits) 1823048, additional_cost(bits) 1450240, 79.550292%
-Simulating 64b counters, Baseline(bits) 1827368, additional_cost(bits) 1456000, 79.677438%
-Simulating 64b counters, Baseline(bits) 1822232, additional_cost(bits) 1449152, 79.526207%
-Simulating 64b counters, Baseline(bits) 1825352, additional_cost(bits) 1453312, 79.618178%
-Simulating 64b counters, Baseline(bits) 1824872, additional_cost(bits) 1452672, 79.604049%
-Simulating 64b counters, Baseline(bits) 1823480, additional_cost(bits) 1450816, 79.563033%
-Simulating 64b counters, Baseline(bits) 94865328, additional_cost(bits) 110455104, 116.433587%
-Simulating 64b counters, Baseline(bits) 94868976, additional_cost(bits) 110459968, 116.434237%
-Simulating 64b counters, Baseline(bits) 94858080, additional_cost(bits) 110445440, 116.432295%
-Simulating 64b counters, Baseline(bits) 94873440, additional_cost(bits) 110465920, 116.435032%
-Simulating 64b counters, Baseline(bits) 94861248, additional_cost(bits) 110449664, 116.432860%
-Simulating 64b counters, Baseline(bits) 94856592, additional_cost(bits) 110443456, 116.432030%
-Simulating 64b counters, Baseline(bits) 95483120, additional_cost(bits) 110564160, 115.794457%
-Simulating 64b counters, Baseline(bits) 94869936, additional_cost(bits) 110461248, 116.434408%
-Simulating 64b counters, Baseline(bits) 94862304, additional_cost(bits) 110451072, 116.433048%
-Simulating 64b counters, Baseline(bits) 94856688, additional_cost(bits) 110443584, 116.432047%
-Simulating 64b counters, Baseline(bits) 241632224, additional_cost(bits) 296220032, 122.591278%
-Simulating 64b counters, Baseline(bits) 241654752, additional_cost(bits) 296251904, 122.593039%
-Simulating 64b counters, Baseline(bits) 241632032, additional_cost(bits) 296219776, 122.591270%
-Simulating 64b counters, Baseline(bits) 241624592, additional_cost(bits) 296209856, 122.590939%
-Simulating 64b counters, Baseline(bits) 241634288, additional_cost(bits) 296222784, 122.591370%
-Simulating 64b counters, Baseline(bits) 241629776, additional_cost(bits) 296216768, 122.591169%
-Simulating 64b counters, Baseline(bits) 241631984, additional_cost(bits) 296219712, 122.591268%
-Simulating 64b counters, Baseline(bits) 241630112, additional_cost(bits) 296217216, 122.591184%
-Simulating 64b counters, Baseline(bits) 241637648, additional_cost(bits) 296227264, 122.591519%
-Simulating 64b counters, Baseline(bits) 241645712, additional_cost(bits) 296238016, 122.591878%
-Simulating 64b counters, Baseline(bits) 338007280, additional_cost(bits) 421631040, 124.740225%
-Simulating 64b counters, Baseline(bits) 337981888, additional_cost(bits) 421597184, 124.739579%
-Simulating 64b counters, Baseline(bits) 338068480, additional_cost(bits) 421712640, 124.741780%
-Simulating 64b counters, Baseline(bits) 337970608, additional_cost(bits) 421582144, 124.739292%
-Simulating 64b counters, Baseline(bits) 338054416, additional_cost(bits) 421693888, 124.741423%
-Simulating 64b counters, Baseline(bits) 338028544, additional_cost(bits) 421659392, 124.740765%
-Simulating 64b counters, Baseline(bits) 337936048, additional_cost(bits) 421536064, 124.738413%
-Simulating 64b counters, Baseline(bits) 337918096, additional_cost(bits) 421512128, 124.737957%
-Simulating 64b counters, Baseline(bits) 338043136, additional_cost(bits) 421678848, 124.741136%
-Simulating 64b counters, Baseline(bits) 337940464, additional_cost(bits) 421541952, 124.738526%
-Simulating 64b counters, Baseline(bits) 519239440, additional_cost(bits) 648068800, 124.811166%
-Simulating 64b counters, Baseline(bits) 519375376, additional_cost(bits) 648250048, 124.813397%
-Simulating 64b counters, Baseline(bits) 519216544, additional_cost(bits) 648038272, 124.810790%
-Simulating 64b counters, Baseline(bits) 519042064, additional_cost(bits) 647805632, 124.807925%
-Simulating 64b counters, Baseline(bits) 518716624, additional_cost(bits) 647371712, 124.802577%
-Simulating 64b counters, Baseline(bits) 518714464, additional_cost(bits) 647368832, 124.802541%
-Simulating 64b counters, Baseline(bits) 518788528, additional_cost(bits) 647467584, 124.803759%
-Simulating 64b counters, Baseline(bits) 518749792, additional_cost(bits) 647415936, 124.803122%
-Simulating 64b counters, Baseline(bits) 518889808, additional_cost(bits) 647602624, 124.805424%
-Simulating 64b counters, Baseline(bits) 518828240, additional_cost(bits) 647522368, 124.804765%
-Simulating 64b counters, Baseline(bits) 652233840, additional_cost(bits) 121767872, 18.669358%
+../20220327.output/3d_rendering_hw.elf_01_validate_record.dump
 Simulating 64b counters, Baseline(bits) 652231072, additional_cost(bits) 121766016, 18.669153%
-Simulating 64b counters, Baseline(bits) 652231584, additional_cost(bits) 121764864, 18.668962%
-Simulating 64b counters, Baseline(bits) 652230912, additional_cost(bits) 121763968, 18.668843%
-Simulating 64b counters, Baseline(bits) 652233792, additional_cost(bits) 121767808, 18.669350%
+../20220327.output/3d_rendering_hw.elf_02_validate_record.dump
 Simulating 64b counters, Baseline(bits) 652232496, additional_cost(bits) 121766080, 18.669122%
-Simulating 64b counters, Baseline(bits) 652233936, additional_cost(bits) 121768000, 18.669375%
-Simulating 64b counters, Baseline(bits) 652231152, additional_cost(bits) 121764288, 18.668886%
-Simulating 64b counters, Baseline(bits) 652234656, additional_cost(bits) 121768960, 18.669502%
-Simulating 64b counters, Baseline(bits) 723133696, additional_cost(bits) 891644928, 123.302915%
-Simulating 64b counters, Baseline(bits) 723120688, additional_cost(bits) 891627584, 123.302735%
-Simulating 64b counters, Baseline(bits) 723115312, additional_cost(bits) 891620416, 123.302660%
-Simulating 64b counters, Baseline(bits) 723041056, additional_cost(bits) 891521408, 123.301630%
-Simulating 64b counters, Baseline(bits) 723081808, additional_cost(bits) 891575744, 123.302195%
-Simulating 64b counters, Baseline(bits) 723130192, additional_cost(bits) 891640256, 123.302867%
-Simulating 64b counters, Baseline(bits) 723080032, additional_cost(bits) 891573376, 123.302171%
-Simulating 64b counters, Baseline(bits) 723054544, additional_cost(bits) 891539392, 123.301817%
-Simulating 64b counters, Baseline(bits) 723105904, additional_cost(bits) 891607872, 123.302530%
+../20220327.output/3d_rendering_hw.elf_03_validate_record.dump
+Simulating 64b counters, Baseline(bits) 652233840, additional_cost(bits) 121767872, 18.669358%
+../20220327.output/3d_rendering_hw.elf_04_validate_record.dump
+Simulating 64b counters, Baseline(bits) 652231584, additional_cost(bits) 121764864, 18.668962%
+../20220327.output/3d_rendering_hw.elf_05_validate_record.dump
 Simulating 64b counters, Baseline(bits) 652132368, additional_cost(bits) 121632576, 18.651516%
+../20220327.output/3d_rendering_hw.elf_06_validate_record.dump
+Simulating 64b counters, Baseline(bits) 652233792, additional_cost(bits) 121767808, 18.669350%
+../20220327.output/3d_rendering_hw.elf_07_validate_record.dump
+Simulating 64b counters, Baseline(bits) 652233936, additional_cost(bits) 121768000, 18.669375%
+../20220327.output/3d_rendering_hw.elf_08_validate_record.dump
+Simulating 64b counters, Baseline(bits) 652230912, additional_cost(bits) 121763968, 18.668843%
+../20220327.output/3d_rendering_hw.elf_09_validate_record.dump
+Simulating 64b counters, Baseline(bits) 652231152, additional_cost(bits) 121764288, 18.668886%
+../20220327.output/3d_rendering_hw.elf_10_validate_record.dump
+Simulating 64b counters, Baseline(bits) 652234656, additional_cost(bits) 121768960, 18.669502%
+../20220327.output/bnn_hw.elf_01_validate_record.dump
+Simulating 64b counters, Baseline(bits) 241645712, additional_cost(bits) 296238016, 122.591878%
+../20220327.output/bnn_hw.elf_02_validate_record.dump
+Simulating 64b counters, Baseline(bits) 241632224, additional_cost(bits) 296220032, 122.591278%
+../20220327.output/bnn_hw.elf_03_validate_record.dump
+Simulating 64b counters, Baseline(bits) 241630112, additional_cost(bits) 296217216, 122.591184%
+../20220327.output/bnn_hw.elf_04_validate_record.dump
+Simulating 64b counters, Baseline(bits) 241637648, additional_cost(bits) 296227264, 122.591519%
+../20220327.output/bnn_hw.elf_05_validate_record.dump
+Simulating 64b counters, Baseline(bits) 241631984, additional_cost(bits) 296219712, 122.591268%
+../20220327.output/bnn_hw.elf_06_validate_record.dump
+Simulating 64b counters, Baseline(bits) 241632032, additional_cost(bits) 296219776, 122.591270%
+../20220327.output/bnn_hw.elf_07_validate_record.dump
+Simulating 64b counters, Baseline(bits) 241629776, additional_cost(bits) 296216768, 122.591169%
+../20220327.output/bnn_hw.elf_08_validate_record.dump
+Simulating 64b counters, Baseline(bits) 241654752, additional_cost(bits) 296251904, 122.593039%
+../20220327.output/bnn_hw.elf_09_validate_record.dump
+Simulating 64b counters, Baseline(bits) 241624592, additional_cost(bits) 296209856, 122.590939%
+../20220327.output/bnn_hw.elf_10_validate_record.dump
+Simulating 64b counters, Baseline(bits) 241634288, additional_cost(bits) 296222784, 122.591370%
+../20220327.output/digit_recognition_hw.elf_01_validate_record.dump
+Simulating 64b counters, Baseline(bits) 723041056, additional_cost(bits) 891521408, 123.301630%
+../20220327.output/digit_recognition_hw.elf_02_validate_record.dump
+Simulating 64b counters, Baseline(bits) 723081808, additional_cost(bits) 891575744, 123.302195%
+../20220327.output/digit_recognition_hw.elf_03_validate_record.dump
+Simulating 64b counters, Baseline(bits) 723115312, additional_cost(bits) 891620416, 123.302660%
+../20220327.output/digit_recognition_hw.elf_04_validate_record.dump
+Simulating 64b counters, Baseline(bits) 723054544, additional_cost(bits) 891539392, 123.301817%
+../20220327.output/digit_recognition_hw.elf_05_validate_record.dump
 Simulating 64b counters, Baseline(bits) 723097744, additional_cost(bits) 891596992, 123.302416%
-Simulating 64b counters, Baseline(bits) 3471019128, additional_cost(bits) 720317056, 20.752322%
-Simulating 64b counters, Baseline(bits) 3471013176, additional_cost(bits) 720309120, 20.752129%
-Simulating 64b counters, Baseline(bits) 3471010344, additional_cost(bits) 720305344, 20.752037%
-Simulating 64b counters, Baseline(bits) 3471013848, additional_cost(bits) 720310016, 20.752150%
-Simulating 64b counters, Baseline(bits) 3471015384, additional_cost(bits) 720312064, 20.752200%
-Simulating 64b counters, Baseline(bits) 3470932488, additional_cost(bits) 720201536, 20.749512%
-Simulating 64b counters, Baseline(bits) 3471002760, additional_cost(bits) 720295232, 20.751791%
-Simulating 64b counters, Baseline(bits) 3471015288, additional_cost(bits) 720311936, 20.752197%
-Simulating 64b counters, Baseline(bits) 3471005832, additional_cost(bits) 720299328, 20.751890%
-Simulating 64b counters, Baseline(bits) 3471016440, additional_cost(bits) 720313472, 20.752235%
-Simulating 64b counters, Baseline(bits) 4973181704, additional_cost(bits) 1004200896, 20.192323%
-Simulating 64b counters, Baseline(bits) 4973267624, additional_cost(bits) 1004315456, 20.194277%
-Simulating 64b counters, Baseline(bits) 4973310728, additional_cost(bits) 1004372928, 20.195258%
-Simulating 64b counters, Baseline(bits) 4973627336, additional_cost(bits) 1004795072, 20.202460%
-Simulating 64b counters, Baseline(bits) 4973058056, additional_cost(bits) 1004036032, 20.189510%
-Simulating 64b counters, Baseline(bits) 4978282712, additional_cost(bits) 1011002240, 20.308253%
-Simulating 64b counters, Baseline(bits) 4973190968, additional_cost(bits) 1004213248, 20.192533%
-Simulating 64b counters, Baseline(bits) 4973102072, additional_cost(bits) 1004094720, 20.190511%
-Simulating 64b counters, Baseline(bits) 4972980104, additional_cost(bits) 1003932096, 20.187736%
-Simulating 64b counters, Baseline(bits) 4972957784, additional_cost(bits) 1003902336, 20.187228%
-Simulating 64b counters, Baseline(bits) 5396296272, additional_cost(bits) 1081005696, 20.032364%
-Simulating 64b counters, Baseline(bits) 5396331840, additional_cost(bits) 1081053120, 20.033110%
-Simulating 64b counters, Baseline(bits) 5396359344, additional_cost(bits) 1081089792, 20.033688%
-Simulating 64b counters, Baseline(bits) 5396302992, additional_cost(bits) 1081014656, 20.032505%
-Simulating 64b counters, Baseline(bits) 5396361840, additional_cost(bits) 1081093120, 20.033740%
-Simulating 64b counters, Baseline(bits) 5396439072, additional_cost(bits) 1081196096, 20.035362%
-Simulating 64b counters, Baseline(bits) 5396358528, additional_cost(bits) 1081088704, 20.033671%
-Simulating 64b counters, Baseline(bits) 5396574384, additional_cost(bits) 1081376512, 20.038203%
+../20220327.output/digit_recognition_hw.elf_06_validate_record.dump
+Simulating 64b counters, Baseline(bits) 723080032, additional_cost(bits) 891573376, 123.302171%
+../20220327.output/digit_recognition_hw.elf_07_validate_record.dump
+Simulating 64b counters, Baseline(bits) 723130192, additional_cost(bits) 891640256, 123.302867%
+../20220327.output/digit_recognition_hw.elf_08_validate_record.dump
+Simulating 64b counters, Baseline(bits) 723105904, additional_cost(bits) 891607872, 123.302530%
+../20220327.output/digit_recognition_hw.elf_09_validate_record.dump
+Simulating 64b counters, Baseline(bits) 723120688, additional_cost(bits) 891627584, 123.302735%
+../20220327.output/digit_recognition_hw.elf_10_validate_record.dump
+Simulating 64b counters, Baseline(bits) 723133696, additional_cost(bits) 891644928, 123.302915%
+../20220327.output/face_detection_hw.elf_01_validate_record.dump
+Simulating 64b counters, Baseline(bits) 95483120, additional_cost(bits) 110564160, 115.794457%
+../20220327.output/face_detection_hw.elf_02_validate_record.dump
+Simulating 64b counters, Baseline(bits) 94861248, additional_cost(bits) 110449664, 116.432860%
+../20220327.output/face_detection_hw.elf_03_validate_record.dump
+Simulating 64b counters, Baseline(bits) 94862304, additional_cost(bits) 110451072, 116.433048%
+../20220327.output/face_detection_hw.elf_04_validate_record.dump
+Simulating 64b counters, Baseline(bits) 94873440, additional_cost(bits) 110465920, 116.435032%
+../20220327.output/face_detection_hw.elf_05_validate_record.dump
+Simulating 64b counters, Baseline(bits) 94856592, additional_cost(bits) 110443456, 116.432030%
+../20220327.output/face_detection_hw.elf_06_validate_record.dump
+Simulating 64b counters, Baseline(bits) 94858080, additional_cost(bits) 110445440, 116.432295%
+../20220327.output/face_detection_hw.elf_07_validate_record.dump
+Simulating 64b counters, Baseline(bits) 94869936, additional_cost(bits) 110461248, 116.434408%
+../20220327.output/face_detection_hw.elf_08_validate_record.dump
+Simulating 64b counters, Baseline(bits) 94856688, additional_cost(bits) 110443584, 116.432047%
+../20220327.output/face_detection_hw.elf_09_validate_record.dump
+Simulating 64b counters, Baseline(bits) 94865328, additional_cost(bits) 110455104, 116.433587%
+../20220327.output/face_detection_hw.elf_10_validate_record.dump
+Simulating 64b counters, Baseline(bits) 94868976, additional_cost(bits) 110459968, 116.434237%
+../20220327.output/mobilenet_hw.elf_01_validate_record.dump
+Simulating 64b counters, Baseline(bits) 338007280, additional_cost(bits) 421631040, 124.740225%
+../20220327.output/mobilenet_hw.elf_02_validate_record.dump
+Simulating 64b counters, Baseline(bits) 338068480, additional_cost(bits) 421712640, 124.741780%
+../20220327.output/mobilenet_hw.elf_03_validate_record.dump
+Simulating 64b counters, Baseline(bits) 337981888, additional_cost(bits) 421597184, 124.739579%
+../20220327.output/mobilenet_hw.elf_04_validate_record.dump
+Simulating 64b counters, Baseline(bits) 338054416, additional_cost(bits) 421693888, 124.741423%
+../20220327.output/mobilenet_hw.elf_05_validate_record.dump
+Simulating 64b counters, Baseline(bits) 337918096, additional_cost(bits) 421512128, 124.737957%
+../20220327.output/mobilenet_hw.elf_06_validate_record.dump
+Simulating 64b counters, Baseline(bits) 338028544, additional_cost(bits) 421659392, 124.740765%
+../20220327.output/mobilenet_hw.elf_07_validate_record.dump
+Simulating 64b counters, Baseline(bits) 337970608, additional_cost(bits) 421582144, 124.739292%
+../20220327.output/mobilenet_hw.elf_08_validate_record.dump
+Simulating 64b counters, Baseline(bits) 337940464, additional_cost(bits) 421541952, 124.738526%
+../20220327.output/mobilenet_hw.elf_09_validate_record.dump
+Simulating 64b counters, Baseline(bits) 337936048, additional_cost(bits) 421536064, 124.738413%
+../20220327.output/mobilenet_hw.elf_10_validate_record.dump
+Simulating 64b counters, Baseline(bits) 338043136, additional_cost(bits) 421678848, 124.741136%
+../20220327.output/optical_flow_hw.elf_01_validate_record.dump
 Simulating 64b counters, Baseline(bits) 5396318880, additional_cost(bits) 1081035840, 20.032838%
+../20220327.output/optical_flow_hw.elf_02_validate_record.dump
 Simulating 64b counters, Baseline(bits) 5396353680, additional_cost(bits) 1081082240, 20.033569%
+../20220327.output/optical_flow_hw.elf_03_validate_record.dump
+Simulating 64b counters, Baseline(bits) 5396358528, additional_cost(bits) 1081088704, 20.033671%
+../20220327.output/optical_flow_hw.elf_04_validate_record.dump
+Simulating 64b counters, Baseline(bits) 5396439072, additional_cost(bits) 1081196096, 20.035362%
+../20220327.output/optical_flow_hw.elf_05_validate_record.dump
+Simulating 64b counters, Baseline(bits) 5396574384, additional_cost(bits) 1081376512, 20.038203%
+../20220327.output/optical_flow_hw.elf_06_validate_record.dump
+Simulating 64b counters, Baseline(bits) 5396302992, additional_cost(bits) 1081014656, 20.032505%
+../20220327.output/optical_flow_hw.elf_07_validate_record.dump
+Simulating 64b counters, Baseline(bits) 5396359344, additional_cost(bits) 1081089792, 20.033688%
+../20220327.output/optical_flow_hw.elf_08_validate_record.dump
+Simulating 64b counters, Baseline(bits) 5396331840, additional_cost(bits) 1081053120, 20.033110%
+../20220327.output/optical_flow_hw.elf_09_validate_record.dump
+Simulating 64b counters, Baseline(bits) 5396361840, additional_cost(bits) 1081093120, 20.033740%
+../20220327.output/optical_flow_hw.elf_10_validate_record.dump
+Simulating 64b counters, Baseline(bits) 5396296272, additional_cost(bits) 1081005696, 20.032364%
+../20220327.output/sha256_hw.elf_01_validate_record.dump
+Simulating 64b counters, Baseline(bits) 4972957784, additional_cost(bits) 1003902336, 20.187228%
+../20220327.output/sha256_hw.elf_02_validate_record.dump
+Simulating 64b counters, Baseline(bits) 4973267624, additional_cost(bits) 1004315456, 20.194277%
+../20220327.output/sha256_hw.elf_03_validate_record.dump
+Simulating 64b counters, Baseline(bits) 4978282712, additional_cost(bits) 1011002240, 20.308253%
+../20220327.output/sha256_hw.elf_04_validate_record.dump
+Simulating 64b counters, Baseline(bits) 4973181704, additional_cost(bits) 1004200896, 20.192323%
+../20220327.output/sha256_hw.elf_05_validate_record.dump
+Simulating 64b counters, Baseline(bits) 4973058056, additional_cost(bits) 1004036032, 20.189510%
+../20220327.output/sha256_hw.elf_06_validate_record.dump
+Simulating 64b counters, Baseline(bits) 4973310728, additional_cost(bits) 1004372928, 20.195258%
+../20220327.output/sha256_hw.elf_07_validate_record.dump
+Simulating 64b counters, Baseline(bits) 4973627336, additional_cost(bits) 1004795072, 20.202460%
+../20220327.output/sha256_hw.elf_08_validate_record.dump
+Simulating 64b counters, Baseline(bits) 4973190968, additional_cost(bits) 1004213248, 20.192533%
+../20220327.output/sha256_hw.elf_09_validate_record.dump
+Simulating 64b counters, Baseline(bits) 4972980104, additional_cost(bits) 1003932096, 20.187736%
+../20220327.output/sha256_hw.elf_10_validate_record.dump
+Simulating 64b counters, Baseline(bits) 4973102072, additional_cost(bits) 1004094720, 20.190511%
+../20220327.output/spam_filter_hw.elf_01_validate_record.dump
+Simulating 64b counters, Baseline(bits) 518714464, additional_cost(bits) 647368832, 124.802541%
+../20220327.output/spam_filter_hw.elf_02_validate_record.dump
+Simulating 64b counters, Baseline(bits) 518716624, additional_cost(bits) 647371712, 124.802577%
+../20220327.output/spam_filter_hw.elf_03_validate_record.dump
+Simulating 64b counters, Baseline(bits) 518788528, additional_cost(bits) 647467584, 124.803759%
+../20220327.output/spam_filter_hw.elf_04_validate_record.dump
+Simulating 64b counters, Baseline(bits) 518749792, additional_cost(bits) 647415936, 124.803122%
+../20220327.output/spam_filter_hw.elf_05_validate_record.dump
+Simulating 64b counters, Baseline(bits) 519375376, additional_cost(bits) 648250048, 124.813397%
+../20220327.output/spam_filter_hw.elf_06_validate_record.dump
+Simulating 64b counters, Baseline(bits) 519239440, additional_cost(bits) 648068800, 124.811166%
+../20220327.output/spam_filter_hw.elf_07_validate_record.dump
+Simulating 64b counters, Baseline(bits) 518889808, additional_cost(bits) 647602624, 124.805424%
+../20220327.output/spam_filter_hw.elf_08_validate_record.dump
+Simulating 64b counters, Baseline(bits) 519042064, additional_cost(bits) 647805632, 124.807925%
+../20220327.output/spam_filter_hw.elf_09_validate_record.dump
+Simulating 64b counters, Baseline(bits) 519216544, additional_cost(bits) 648038272, 124.810790%
+../20220327.output/spam_filter_hw.elf_10_validate_record.dump
+Simulating 64b counters, Baseline(bits) 518828240, additional_cost(bits) 647522368, 124.804765%
+../20220327.output/sssp_hw.elf_01_validate_record.dump
+Simulating 64b counters, Baseline(bits) 1824200, additional_cost(bits) 1451776, 79.584256%
+../20220327.output/sssp_hw.elf_02_validate_record.dump
+Simulating 64b counters, Baseline(bits) 1828424, additional_cost(bits) 1457408, 79.708426%
+../20220327.output/sssp_hw.elf_03_validate_record.dump
+Simulating 64b counters, Baseline(bits) 1826168, additional_cost(bits) 1454400, 79.642180%
+../20220327.output/sssp_hw.elf_04_validate_record.dump
+Simulating 64b counters, Baseline(bits) 1823912, additional_cost(bits) 1451392, 79.575769%
+../20220327.output/sssp_hw.elf_05_validate_record.dump
+Simulating 64b counters, Baseline(bits) 1825352, additional_cost(bits) 1453312, 79.618178%
+../20220327.output/sssp_hw.elf_06_validate_record.dump
+Simulating 64b counters, Baseline(bits) 1824872, additional_cost(bits) 1452672, 79.604049%
+../20220327.output/sssp_hw.elf_07_validate_record.dump
+Simulating 64b counters, Baseline(bits) 1823480, additional_cost(bits) 1450816, 79.563033%
+../20220327.output/sssp_hw.elf_08_validate_record.dump
+Simulating 64b counters, Baseline(bits) 1827368, additional_cost(bits) 1456000, 79.677438%
+../20220327.output/sssp_hw.elf_09_validate_record.dump
+Simulating 64b counters, Baseline(bits) 1822232, additional_cost(bits) 1449152, 79.526207%
+../20220327.output/sssp_hw.elf_10_validate_record.dump
+Simulating 64b counters, Baseline(bits) 1823048, additional_cost(bits) 1450240, 79.550292%
+../20220327.output/test_dram_dma_01_validate_record.dump
+Simulating 64b counters, Baseline(bits) 3471005832, additional_cost(bits) 720299328, 20.751890%
+../20220327.output/test_dram_dma_02_validate_record.dump
+Simulating 64b counters, Baseline(bits) 3471013176, additional_cost(bits) 720309120, 20.752129%
+../20220327.output/test_dram_dma_03_validate_record.dump
+Simulating 64b counters, Baseline(bits) 3471010344, additional_cost(bits) 720305344, 20.752037%
+../20220327.output/test_dram_dma_04_validate_record.dump
+Simulating 64b counters, Baseline(bits) 3471019128, additional_cost(bits) 720317056, 20.752322%
+../20220327.output/test_dram_dma_05_validate_record.dump
+Simulating 64b counters, Baseline(bits) 3471013848, additional_cost(bits) 720310016, 20.752150%
+../20220327.output/test_dram_dma_06_validate_record.dump
+Simulating 64b counters, Baseline(bits) 3471016440, additional_cost(bits) 720313472, 20.752235%
+../20220327.output/test_dram_dma_07_validate_record.dump
+Simulating 64b counters, Baseline(bits) 3470932488, additional_cost(bits) 720201536, 20.749512%
+../20220327.output/test_dram_dma_08_validate_record.dump
+Simulating 64b counters, Baseline(bits) 3471015384, additional_cost(bits) 720312064, 20.752200%
+../20220327.output/test_dram_dma_09_validate_record.dump
+Simulating 64b counters, Baseline(bits) 3471002760, additional_cost(bits) 720295232, 20.751791%
+../20220327.output/test_dram_dma_10_validate_record.dump
+Simulating 64b counters, Baseline(bits) 3471015288, additional_cost(bits) 720311936, 20.752197%
