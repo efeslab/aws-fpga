@@ -449,6 +449,10 @@ with maxPendingAWAR, with pcim_interconnect_ila, with new almful design
 app: axi_atop_filter
 buggy version  CL_DISABLE_IRQ_PCIM
 with maxPendingAWAR, with new almful design
+NOTE: CL_DISABLE_IRQ_PCIM is to expose the buggy interface implementation to
+replay. Otherwise, the buggy implementation can hide behind an interconnect and
+I do not know how to trigger certain timing in an interconnect without its
+source code.
 
 22_04_27-225709.nohup.out (GEFEI)
 app: axi_atop_filter
@@ -489,3 +493,7 @@ MICRO'22 resource overhead sweep (and all followings)
 22_06_26-210743.nohup.out (GEFEI)
 --sda --ocl --bar1 --pcim --dma_pcis
 
+22_10_19-020440.nohup.out (GEFEI)
+app: dram_dma
+ASPLOS'23 test the new DDR4 and APP internal RR support
+--no-sda --no-bar1 --no-pcim --no-pcis --ddrc --app_axim
