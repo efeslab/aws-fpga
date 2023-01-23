@@ -103,10 +103,7 @@ ifndef SDK_DIR
     $(error SDK_DIR is undefined. Try "source sdk_setup.sh" to set the software environment)
 endif
 
-f1setup:
-	sudo mkfs.ext4 /dev/nvme0n1
-	sudo mount /dev/nvme0n1 /mnt
-	sudo mkdir /mnt/output
-	sudo chown -R ubuntu:ubuntu /mnt/output
 help:
 	@echo "Available HLS_DESIGN: $(ALL_HLS_DESIGN)"
+
+include ${CL_FPGARR_ROOT}/software/include/Makefile.rules.common

@@ -13,6 +13,7 @@
 # implied. See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 INCLUDES = -I$(SDK_DIR)/userspace/include
 
 CC = gcc
@@ -27,12 +28,12 @@ include ${CL_FPGARR_ROOT}/software/runtime/libfpgarr/Makefile.inc
 CFLAGS += -I$(LIBFPGARR_PATH)
 
 
-all: test_dram_dma check_env retention
+all: test_dram_dma check_env test_dram_dma_retention
 
 test_dram_dma: $(OBJ) $(LIBFPGARR_ALL_FILES)
 	$(CC) $(CFLAGS) -o test_dram_dma test_dram_dma.o test_dram_dma_common.o $(LIBFPGARR_SRC) $(LDFLAGS) $(LDLIBS)
 
-retention: $(OBJ)
+test_dram_dma_retention: $(OBJ)
 	$(CC) $(CFLAGS) -o test_dram_dma_retention test_dram_dma_retention.o test_dram_dma_common.o $(LDFLAGS) $(LDLIBS)
 
 cosim: $(OBJ) $(LIBFPGARR_ALL_FILES)
@@ -71,3 +72,5 @@ test: $(BIN)
 	      mv $${dump} $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_$${dump}; \
 	    done \
 	done
+
+include ${CL_FPGARR_ROOT}/software/include/Makefile.rules.common
