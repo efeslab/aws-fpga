@@ -278,9 +278,15 @@ void test_main(uint32_t *exit_code)
 int main(int argc, char **argv)
 #endif
 {
+  /*
+   * cl_axis_fifo_buggy cmdline arguments:
+   * [0] = ${binary_name}
+   * [1] = buffer_alignment (e.g., 4096)
+   * [2] = delayed_start or not (e.g., "delayed_start" or "imm_start")
+   */
 #if defined(SV_TEST)
-    int argc = 0;
-    char *argv[2] = {"hls", NULL};
+    int argc = 3;
+    char *argv[] = {"axis_fifo_b", "8", "imm_start", NULL};
 #endif
 
     int rc = 0;
@@ -294,7 +300,7 @@ int main(int argc, char **argv)
 
 #if !defined(SV_TEST)
     /* setup logging to print to stdout */
-    rc = log_init("test_hls");
+    rc = log_init("axis_fifo_buggy");
     fail_on(rc, out, "Unable to initialize the log.");
     rc = log_attach(logger, NULL, 0);
     fail_on(rc, out, "%s", "Unable to attach to the log.");
@@ -355,7 +361,6 @@ out:
 #define OCL_INJECT_SIZE (sizeof(uint32_t) * OCL_INJECT_CNT)
 #define READBACK_SIZE (OCL_INJECT_SIZE + BUFFERSIZE)
 #define REPORT_LIMIT (200)
-#define BUFFER_ALIGNMENT (4096)
 typedef enum {
   APP_CSR_DDR_WAIT_CYC = 0,
   APP_CSR_DONE,
@@ -369,26 +374,45 @@ typedef struct {
 } ocl_thread_info_t;
 void *ocl_thread_start(void *);
 int axis_fifo_main(int argc, char *argv[]) {
+  uint32_t buffer_alignment = 4096;
+  int delayed_start = 1;
+  if (argc < 3) {
+    printf("usage: %s ${buffer_alignment} [delayed_start|imm_start]\n", argv[0]);
+    return -1;
+  } else {
+    buffer_alignment = atoi(argv[1]);
+    if (strncmp(argv[2], "delayed_start", 128) == 0) {
+      delayed_start = 1;
+    } else if (strncmp(argv[2], "imm_start", 128) == 0) {
+      delayed_start = 0;
+    } else {
+      printf("Invalid arg: either \"delayed_start\" or \"imm_start\"\n");
+      return -1;
+    }
+  }
   // pcis_mem are all even
-  uint32_t *pcis_mem = aligned_alloc(BUFFER_ALIGNMENT, BUFFERSIZE);
+  uint32_t *pcis_mem = aligned_alloc(buffer_alignment, BUFFERSIZE);
+  printf("pcis_mem is on %p\n", pcis_mem);
   fail_on(pcis_mem == NULL, out, "allocate pcis_mem failed");
   for (uint64_t i = 0; i < BUFFERSIZE/sizeof(uint32_t); ++i) {
     pcis_mem[i] = 2*i;
   }
   int rc;
   // ocl thread
-  pthread_t ocl_tid;
+  pthread_t ocl_tid = 0;
   void *ocl_ret;
 #ifdef SV_TEST
-  ocl_thread_start(NULL);
-  // force fifo to fill up to trigger the bug
-  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1);
-  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_DDR_WAIT_CYC), 10);
+  // in simulation,
+  ocl_thread_start(&delayed_start);
+  // If you want to trigger the bug in simulation, you can force fifo to fill up
+  // by uncommenting the following lines
+  //hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1);
+  //hls_poke_ocl(APP_CSR_ADDR(APP_CSR_DDR_WAIT_CYC), 10);
   //hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W_INTVL), 200);
 #else
   // on real hardware, poke ocl in a new thread would trigger the bug
   //hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1); //
-  rc = pthread_create(&ocl_tid, NULL, &ocl_thread_start, NULL);
+  rc = pthread_create(&ocl_tid, NULL, &ocl_thread_start, &delayed_start);
   fail_on(rc, out, "failed to create ocl pthread");
 #endif
   // continue doing pcis dma write
@@ -404,14 +428,14 @@ int axis_fifo_main(int argc, char *argv[]) {
   // wait for completion (irq)
   rr_wait_irq(0);
   // read back and check
-  uint32_t *readback_mem = aligned_alloc(BUFFER_ALIGNMENT, READBACK_SIZE);
+  uint32_t *readback_mem = aligned_alloc(buffer_alignment, READBACK_SIZE);
   fail_on(readback_mem == NULL, out, "allocate readback_mem failed");
   memset(readback_mem, 0, READBACK_SIZE);
   rc = do_dma_read((uint8_t*)readback_mem, READBACK_SIZE, 0, 0, slot_id);
   fail_on(rc, out, "DMA read failed");
   size_t unexpected = 0, minus1_counter = 0, oob_counter = 0;
 
-  uint32_t *counters = aligned_alloc(BUFFER_ALIGNMENT, 2*BUFFERSIZE);
+  uint32_t *counters = aligned_alloc(buffer_alignment, 2*BUFFERSIZE);
   for (size_t i = 0; i < 2*BUFFERSIZE/sizeof(uint32_t); ++i) {
     counters[i] = 0;
   }
@@ -445,19 +469,26 @@ int axis_fifo_main(int argc, char *argv[]) {
     }
   }
 
-  printf("total: %ld, unexpected: %ld places, -1: %ld places, oob: %ld places\n",
+  printf("################# TEST REPORT ###############################\n");
+  printf("total values: %ld ;\nincorrect values: %ld ;\nincorrect values (-1): %ld ;\nout of bound values: %ld ;\n",
           BUFFERSIZE/sizeof(uint32_t) + OCL_INJECT_CNT, unexpected, minus1_counter, oob_counter);
+  printf("#############################################################\n");
   out:
   free(pcis_mem);
   free(readback_mem);
   return 0;
 }
 void *ocl_thread_start(void *arg) {
+  int delayed_start = *((int*)arg);
+  // NOTE: we currently do not need to inject any packets through the ocl to
+  // trigger the bug, so the following code is simply kept for reference
   // ocl are all odd
   //for (size_t i = 0; i < OCL_INJECT_CNT; ++i) {
   //  hls_poke_ocl(APP_CSR_ADDR(APP_CSR_INJECT), 2 * i + 1);
   //}
-  sleep(1);
+  if (delayed_start) {
+    sleep(1);
+  }
   hls_poke_ocl(APP_CSR_ADDR(APP_CSR_ALLOW_DDR_W), 1); //
   return NULL;
 }

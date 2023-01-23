@@ -1,10 +1,21 @@
+.PHONY: f1setup loadafi describe clearfpga
+${AUTOMATE_TEST_OUT_DIR}: f1setup
+
+USER:=$(shell id -un)
+GROUP:=$(shell id -gn)
 f1setup:
-	if mountpoint /mnt; then                                                      \
-	  echo "skip f1setup because /mnt is already mounted" ;                       \
-	else                                                                          \
-	  echo "f1setup: formatting and mount local SSD" ;                            \
-	  sudo mkfs.ext4 /dev/nvme0n1 ;                                               \
-	  sudo mount /dev/nvme0n1 /mnt ;                                              \
-	  sudo mkdir /mnt/output ;                                                    \
-	  sudo chown -R ubuntu:ubuntu /mnt/output ;                                   \
+	@if mountpoint $(AUTOMATE_TEST_MOUNTPOINT) >/dev/null; then                \
+	  echo "skip f1setup because $(AUTOMATE_TEST_MOUNTPOINT) is already mounted" ; \
+	else                                                                       \
+	  echo "f1setup: formatting and mount local SSD" ;                         \
+	  sudo mkfs.ext4 /dev/nvme0n1 ;                                            \
+	  sudo mount /dev/nvme0n1 $(AUTOMATE_TEST_MOUNTPOINT) ;                    \
+	  sudo mkdir -p $(AUTOMATE_TEST_OUT_DIR) ;                                 \
+	  sudo chown -R $(USER):$(GROUP) $(AUTOMATE_TEST_OUT_DIR) ;                \
 	fi
+loadafi:
+	$(LOAD_AFI)
+describe:
+	sudo fpga-describe-local-image -S 0 -M
+clearfpga:
+	$(CLEAR_FPGA)
