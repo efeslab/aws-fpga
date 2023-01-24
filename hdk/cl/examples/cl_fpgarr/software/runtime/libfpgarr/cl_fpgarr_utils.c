@@ -27,7 +27,7 @@ uint8_t *rr_alloc_buffer(uint64_t size, uint64_t *pa) {
     assert(fpga_hugealloc_get(&va, pa, &sizeB) == 0);
     assert(size <= sizeB);
     memset(va, 0, sizeB);
-    log_info("rr_alloc_buffer, va %p, pa %p, size %ld\n", va, (void *)(*pa),
+    log_info("rr_alloc_buffer, va %p, pa %p, size %ld", va, (void *)(*pa),
              sizeB);
     return (uint8_t *)(va);
 #endif
