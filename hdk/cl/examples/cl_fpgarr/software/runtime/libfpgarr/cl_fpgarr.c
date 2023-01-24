@@ -21,6 +21,9 @@ static uint64_t buffer_size;
 static struct timespec rr_start_time;
 static uint64_t rr_user_timer_ns = 0;
 static struct timespec rr_user_start_time;
+static const char *record_path = DEFAULT_RECORD_PATH;
+static const char *validate_record_path = DEFAULT_VALIDATE_RECORD_PATH;
+static const char *validate_replay_path = DEFAULT_VALIDATE_REPLAY_PATH;
 
 int init_rr(int slot_id) {
     char *rr_mode_env = getenv("RR_MODE");
@@ -60,6 +63,23 @@ int init_rr(int slot_id) {
     } else {
         buffer_size = atoi(rr_buf_sizeB);
     }
+    // overriding
+    const char *record_path_override = getenv("RR_RECORD_PATH");
+    if (record_path_override) {
+        record_path = record_path_override;
+        printf("Overriding RR_RECORD_PATH: %s\n", record_path);
+    }
+    const char *validate_record_path_overide = getenv("RR_VALIDATE_RECORD_PATH");
+    if (validate_record_path_overide) {
+        validate_record_path = validate_record_path_overide;
+        printf("Overriding RR_VALIDATE_RECORD_PATH: %s\n", validate_record_path);
+    }
+    const char *validate_replay_path_overide = getenv("RR_VALIDATE_REPLAY_PATH");
+    if (validate_replay_path_overide) {
+        validate_replay_path = validate_replay_path_overide;
+        printf("Overriding RR_VALIDATE_REPLAY_PATH: %s\n", validate_replay_path);
+    }
+    // print basic info
     printf("RR Mode (env): %s\n", rr_mode_env);
     printf("RR Mode (csr): %#x\n", rr_mode.val);
     printf("RR Buffer Size: %ldB\n", buffer_size);
@@ -129,12 +149,12 @@ void do_record_stop() {
     rr_cfg_poke(RECORD_FORCE_FINISH, 1);
     uint64_t record_bits =
         rr_wait_counter_stable(RECORD_BITS_LO, RECORD_BITS_HI);
-    dump_trace("Record Buffer", "record.dump", record_buffer, record_bits);
+    dump_trace("Record Buffer", record_path, record_buffer, record_bits);
     rr_dealloc_buffer(record_buffer);
     if (is_validate()) {
         uint64_t validate_bits =
             rr_wait_counter_stable(VALIDATE_BITS_LO, VALIDATE_BITS_HI);
-        dump_trace("Validate Buffer", "validate_record.dump", validate_buffer,
+        dump_trace("Validate Buffer", validate_record_path, validate_buffer,
                    validate_bits);
         rr_dealloc_buffer(validate_buffer);
     }
@@ -148,7 +168,7 @@ void do_replay_start() {
         validate_buffer =
             rr_alloc_setup_buffer(validate_buffer_size, VALIDATE_BUF_UPDATE);
     }
-    int fd = open("record.dump", O_RDONLY);
+    int fd = open(record_path, O_RDONLY);
     read(fd, &replay_bits, TRACE_LEN_BYTES);
 
     uint32_t replay_bits_hi = UINT64_HI32(replay_bits);
@@ -185,7 +205,7 @@ void do_replay_stop() {
         rr_cfg_poke(RECORD_FORCE_FINISH, 1);
         uint64_t validate_bits =
             rr_wait_counter_stable(VALIDATE_BITS_LO, VALIDATE_BITS_HI);
-        dump_trace("Validate Buffer", "validate_replay.dump", validate_buffer,
+        dump_trace("Validate Buffer", validate_replay_path, validate_buffer,
                    validate_bits);
         rr_dealloc_buffer(validate_buffer);
     }

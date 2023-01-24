@@ -20,5 +20,11 @@
 
 // MACRO configuration
 #undef DUMP_TRACE_TXT
+// Trace collected during record. Used for replay.
+#define DEFAULT_RECORD_PATH "record.dump"
+// Trace collected during record. Used as a reference to validate the replay correctness.
+#define DEFAULT_VALIDATE_RECORD_PATH "validate_record.dump"
+// Trace collected during replay. Used to validate the replay correctness.
+#define DEFAULT_VALIDATE_REPLAY_PATH "validate_replay.dump"
 
 #endif // CL_FPGARR_CFG_H
