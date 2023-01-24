@@ -24,9 +24,8 @@ LDLIBS = -lfpga_mgmt
 SRC = test_dram_dma_common.c test_dram_dma_retention.c test_dram_dma.c test_dram_dma_hwsw_cosim.c
 OBJ = $(SRC:.c=.o)
 
-include ${CL_FPGARR_ROOT}/software/runtime/libfpgarr/Makefile.inc
-CFLAGS += -I$(LIBFPGARR_PATH)
-
+APP_AGFI_ID=agfi-0eb4759660bb582b2
+include ${CL_FPGARR_ROOT}/software/include/Makefile.include.common
 
 all: test_dram_dma check_env test_dram_dma_retention
 
@@ -47,30 +46,11 @@ ifndef SDK_DIR
     $(error SDK_DIR is undefined. Try "source sdk_setup.sh" to set the software environment)
 endif
 
-RUN_RR = sudo RR_MODE=$(1) $(2)
-RR_NONE = $(call RUN_RR,none,$(1))
-RR_RECORDV = $(call RUN_RR,recordv,$(1))
-RR_REPLAYV = $(call RUN_RR,replayv,$(1))
-# 250MHz
-LOAD_AFI = sudo fpga-clear-local-image -S 0; sudo fpga-load-local-image -S 0 -I agfi-0eb4759660bb582b2
-NUM_TEST?=10
-AUTOMATE_TEST_OUT_DIR?=/mnt/output
 BIN=test_dram_dma
 CMDLINE=./$(BIN) -S 0
-RR_TOOL=${CL_FPGARR_ROOT}/software/runtime/rr_tool/rr_tool.opt.elf
-test: $(BIN)
-	for i in `seq -w 1 $(NUM_TEST)`; do \
-	    $(LOAD_AFI); \
-	    $(call RR_NONE, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_none.log; \
-			sudo fpga-describe-local-image -S 0 -M | tee $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_none_describe_local.log; \
-	    $(LOAD_AFI); \
-	    $(call RR_RECORDV, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_recordv.log; \
-	    $(LOAD_AFI); \
-	    $(call RR_REPLAYV, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_replayv.log; \
-	    $(RR_TOOL) -v --hbver2 -c validate_record.dump -c validate_replay.dump >$(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_diff.txt 2>&1; \
-	    for dump in record.dump validate_record.dump validate_replay.dump; do \
-	      mv $${dump} $(AUTOMATE_TEST_OUT_DIR)/$(BIN)_$${i}_$${dump}; \
-	    done \
+test: $(BIN) $(AUTOMATE_TEST_OUT_DIR)
+	for i in `seq -w 1 $(NUM_TEST)`; do                                    \
+	    $(call singlelineish,$(call run_all_rr_mode,$(BIN)_$${i}))         \
 	done
 
 include ${CL_FPGARR_ROOT}/software/include/Makefile.rules.common
