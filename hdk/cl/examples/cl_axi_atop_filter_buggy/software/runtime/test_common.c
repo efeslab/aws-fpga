@@ -350,8 +350,8 @@ out:
 #ifdef SV_TEST
 #define BUFFERSIZE (1LL << 15)
 #else
-#define BUFFERSIZE (1024*1024*420LL)
-//#define BUFFERSIZE (0x3000LL)
+//#define BUFFERSIZE (1024*1024*420LL)
+#define BUFFERSIZE (0x3000LL)
 #endif
 #define REPORT_LIMIT (200)
 #define BUFFER_ALIGNMENT (4096)
