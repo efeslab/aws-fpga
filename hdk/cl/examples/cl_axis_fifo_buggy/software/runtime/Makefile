@@ -62,6 +62,15 @@ correct_run: $(BIN)
 	$(eval DELAYED_START=imm_start)
 	$(LOAD_AFI) > /dev/null
 	$(call RR_NONE, $(CMDLINE)) 2>&1
+
+load_instrumented:
+	$(call LOAD_AFI_TPL, $(APP_AGFI_ID_LOSSCHECK))
+
+replay_delayed_start: $(BIN) $(AUTOMATE_TEST_OUT_DIR)
+	$(eval BUFFER_ALIGNMENT=4096)
+	$(eval DELAYED_START=delayed_start)
+	$(call RR_REPLAY, RR_RECORD_PATH=$(AUTOMATE_TEST_OUT_DIR)/$(TESTID)_record.dump $(CMDLINE)) 2>&1
+
 clean:
 	rm -rf *.elf $(LIBFPGARR_OBJ) $(LIB_OBJ)
 
