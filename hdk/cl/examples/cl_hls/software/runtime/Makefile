@@ -39,7 +39,8 @@ CFLAGS += -I.
 CXXFLAGS = $(CFLAGS) -I$(XILINX_HLS)/include
 LDLIBS += -lminizip -lz -lcrypto
 
-HLS_GEN_DIR=../../gen
+MAKEFILE_DIR:=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+HLS_GEN_DIR=$(abspath $(MAKEFILE_DIR)../../gen)
 
 ifdef HLS_DESIGN
 # {{{
@@ -62,10 +63,14 @@ all: $(BIN)
 $(BIN): $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
 	$(HLS_DESIGN_COMPILER) -o $@ $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ) $(LDFLAGS) $(LDLIBS)
 .PHONY: test
-CMDLINE = $(HLS_DESIGN_TEST_ENV) ./$(BIN) $(HLS_DESIGN_TEST_ARGS)
+CMDLINE = $(HLS_DESIGN_TEST_ENV) $(MAKEFILE_DIR)$(BIN) $(HLS_DESIGN_TEST_ARGS)
 test: $(BIN) $(AUTOMATE_TEST_OUT_DIR)
-	for i in `seq -w 1 $(NUM_TEST)`; do                                        \
-	    $(call singlelineish,$(call run_all_rr_mode,$(HLS_DESIGN)_$${i}))      \
+	@mkdir -p $(HLS_DESIGN)/workdir
+	@echo "Running application $(HLS_DESIGN) in $(abspath $(HLS_DESIGN)/workdir)"
+	@cd $(HLS_DESIGN)/workdir &&                                           \
+	for i in `seq -w 1 $(NUM_TEST)`; do                                    \
+	    echo $${PWD};                                                      \
+	    $(call singlelineish,$(call run_all_rr_mode,$(HLS_DESIGN)_$${i}))  \
 	done
 clean:
 	rm -rf $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
