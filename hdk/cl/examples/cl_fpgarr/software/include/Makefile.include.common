@@ -25,26 +25,24 @@ define newline
 endef
 # singlelineish
 # assumption:
-# 1. each line has not been concatenated yet (via \)
+# 1. each line has not been concatenated yet (via \) but all shell commands end with a semicolon
 # 2. '@' is only used to suppress command display. In other words, no usage of '$@'
 # args:
 # $1 is the original (canned) recipe
 define singlelineish =
-$(subst @,,$(subst ${newline},;\${newline},$(1)))
+$(subst @,,$(subst ${newline},\${newline},$(1)))
 endef
 
 # NOTE: every target calls this recipe should depend on $(AUTOMATE_TEST_OUT_DIR)
 # $1 is $(TESTID)
 define run_all_rr_mode =
-    $(LOAD_AFI) > /dev/null
-    $(call RR_NONE, $(CMDLINE)) > $(AUTOMATE_TEST_OUT_DIR)/$(1)_none.log 2>&1
-    $(LOAD_AFI) > /dev/null
-    $(call RR_RECORDV, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(1)_recordv.log
-    $(LOAD_AFI) > /dev/null
-    $(call RR_REPLAYV, $(CMDLINE)) 2>&1 | tee $(AUTOMATE_TEST_OUT_DIR)/$(1)_replayv.log
-    $(RR_TOOL) -v --hbver2 -c validate_record.dump -c validate_replay.dump > $(AUTOMATE_TEST_OUT_DIR)/$(1)_diff.txt 2>&1
-    @echo "Experiments are done, saving trace files"
-    @for dump in record.dump validate_record.dump validate_replay.dump; do     \
-      mv $${dump} $(AUTOMATE_TEST_OUT_DIR)/$(1)_$${dump};                      \
-    done
+    $(eval TESTPREFIX=$(AUTOMATE_TEST_OUT_DIR)/$$(1))
+    $(eval ENVPREFIX=RR_RECORD_PATH=$$(TESTPREFIX)_record.dump RR_VALIDATE_RECORD_PATH=$$(TESTPREFIX)_validate_record.dump RR_VALIDATE_REPLAY_PATH=$$(TESTPREFIX)_validate_replay.dump)
+    $(LOAD_AFI) > /dev/null;
+    $(call RR_NONE, $(ENVPREFIX) $(CMDLINE)) > $(TESTPREFIX)_none.log 2>&1;
+    $(LOAD_AFI) > /dev/null;
+    $(call RR_RECORDV, $(ENVPREFIX) $(CMDLINE)) 2>&1 | tee $(TESTPREFIX)_recordv.log;
+    $(LOAD_AFI) > /dev/null;
+    $(call RR_REPLAYV, $(ENVPREFIX) $(CMDLINE)) 2>&1 | tee $(TESTPREFIX)_replayv.log;
+    $(RR_TOOL) -v --hbver2 -c $(TESTPREFIX)_validate_record.dump -c $(TESTPREFIX)_validate_replay.dump > $(TESTPREFIX)_diff.txt 2>&1;
 endef
