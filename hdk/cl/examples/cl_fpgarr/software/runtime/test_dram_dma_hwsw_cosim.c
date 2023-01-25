@@ -198,7 +198,7 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
     fail_on(rc, out, "init_rr failed");
     do_pre_rr();
 
-    if (is_record()) {
+    if (!is_replay()) {
         deselect_atg_hw();
 
 #ifdef TEST_PCIM
