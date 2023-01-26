@@ -64,12 +64,11 @@ $(BIN): $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
 	$(HLS_DESIGN_COMPILER) -o $@ $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ) $(LDFLAGS) $(LDLIBS)
 .PHONY: test
 CMDLINE = $(HLS_DESIGN_TEST_ENV) $(MAKEFILE_DIR)$(BIN) $(HLS_DESIGN_TEST_ARGS)
-test: $(BIN) $(AUTOMATE_TEST_OUT_DIR)
+test: $(BIN) $(COMMON_TEST_DEPS)
 	@mkdir -p $(HLS_DESIGN)/workdir
 	@echo "Running application $(HLS_DESIGN) in $(abspath $(HLS_DESIGN)/workdir)"
 	@cd $(HLS_DESIGN)/workdir &&                                           \
 	for i in `seq -w 1 $(NUM_TEST)`; do                                    \
-	    echo $${PWD};                                                      \
 	    $(call singlelineish,$(call run_all_rr_mode,$(HLS_DESIGN)_$${i}))  \
 	done
 clean:

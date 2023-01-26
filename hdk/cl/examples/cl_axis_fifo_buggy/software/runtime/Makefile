@@ -47,12 +47,12 @@ DELAYED_START?=delayed_start
 CMDLINE = ./$(BIN) ${BUFFER_ALIGNMENT} ${DELAYED_START}
 TESTID=$(BIN)_${BUFFER_ALIGNMENT}_${DELAYED_START}
 
-bug_delayed_start: $(BIN) $(AUTOMATE_TEST_OUT_DIR)
+bug_delayed_start: $(BIN) $(COMMON_TEST_DEPS)
 	$(eval BUFFER_ALIGNMENT=4096)
 	$(eval DELAYED_START=delayed_start)
 	$(call run_all_rr_mode,$(TESTID))
 
-bug_dma_alignment: $(BIN) $(AUTOMATE_TEST_OUT_DIR)
+bug_dma_alignment: $(BIN) $(COMMON_TEST_DEPS)
 	$(eval BUFFER_ALIGNMENT=8)
 	$(eval DELAYED_START=imm_start)
 	$(call run_all_rr_mode,$(TESTID))
@@ -66,7 +66,7 @@ correct_run: $(BIN)
 load_instrumented:
 	$(call LOAD_AFI_TPL, $(APP_AGFI_ID_LOSSCHECK))
 
-replay_delayed_start: $(BIN) $(AUTOMATE_TEST_OUT_DIR)
+replay_delayed_start: $(BIN) $(COMMON_TEST_DEPS)
 	$(eval BUFFER_ALIGNMENT=4096)
 	$(eval DELAYED_START=delayed_start)
 	$(call RR_REPLAY, RR_RECORD_PATH=$(AUTOMATE_TEST_OUT_DIR)/$(TESTID)_record.dump $(CMDLINE)) 2>&1

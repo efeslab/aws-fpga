@@ -43,7 +43,7 @@ $(BIN): $(LIBFPGARR_OBJ) $(LIB_OBJ)
 	$(CC) -o $@ $(CFLAGS) $(LIBFPGARR_OBJ) $(LIB_OBJ)$ $(LDFLAGS) $(LDLIBS)
 .PHONY: test record mutate replay_mutation load_buggy load_fixed
 CMDLINE = ./$(BIN)
-record: $(BIN) $(AUTOMATE_TEST_OUT_DIR)
+record: $(BIN) $(COMMON_TEST_DEPS)
 	$(call run_all_rr_mode,$(APP_NAME))
 load_buggy:
 	$(call CLR_LOAD_AFI_TPL,$(APP_BUGGY_AGFI_ID))

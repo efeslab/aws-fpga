@@ -5,7 +5,8 @@ include ${CL_FPGARR_ROOT}/software/runtime/libfpgarr/Makefile.inc
 NUM_TEST?=10
 AUTOMATE_TEST_MOUNTPOINT?=/mnt
 AUTOMATE_TEST_OUT_DIR?=$(AUTOMATE_TEST_MOUNTPOINT)/output
-RR_TOOL=${CL_FPGARR_ROOT}/software/runtime/rr_tool/rr_tool.opt.elf
+RR_TOOL_DIR=${CL_FPGARR_ROOT}/software/runtime/rr_tool
+RR_TOOL=${RR_TOOL_DIR}/rr_tool.opt.elf
 
 #### Helper Shell functions
 RUN_RR = sudo RR_MODE=$(1) $(2)
@@ -19,6 +20,7 @@ CLR_LOAD_AFI_TPL = $(CLEAR_FPGA); sudo fpga-load-local-image -S 0 -I $(1)
 LOAD_AFI = $(call LOAD_AFI_TPL, $(APP_AGFI_ID))
 
 #### Helper Makefile functions
+COMMON_TEST_DEPS = $(AUTOMATE_TEST_OUT_DIR) $(RR_TOOL)
 define newline
 
 

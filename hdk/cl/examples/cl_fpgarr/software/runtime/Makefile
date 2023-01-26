@@ -48,7 +48,7 @@ endif
 
 BIN=test_dram_dma
 CMDLINE=./$(BIN) -S 0
-test: $(BIN) $(AUTOMATE_TEST_OUT_DIR)
+test: $(BIN) $(COMMON_TEST_DEPS)
 	for i in `seq -w 1 $(NUM_TEST)`; do                                    \
 	    $(call singlelineish,$(call run_all_rr_mode,$(BIN)_$${i}))         \
 	done
