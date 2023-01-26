@@ -40,11 +40,19 @@ endef
 define run_all_rr_mode =
     $(eval TESTPREFIX=$(AUTOMATE_TEST_OUT_DIR)/$$(1))
     $(eval ENVPREFIX=RR_RECORD_PATH=$$(TESTPREFIX)_record.dump RR_VALIDATE_RECORD_PATH=$$(TESTPREFIX)_validate_record.dump RR_VALIDATE_REPLAY_PATH=$$(TESTPREFIX)_validate_replay.dump)
+    @echo "Flashing and running [[$(1)]] without record/replay";
+    @echo "Tracking progress: tail -f $(TESTPREFIX)_none.log";
     $(LOAD_AFI) > /dev/null;
     $(call RR_NONE, $(ENVPREFIX) $(CMDLINE)) > $(TESTPREFIX)_none.log 2>&1;
+    @echo "Flashing and running [[$(1)]] with record + validation enabled";
+    @echo "Tracking progress: tail -f $(TESTPREFIX)_recordv.log";
     $(LOAD_AFI) > /dev/null;
-    $(call RR_RECORDV, $(ENVPREFIX) $(CMDLINE)) 2>&1 | tee $(TESTPREFIX)_recordv.log;
+    $(call RR_RECORDV, $(ENVPREFIX) $(CMDLINE)) > $(TESTPREFIX)_recordv.log 2>&1;
+    @echo "Flashing and running [[$(1)]] with replay + validation enabled";
+    @echo "Tracking progress: tail -f $(TESTPREFIX)_replayv.log";
     $(LOAD_AFI) > /dev/null;
-    $(call RR_REPLAYV, $(ENVPREFIX) $(CMDLINE)) 2>&1 | tee $(TESTPREFIX)_replayv.log;
+    $(call RR_REPLAYV, $(ENVPREFIX) $(CMDLINE)) > $(TESTPREFIX)_replayv.log 2>&1;
+    @echo "Comparing the validation trace between record and replay";
     $(RR_TOOL) -v --hbver2 -c $(TESTPREFIX)_validate_record.dump -c $(TESTPREFIX)_validate_replay.dump > $(TESTPREFIX)_diff.txt 2>&1;
+    @echo "Check HB violations: $(TESTPREFIX)_diff.txt";
 endef
