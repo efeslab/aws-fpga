@@ -64,7 +64,7 @@ $(BIN): $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ)
 	$(HLS_DESIGN_COMPILER) -o $@ $(HLS_DESIGN_OBJ) $(LIBFPGARR_OBJ) $(LIB_OBJ) $(LDFLAGS) $(LDLIBS)
 .PHONY: test
 CMDLINE = $(HLS_DESIGN_TEST_ENV) $(MAKEFILE_DIR)$(BIN) $(HLS_DESIGN_TEST_ARGS)
-test: $(BIN) $(COMMON_TEST_DEPS)
+test: $(BIN) $(HLS_DESIGN_INPUT) $(COMMON_TEST_DEPS)
 	@mkdir -p $(HLS_DESIGN)/workdir
 	@echo "Running application $(HLS_DESIGN) in $(abspath $(HLS_DESIGN)/workdir)"
 	@cd $(HLS_DESIGN)/workdir &&                                           \

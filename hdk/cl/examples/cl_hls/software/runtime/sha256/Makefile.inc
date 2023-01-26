@@ -8,6 +8,7 @@ GENERATE_SCRIPT := $(HLS_DESIGN_DIR)generate_random_passwords.py
 HLS_DESIGN_ALL_FILES := $(HLS_DEISNG_SRC) $(HLS_DESING_HEADER) $(GENERATED_INPUT)
 HLS_DESIGN_COMPILER = $(CXX)
 HLS_DESIGN_TEST_ENV :=
+HLS_DESIGN_INPUT := $(GENERATED_INPUT)
 # -B 30: replayv stalls easily.
 # -B 1: less likely to stall
 # may need some debugging later. Could be the PCIs 32 AW with burst of 8 while
