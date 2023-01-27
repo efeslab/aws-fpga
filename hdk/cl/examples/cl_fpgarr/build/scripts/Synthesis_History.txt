@@ -119,65 +119,65 @@ parameter REPLAY_FIFO_DEPTH=32;
 21_11_19-150450.nohup.out (CONGESTION)
 21_11_19-150456.nohup.out (DEFAULT)
 21_11_19-150515.nohup.out (DEFAULT+125MHz)
-21_11_20-015302.nohup.out (GEFEI)
+21_11_20-015302.nohup.out (VIDI)
 commit: 37df414
 tried to optimize decoder length calc
 
-21_11_23-021223.nohup.out (GEFEI)
+21_11_23-021223.nohup.out (VIDI)
 21_11_23-021227.nohup.out (CONGESTION)
 21_11_23-021238.nohup.out (DEFAULT+125MHz)
 commit: e67ffd6
 fix wb_XXX_inst backpressure and expose some fifo underflow/overflow to CSR
 
-21_11_23-155245.nohup.out (GEFEI)
+21_11_23-155245.nohup.out (VIDI)
 commit: 5ee64f5
 register reset in trace_storage
 
-21_11_24-184915.nohup.out (GEFEI)
+21_11_24-184915.nohup.out (VIDI)
 21_11_24-184923.nohup.out (DEFAULT+125MHz)
 commit: fb8fc93
 fix cl_tst, buffer pcimB and pcimW for interconnect, remove dont_touch
 
-21_11_26-182007.nohup.out (GEFEI)
+21_11_26-182007.nohup.out (VIDI)
 commit: 1f834cd
 add ready-replayer, fix hi_pad_last, reduced rt_loge_crossbar dist
 
-21_11_26-210138.nohup.out (GEFEI)
+21_11_26-210138.nohup.out (VIDI)
 21_11_26-214736.nohup.out (DEFAULT+125MHz)
 commit: ab9a0a9
 change to more complex ready-replayer
 
-21_11_26-215050.nohup.out (GEFEI)
+21_11_26-215050.nohup.out (VIDI)
 commit: 3e4202a
 may this help timing?
 
-21_11_26-231105.nohup.out (GEFEI)
+21_11_26-231105.nohup.out (VIDI)
 commit: dabc980
 Changed rt_loge_crossbar dist, hope it helps timing.
 
-21_11_28-224340.nohup.out (GEFEI)
+21_11_28-224340.nohup.out (VIDI)
 21_11_28-224336.nohup.out (DEFAULT + 125MHz)
 commit: 6f42087
 Expand to 128 CSRS to debug incomplete record trace
 
-21_11_29-000341.nohup.out (GEFEI)
+21_11_29-000341.nohup.out (VIDI)
 commit: 41a4731
 Fix trace_rw arvalid protocol violation
 
-21_11_29-000806.nohup.out (GEFEI)
+21_11_29-000806.nohup.out (VIDI)
 commit: cf6192b
 Try to synthesis rr_pcim_pchk_interconect
 NOTE: pchk failed, abandon
 
-21_11_29-152926.nohup.out (GEFEI)
+21_11_29-152926.nohup.out (VIDI)
 commit: b6ca3a5
 expose pcim pchk reports to csr
 
-21_11_29-201839.nohup.out (GEFEI)
+21_11_29-201839.nohup.out (VIDI)
 commit: 5b564fb
 Fix trace_rw arvalid, second try
 
-21_11_29-224009.nohup.out (GEFEI)
+21_11_29-224009.nohup.out (VIDI)
 21_11_29-224054.nohup.out (DEFAULT + 125MHz)
 commit: 57b875a
 Add dbg csr for replay
@@ -212,26 +212,26 @@ commit: ae8b4a0
 try to fix replay deadlock due to reordering (I guess it is caused by
 reordering)
 
-21_12_06-055541.nohup.out (GEFEI)
+21_12_06-055541.nohup.out (VIDI)
 commit: 7a57758
 disabled a lot of debug related stuff and try timing with deadlock fix.
 
-21_12_06-150521.nohup.out (GEFEI)
+21_12_06-150521.nohup.out (VIDI)
 same as previous, disabled more ILA instance
 
-21_12_06-221120.nohup.out (GEFEI)
+21_12_06-221120.nohup.out (VIDI)
 commit: e4e2189
 flop the reset of cl_csrs
 
-21_12_07-190250.nohup.out (GEFEI)
+21_12_07-190250.nohup.out (VIDI)
 commit: 5b92717
 test tcl synthesis scripts seperation
 
-21_12_08-144202.nohup.out (GEFEI)
+21_12_08-144202.nohup.out (VIDI)
 commit: 228d0c2
 dram_dma axi_mstr ira2pcim
 
-21_12_08-194502.nohup.out (GEFEI)
+21_12_08-194502.nohup.out (VIDI)
 app: 3d_rendering
 commit: 840f103
 3d_rendering + irq2pcim
@@ -243,89 +243,89 @@ fix multiple-driver critical warning and test lower freq 3d_rendering
 
 (ABORTED!)
 21_12_09-045917.nohup.out (125MHz)
-21_12_09-051835.nohup.out (GEFEI)
+21_12_09-051835.nohup.out (VIDI)
 app: bnn
 commit: 0546cf8
 unified synthesis/compilation framework for hls benchmarks
 
-21_12_09-060616.nohup.out (GEFEI)
+21_12_09-060616.nohup.out (VIDI)
 21_12_09-060626.nohup.out (125MHz)
 app: dram_dma
 commit: d787519
 disable trace_split ila
 
-21_12_09-061040.nohup.out (GEFEI)
+21_12_09-061040.nohup.out (VIDI)
 21_12_09-061044.nohup.out (125MHz)
 app: 3d_rendering
 commit: d787519
 disable trace_split ila
 
-21_12_09-064818.nohup.out (GEFEI)
+21_12_09-064818.nohup.out (VIDI)
 21_12_09-064822.nohup.out (125MHz)
 app: bnn
 commit: d787519
 disable trace_split ila
 
-21_12_09-224235.nohup.out (GEFEI)
+21_12_09-224235.nohup.out (VIDI)
 21_12_09-224243.nohup.out (125MHz)
-21_12_10-035942.nohup.out (GEFEI) // just want to check whether randomness affect timing
+21_12_10-035942.nohup.out (VIDI) // just want to check whether randomness affect timing
 app: digit_recognition
 commit: 45ddb2e
 first trial
 
-21_12_10-211150.nohup.out (GEFEI)
+21_12_10-211150.nohup.out (VIDI)
 21_12_10-211225.nohup.out (125MHz)
 app: face_detection
 commit: 617f573
 first trial
 
-21_12_10-213413.nohup.out (GEFEI)
+21_12_10-213413.nohup.out (VIDI)
 21_12_10-213415.nohup.out (125MHz)
 app:spam_filter
 
-21_12_11-012328.nohup.out (GEFEI)
+21_12_11-012328.nohup.out (VIDI)
 app: 3d_rendering
 no RR
 commit: cd4fa8c
 
-21_12_11-031345.nohup.out (GEFEI)
+21_12_11-031345.nohup.out (VIDI)
 app: bnn
 no RR
 
-21_12_11-035340.nohup.out (GEFEI)
+21_12_11-035340.nohup.out (VIDI)
 app: digit_recognition
 no RR
 
-21_12_11-042231.nohup.out (GEFEI)
+21_12_11-042231.nohup.out (VIDI)
 app: face_detection
 no RR (FAILED)
 
-21_12_11-051949.nohup.out (GEFEI)
+21_12_11-051949.nohup.out (VIDI)
 app: spam_filter
 no RR
 
-21_12_11-063946.nohup.out (GEFEI)
+21_12_11-063946.nohup.out (VIDI)
 app: optical_flow
 no RR
 
-21_12_11-014936.nohup.out (GEFEI)
+21_12_11-014936.nohup.out (VIDI)
 21_12_11-014941.nohup.out (125MHz)
 app: optical_flow
 commit: a3efbf9
 first trial
 
-21_12_11-204801.nohup.out (GEFEI)
+21_12_11-204801.nohup.out (VIDI)
 21_12_11-204804.nohup.out (125MHz)
 app: sssp
 commit: 
 first trial
 
-21_12_11-224222.nohup.out (GEFEI)
+21_12_11-224222.nohup.out (VIDI)
 app: sssp
 commit:
 no RR (OK)
 
-21_12_11-233015.nohup.out (GEFEI)
+21_12_11-233015.nohup.out (VIDI)
 21_12_11-233207.nohup.out (125MHz)
 app:sha256
 commit:
@@ -335,117 +335,117 @@ first trial
 app:sha256
 no RR
 
-21_12_12-185349.nohup.out (GEFEI)
+21_12_12-185349.nohup.out (VIDI)
 21_12_12-185437.nohup.out (125MHz)
 app: mobilenet
 commit: 8e0797b
 first trial
 
-22_03_16-045258.nohup.out (GEFEI)
+22_03_16-045258.nohup.out (VIDI)
 app: dram
 commit: 73aecdd
 add configurable PCIM workaround and app-side rt_loge
 
-22_03_17-205701.nohup.out (GEFEI)
+22_03_17-205701.nohup.out (VIDI)
 app: 3d_rendering
 commit: 3df42e1
 app configurable PCIM workaround and app-side rt_loge. For HLS apps
 
-22_03_16-210531.nohup.out (GEFEI)
+22_03_16-210531.nohup.out (VIDI)
 app: bnn
-22_03_16-211232.nohup.out (GEFEI)
+22_03_16-211232.nohup.out (VIDI)
 app: digit_recognition
-22_03_16-211934.nohup.out (GEFEI)
+22_03_16-211934.nohup.out (VIDI)
 app: face_detection
-22_03_16-212635.nohup.out (GEFEI)
+22_03_16-212635.nohup.out (VIDI)
 app: spam_filter
-22_03_17-020330.nohup.out (GEFEI)
+22_03_17-020330.nohup.out (VIDI)
 app: optical_flow
-22_03_17-021031.nohup.out (GEFEI)
+22_03_17-021031.nohup.out (VIDI)
 app: sssp
-22_03_17-021732.nohup.out (GEFEI)
+22_03_17-021732.nohup.out (VIDI)
 app: sha256
-22_03_17-022433.nohup.out (GEFEI)
+22_03_17-022433.nohup.out (VIDI)
 app: mobilenet
 
-22_03_23-182925.nohup.out (GEFEI)
+22_03_23-182925.nohup.out (VIDI)
 app: axis_fifo_buggy
 first trial
 
-22_03_25-012958.nohup.out (GEFEI)
+22_03_25-012958.nohup.out (VIDI)
 app: axis_fifo_buggy
 add ddr_wait_cyc, allow_ddr_w_intvl.
 add replayer loge_valid aggregation
 
-22_03_25-013237.nohup.out (GEFEI)
+22_03_25-013237.nohup.out (VIDI)
 app: dram
 commit: 9087274
 add replayer loge_valid aggregation
 
-22_03_25-031704.nohup.out (GEFEI)
+22_03_25-031704.nohup.out (VIDI)
 app: axis_fifo_buggy(losscheck)
 jiacheng compiled with losscheck instrumentation
 
-22_03_25-014535.nohup.out (GEFEI)
+22_03_25-014535.nohup.out (VIDI)
 app: 3d_rendering
-22_03_25-015536.nohup.out (GEFEI)
+22_03_25-015536.nohup.out (VIDI)
 app: bnn
-22_03_25-130052.nohup.out (GEFEI)
+22_03_25-130052.nohup.out (VIDI)
 app: digit_recognition
-22_03_25-131053.nohup.out (GEFEI)
+22_03_25-131053.nohup.out (VIDI)
 app: face_detection
-22_03_25-132054.nohup.out (GEFEI)
+22_03_25-132054.nohup.out (VIDI)
 app: spam_filter
-22_03_25-210933.nohup.out (GEFEI)
+22_03_25-210933.nohup.out (VIDI)
 app: optical_flow
-22_03_25-211934.nohup.out (GEFEI)
+22_03_25-211934.nohup.out (VIDI)
 app: sssp
-22_03_25-212935.nohup.out (GEFEI)
+22_03_25-212935.nohup.out (VIDI)
 app: sha256
-22_03_25-213936.nohup.out (GEFEI)
+22_03_25-213936.nohup.out (VIDI)
 app: mobilenet
 
-22_03_28-192023.nohup.out (GEFEI)
+22_03_28-192023.nohup.out (VIDI)
 app: dram_dma
 count_ddr
 
-22_04_20-191447.nohup.out (GEFEI)
+22_04_20-191447.nohup.out (VIDI)
 app: axi_atop_filter
 buggy version
 
-22_04_20-192011.nohup.out (GEFEI)
+22_04_20-192011.nohup.out (VIDI)
 app: axi_atop_filter
 fixed version
 
-22_04_21-030203.nohup.out (GEFEI)
+22_04_21-030203.nohup.out (VIDI)
 app: axi_atop_filter
 buggy version + SYNTH_DEBUG_INTERCONNECT + DEBUG_PCHK_CSR
 
-22_04_21-054244.nohup.out (GEFEI)
+22_04_21-054244.nohup.out (VIDI)
 app: axi_atop_filter
 buggy version + SYNTH_DEBUG_INTERCONNECT
 with maxPendingAWAR
 
-22_04_21-054710.nohup.out (GEFEI)
+22_04_21-054710.nohup.out (VIDI)
 app: axi_atop_filter
 fixed version + without SYNTH_DEBUG_INTERCONNECT
 with maxPendingAWAR
 
-22_04_25-032719.nohup.out (GEFEI)
+22_04_25-032719.nohup.out (VIDI)
 app: axi_atop_filter
 buggy version +  CL_DISABLE_IRQ_PCIM + SYNTH_DEBUG_INTERCONNECT
 with maxPendingAWAR, with pcim_interconnect_ila
 
-22_04_27-042003.nohup.out (GEFEI)
+22_04_27-042003.nohup.out (VIDI)
 app: dram_dma
 new almful design
 
-22_04_27-042021.nohup.out (GEFEI)
+22_04_27-042021.nohup.out (VIDI)
 app: axi_atop_filter
 buggy version +  CL_DISABLE_IRQ_PCIM + SYNTH_DEBUG_INTERCONNECT
 with maxPendingAWAR, with pcim_interconnect_ila, with new almful design
 
-22_04_27-225659.nohup.out (GEFEI)
+22_04_27-225659.nohup.out (VIDI)
 app: axi_atop_filter
 buggy version  CL_DISABLE_IRQ_PCIM
 with maxPendingAWAR, with new almful design
@@ -454,46 +454,46 @@ replay. Otherwise, the buggy implementation can hide behind an interconnect and
 I do not know how to trigger certain timing in an interconnect without its
 source code.
 
-22_04_27-225709.nohup.out (GEFEI)
+22_04_27-225709.nohup.out (VIDI)
 app: axi_atop_filter
 correct version CL_DISABLE_IRQ_PCIM + CORRECT_AXI_ATOP_FILTER
 with maxPendingAWAR, with new almful design
 
-22_05_13-175738.nohup.out (GEFEI)
+22_05_13-175738.nohup.out (VIDI)
 app: nbody_2CU2Pipe
 first trial
 
-22_05_30-215229.nohup.out (GEFEI)
+22_05_30-215229.nohup.out (VIDI)
 app: hpcc_stream
 first trial
 
-22_06_26-041253.nohup.out (GEFEI)
+22_06_26-041253.nohup.out (VIDI)
 app: dram_dma
 MICRO'22 resource overhead sweep (and all followings)
 --sda --no-ocl --no-bar1 --no-pcim --no-dma_pcis
 
-22_06_26-131929.nohup.out (GEFEI)
+22_06_26-131929.nohup.out (VIDI)
 --sda --ocl --no-bar1 --no-pcim --no-dma_pcis
-22_06_26-134359.nohup.out (GEFEI)
+22_06_26-134359.nohup.out (VIDI)
 --sda --ocl --bar1 --no-pcim --no-dma_pcis
-22_06_28-035704.nohup.out (GEFEI)
+22_06_28-035704.nohup.out (VIDI)
 --no-sda --no-ocl --no-bar1 --pcim --no-dma_pcis
-22_06_28-050150.nohup.out (GEFEI)
+22_06_28-050150.nohup.out (VIDI)
 --sda --no-ocl --no-bar1 --pcim --no-dma_pcis
-22_06_28-052116.nohup.out (GEFEI)
+22_06_28-052116.nohup.out (VIDI)
 --sda --ocl --no-bar1 --pcim --no-dma_pcis
-22_06_26-141449.nohup.out (GEFEI)
+22_06_26-141449.nohup.out (VIDI)
 --sda --ocl --bar1 --pcim --no-dma_pcis
-22_06_28-053205.nohup.out (GEFEI)
+22_06_28-053205.nohup.out (VIDI)
 --no-sda --no-ocl --no-bar1 --pcim --dma_pcis
-22_06_28-054119.nohup.out (GEFEI)
+22_06_28-054119.nohup.out (VIDI)
 --sda --no-ocl --no-bar1 --pcim --dma_pcis
-22_06_28-055119.nohup.out (GEFEI)
+22_06_28-055119.nohup.out (VIDI)
 --sda --ocl --no-bar1 --pcim --dma_pcis
-22_06_26-210743.nohup.out (GEFEI)
+22_06_26-210743.nohup.out (VIDI)
 --sda --ocl --bar1 --pcim --dma_pcis
 
-22_10_19-020440.nohup.out (GEFEI)
+22_10_19-020440.nohup.out (VIDI)
 app: dram_dma
 ASPLOS'23 test the new DDR4 and APP internal RR support
 --no-sda --no-bar1 --no-pcim --no-pcis --ddrc --app_axim

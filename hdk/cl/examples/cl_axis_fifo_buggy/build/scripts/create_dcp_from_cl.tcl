@@ -186,9 +186,9 @@ switch $strategy {
         puts "DEFAULT strategy."
         source $HDK_SHELL_DIR/build/scripts/strategy_DEFAULT.tcl
     }
-    "GEFEI" {
-        puts "GEFEI's strategy."
-        source $HDK_SHELL_DIR/build/scripts/strategy_GEFEI.tcl
+    "VIDI" {
+        puts "VIDI's strategy."
+        source $HDK_SHELL_DIR/build/scripts/strategy_VIDI.tcl
     }
     default {
         puts "$strategy is NOT a valid strategy. Defaulting to strategy DEFAULT."
