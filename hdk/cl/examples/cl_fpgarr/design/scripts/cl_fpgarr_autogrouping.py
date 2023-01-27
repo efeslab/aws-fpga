@@ -2,6 +2,7 @@
 import argparse
 from pathlib import Path
 from functools import reduce
+from itertools import groupby
 from typing import Callable, List, Optional, Set
 import sys
 
@@ -12,46 +13,55 @@ parser = argparse.ArgumentParser(description="""Generate tree structures that gr
     generated .svh files should be included in the top-level wrapper (not on top
     of the file, but inline to the correct location).""")
 
+# Possible actions the generated code might take for each registered interface
+# ACTION_TRACE => instrument the record/replay middle layer for a given pair of pre/post-record objects.
+ACTION_TRACE = "trace"
+# ACTION_FUSE => instrument to directly connect a given pair of pre/post-record objects.
+ACTION_FUSE = "fuse"
+# ACTION_DEL => does not instrument anything. This is often used when the registered interface does not exist in the target application.
+ACTION_DEL = "del"
+ALLOWED_ACTIONS = [ACTION_TRACE, ACTION_FUSE, ACTION_DEL]
 # A dict of potential AXI interfaces and their metadata
 # keys are canonical name in this automation scripts
 # values are auxiliary info that is related to other part of the project
 #  - INTF_ENUM: the enum identifier in the `AWSF1_INTF_RRCFG`` package specified in `cl_fpgarr_defs.svh``
 #  - PLACEMENT: the placement_vec copied from `cl_fpgarr_defs.svh`, representing the physical distance between interfaces.
+#  - DEFAULT_ACTION: see the ACTION_* above
 INTFCFG = {
     "sda": {
         "INTF_ENUM": "SDA",
         "PLACEMENT": 1,
-        "DEFAULT_ENABLED": True,
+        "DEFAULT_ACTION": ACTION_TRACE,
     },
     "ocl": {
         "INTF_ENUM": "OCL",
         "PLACEMENT": 1,
-        "DEFAULT_ENABLED": True,
+        "DEFAULT_ACTION": ACTION_TRACE,
     },
     "bar1": {
         "INTF_ENUM": "BAR1",
         "PLACEMENT": 0,
-        "DEFAULT_ENABLED": True,
+        "DEFAULT_ACTION": ACTION_TRACE,
     },
     "pcim": {
         "INTF_ENUM": "PCIM",
         "PLACEMENT": 0,
-        "DEFAULT_ENABLED": True,
+        "DEFAULT_ACTION": ACTION_TRACE,
     },
     "pcis": {
         "INTF_ENUM": "PCIS",
         "PLACEMENT": 1,
-        "DEFAULT_ENABLED": True,
+        "DEFAULT_ACTION": ACTION_TRACE,
     },
     "ddrc": {
         "INTF_ENUM": "DDRC",
         "PLACEMENT": 0,
-        "DEFAULT_ENABLED": False,
+        "DEFAULT_ACTION": ACTION_DEL,
     },
     "app_axim": {
         "INTF_ENUM": "APP_AXIM",
         "PLACEMENT": 0,
-        "DEFAULT_ENABLED": False,
+        "DEFAULT_ACTION": ACTION_DEL,
     },
 }
 # INTFNAMES enforces an order across all interfaces that support RR
@@ -156,9 +166,7 @@ class MergeNode(object):
 
 def exportMergeStructure(filepath: Path,
                          top_node_name: str,
-                         ignoredIntfs: Set[AXIIntf],
-                         RRIntfs: List[AXIIntf],
-                         ignore_callback: Callable[[AXIIntf], str],
+                         IntfsToMerge: List[AXIIntf],
                          getBusName_callback: Callable[[AXIIntf], str],
                          render_callback: Callable[[MergeNode], str],
                          passThrough_callback: Callable[[MergeNode, str], str]
@@ -166,18 +174,15 @@ def exportMergeStructure(filepath: Path,
     """
     @param filepath: the output file to export the tree structure
     @param top_node_name: the bus name of the expected top-level node in the merge tree
-    @param ignoredIntfs: the set of interfaces that should be excluded from the merge tree and ignored
-    @param RRIntfs: the list of interfaces to be merged
-    TODO: ignore_callback is no longer needed.
-    @param ignore_callback: the callback that generates the code to ignore a bus
+    @param IntfsToMerge: the list of interfaces to be merged
     @param getBusName_callback: the callback that generates the corresponding bus name of the interface. This normally extracts a few channels in an interface to merge.
-    @param render_callback: the callback that generates the code to merge the interfaces in RRIntfs
+    @param render_callback: the callback that generates the code to merge the interfaces in IntfsToMerge
     @param passThrough_callback: the callback to handle the case that the merge tree only has one node. This call back will generate the code to rename one bus to the expected top-level bus.
     """
     with open(filepath, "w") as f:
         f.write(AUTOGEN_INFO)
         buses_to_merge = [MergeNode(getBusName_callback(intf))
-                          for intf in RRIntfs]
+                          for intf in IntfsToMerge]
         if len(buses_to_merge) > 1:
             merged_node = reduce(
                 lambda l, r: MergeNode(MergeNode.getTempName(), l, r),
@@ -193,10 +198,10 @@ intfMap = {intfname: AXIIntf(intfname) for intfname in INTFNAMES}
 intf_toggles = parser.add_argument_group("Interface Toggles")
 for intfname in INTFNAMES:
     intf_toggles.add_argument(f"--{intfname}", dest=intfname,
-            action="store_true", default=intfMap[intfname].DEFAULT_ENABLED,
-            help=f"enable {intfname} (default: %(default)s)")
-    intf_toggles.add_argument(f"--no-{intfname}", dest=intfname,
-                              action="store_false", help=f"disable {intfname}")
+            action="store", type=str, default=intfMap[intfname].DEFAULT_ACTION, choices=ALLOWED_ACTIONS,
+            help=f"config instrumentation for {intfname} (default: %(default)s)")
+    #intf_toggles.add_argument(f"--no-{intfname}", dest=intfname,
+    #                          action="store_false", help=f"disable {intfname}")
 io_ctrl = parser.add_argument_group("Output Control")
 io_ctrl.add_argument("-d", "--dir", type=str, default="gen",
                      help="The output directory. (default: %(default)s)")
@@ -228,10 +233,10 @@ AUTOGEN_FOOTER = (
 print(f"{sys.argv[0]} is working with config:")
 print(args)
 
-ignoredIntfs = set(intfMap[intfname] for intfname in INTFNAMES
-                   if not getattr(args, intfname))
-RRIntfs = [intfMap[intfname] for intfname in INTFNAMES
-           if getattr(args, intfname)]
+RRIntfs = {
+    action: list(intfs) for action, intfs in groupby(
+        intfMap.values(), lambda intf: intf.DEFAULT_ACTION)
+}
 
 output_dir = Path(args.dir)
 
@@ -245,9 +250,7 @@ TOP_LEVEL_RECORD_BUS_NAME = "merged_SH2CL_logging_bus"
 exportMergeStructure(
     output_dir/args.record_out,
     TOP_LEVEL_RECORD_BUS_NAME,
-    ignoredIntfs,
-    RRIntfs,
-    AXIIntf.getRecordBusBlackholeInst,
+    RRIntfs[ACTION_TRACE],
     AXIIntf.getRecordBusName,
     MergeNode.renderLoggingMerge,
     MergeNode.passThroughLogging
@@ -258,9 +261,7 @@ TOP_LEVEL_VALIDATE_BUS_NAME = "merged_CL2SH_logging_bus"
 exportMergeStructure(
     output_dir/args.validate_out,
     TOP_LEVEL_VALIDATE_BUS_NAME,
-    ignoredIntfs,
-    RRIntfs,
-    AXIIntf.getValidateBusBlackholeInst,
+    RRIntfs[ACTION_TRACE],
     AXIIntf.getValidateBusName,
     MergeNode.renderLoggingMerge,
     MergeNode.passThroughLogging
@@ -271,9 +272,7 @@ TOP_LEVEL_REPLAY_BUS_NAME = "unpacked_replay_bus"
 exportMergeStructure(
     output_dir/args.replay_out,
     TOP_LEVEL_REPLAY_BUS_NAME,
-    ignoredIntfs,
-    RRIntfs,
-    AXIIntf.getReplayBusWhiteholeInst,
+    RRIntfs[ACTION_TRACE],
     AXIIntf.getReplayBusName,
     MergeNode.renderReplayMerge,
     MergeNode.passThroughReplay
@@ -283,11 +282,10 @@ exportMergeStructure(
 with open(output_dir/args.cfg_out, "w") as f:
     f.write(AUTOGEN_HEADER)
     num_tracked_label = "RR_NUM_TRACKED_AXI"
-    print((
-        f"// axi interfaces under track: {', '.join([i.intfname for i in RRIntfs])}\n"
-        f"// axi interfaces ignored: {', '.join([i.intfname for i in ignoredIntfs])}\n"
-        f"parameter {num_tracked_label} = {len(RRIntfs)};"
-    ), file=f)
+    for action, intfs in RRIntfs.items():
+        print(f"// axi interfaces with action {action}: {', '.join(i.intfname for i in intfs)}", file=f)
+    print(
+        f"parameter {num_tracked_label} = {len(RRIntfs[ACTION_TRACE])};", file=f)
     bracket_sep = ', \n\t'
     # tracked_intf_enum = [INTFCFG[intf.intfname]["INTF_ENUM"]
     #                     for intf in RRIntfs]
@@ -298,7 +296,7 @@ with open(output_dir/args.cfg_out, "w") as f:
     #     for eid in tracked_intf_enum]
     placement_vec_entries = [
         "{} /*{}*/".format(intf.PLACEMENT, intf.intfname)
-        for intf in RRIntfs
+        for intf in RRIntfs[ACTION_TRACE]
     ]
     print(
         f"parameter int RR_TRACKED_AXI_PLACEMENT_VEC[0:{num_tracked_label}-1] = '{{\n\t{bracket_sep.join(placement_vec_entries)}\n}};", file=f)
@@ -306,13 +304,13 @@ with open(output_dir/args.cfg_out, "w") as f:
     tracked_loge_entries = []
     tracked_loge_cnt = 0
     for intfname in INTFNAMES:
-        if getattr(args,intfname):
+        if getattr(args,intfname) != ACTION_DEL:
             tracked_loge_entries.append(f"{tracked_loge_cnt} /*{intfname}*/")
             tracked_loge_cnt += 1
         else:
             tracked_loge_entries.append(f"-1 /*{intfname}*/")
     print(f"parameter int RR_TRACKED_LOGE_INTF_IDX[0:AWSF1_INTF_RRCFG::NUM_INTF-1] = '{{\n\t{bracket_sep.join(tracked_loge_entries)}\n}};", file=f)
-    for intf in RRIntfs:
-        if getattr(args,intf.intfname):
-            print(f"`define RR_ENABLE_{intf.INTF_ENUM}", file=f)
+    for action, intfs in RRIntfs.items():
+        for intf in intfs:
+            print(f"`define RR_{action.upper()}_{intf.INTF_ENUM}", file=f)
     f.write(AUTOGEN_FOOTER)

@@ -372,7 +372,7 @@ assign rr_state_csr_next.rt.almful.replay_bus.rdyrply_almful = unpacked_replay_b
 // Replay logic
 ////////////////////////////////////////////////////////////////////////////////
 // PCIM bus
-`ifdef RR_ENABLE_PCIM
+`ifdef RR_TRACE_PCIM
 rr_axi_bus_t pcim_replay_axi_bus();
 localparam PCIM_LOGE_INTF_IDX = RR_TRACKED_LOGE_INTF_IDX[PCIM];
   axi_slv_replayer #(RR_NUM_TRACKED_AXI, LOGE_PER_AXI, PCIM_LOGE_INTF_IDX,
@@ -434,8 +434,10 @@ rr_axi_bus_t rr_validation_bus();
 // It can be the bus connected to the shell, or the corresponding replay bus
 ////////////////////////////////////////////////////////////////////////////////
 // rr_mode_csr.replayEn decides
-// rr_irq_pcim or pcim_replay_axi_bus ?
-`ifdef RR_ENABLE_PCIM
+// cl_pcim_bus (pcim connected to shell)
+// or
+// pcim_replay_axi_bus (replayed pcim)
+`ifdef RR_TRACE_PCIM
   rr_axi_slv_sel pcim_sel (
     .sel(rr_mode_csr.replayEn),
     .inAM(cl_pcim_bus),

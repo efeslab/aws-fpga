@@ -314,13 +314,18 @@ endfunction
   assign m.rvalid = s.rvalid;                                                  \
   assign s.rready = m.rready
 
+// Conditionally perform casting for record/replay the given interface ID
+// The cast is between types that shares the same axi-like fields.
+// Do nothing when that interface ID is disabled
 `define RR_AXI_CONNECT_M_TO_S(m, s, intfid)                                    \
+`ifndef RR_DEL_``intfid                                                        \
   /* rr_axi_m is the type-casted master intf */                                \
   rr_axi_bus_t intfid``_rr_axi_m();                                            \
   /* rr_axi_s is the type-casted slave intf */                                 \
   rr_axi_bus_t intfid``_rr_axi_s();                                            \
   `AXI_CONNECT_M_TO_S(m, intfid``_rr_axi_m);                                   \
-  `AXI_CONNECT_M_TO_S(intfid``_rr_axi_s, s)
+  `AXI_CONNECT_M_TO_S(intfid``_rr_axi_s, s);                                   \
+`endif
 
 
 // RR CSRS
@@ -575,7 +580,7 @@ parameter int MAX_PCIM_ARID_WIDTH = $clog2(MAX_PCIM_RD_BURSTS);
 
 // Automate registering interfaces for RR
 `define REG_AXI_MSTR_INTF_RR(pre_record, post_record, intf_id, intf_str)       \
-`ifdef RR_ENABLE_``intf_id                                                     \
+`ifdef RR_TRACE_``intf_id                                                     \
   `AXI_MSTR_LOGGING_BUS(rr_``intf_id``_SH2CL_logging_bus, intf_str);           \
   `AXI_SLV_LOGGING_BUS(rr_``intf_id``_CL2SH_logging_bus, intf_str);            \
   rr_axi_bus_t intf_id``_to_record();                                          \
@@ -607,12 +612,15 @@ parameter int MAX_PCIM_ARID_WIDTH = $clog2(MAX_PCIM_RD_BURSTS);
     .inBS(intf_id``_replay),                                                   \
     .outM(intf_id``_to_record)                                                 \
   );                                                                           \
-`else                                                                          \
+`elsif RR_FUSE_``intf_id                                                       \
   `AXI_CONNECT_M_TO_S(pre_record, post_record);                                \
+`elsif RR_DEL_``intf_id                                                        \
+`else                                                                          \
+  $error("Is the interface %s configured correctly?", intf_str);               \
 `endif
 
 `define REG_AXIL_MSTR_INTF_RR(pre_record, post_record, intf_id, intf_str)      \
-`ifdef RR_ENABLE_``intf_id                                                     \
+`ifdef RR_TRACE_``intf_id                                                      \
   `AXIL_MSTR_LOGGING_BUS(rr_``intf_id``_SH2CL_logging_bus, intf_str);          \
   `AXIL_SLV_LOGGING_BUS(rr_``intf_id``_CL2SH_logging_bus, intf_str);           \
   rr_axi_lite_bus_t intf_id``_to_record();                                     \
@@ -644,8 +652,11 @@ parameter int MAX_PCIM_ARID_WIDTH = $clog2(MAX_PCIM_RD_BURSTS);
     .inBS(intf_id``_replay),                                                   \
     .outM(intf_id``_to_record)                                                 \
   );                                                                           \
-`else                                                                          \
+`elsif RR_FUSE_``intf_id                                                       \
   `AXIL_CONNECT_M_TO_S(pre_record, post_record);                               \
+`elsif RR_DEL_``intf_id                                                        \
+`else                                                                          \
+  $error("Is the interface %s configured correctly?", intf_str);               \
 `endif
 
 `endif // CL_FPGARR_DEFS
