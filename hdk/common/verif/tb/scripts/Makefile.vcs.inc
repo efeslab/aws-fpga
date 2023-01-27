@@ -15,6 +15,8 @@
 
 
 
+view:
+	cd $(SIM_DIR) && dve -full64 -vpd $(TEST).vpd
 clean::
 	cd $(SIM_ROOT)/.. && rm -rf *.jou
 	cd $(SIM_ROOT)/.. && rm -rf .cxl.vcs_mx.version
