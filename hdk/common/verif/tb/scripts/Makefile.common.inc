@@ -140,4 +140,6 @@ make_sim_dir: $(HDK_COMMON_DIR)/verif/models/sh_bfm/cl_ports_sh_bfm.vh
 
 show_common_liblists:
 	@ for i in $(COMMON_LIBLISTS); do echo $$i; done
-
+make_complib: $(SIM_DIR) $(COMPLIB_DIR)
+$(SIM_DIR):
+	@mkdir -p $(SIM_DIR)
