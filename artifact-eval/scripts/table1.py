@@ -10,14 +10,11 @@ from typing import List
 HOME = os.getenv("HOME")
 parser = argparse.ArgumentParser(description="Reproduce the Table.1 in the paper")
 parser.add_argument('--expr-output', type=str, required=True, help="The output directory of experiments on the actual FPGA hardware")
-parser.add_argument('--synth-reports', type=str, default=f"{HOME}/aws-fpga-prebuilt", help="The git repo that contains synthesis results (default: %(default)s)")
 parser.add_argument('--record-width', type=int, default=1694, help="The width (in bits) of the interfaces being recorded (default: %(default)s)")
 
 args = parser.parse_args()
 DRAM_OUTPUT_DIR = args.expr_output
 HLS_OUTPUT_DIR  = args.expr_output
-HLS_SYNTH_PATH = f"{args.synth_reports}/hdk/cl/examples/cl_hls/build/reports/"
-FPGA_RR_SYNTH_PATH = f"{args.synth_reports}/hdk/cl/examples/cl_fpgarr/build/reports/"
 benchmarks = {
         "test_dram_dma":"22_03_16-045258",
         "3d_rendering":"22_03_17-205701",
@@ -58,36 +55,16 @@ def get_record_size(f):
     validate_buffer_size = grep("Validate Buffer", f).replace("(","").replace(")","").split()[-2]
     return int(record_buffer_size) + int(validate_buffer_size)
 
-def get_resource_util(f):
-    check_file_existance(f)
-    rr = 0
-    cl = 1
-    sh = 2
-    logic = []
-    reg = []
-    ram = []
-    res = grep("-w", " CL ", f).replace(" ", "").splitlines()
-    res.append(grep("-w", "static_sh", f).replace(" ", "").splitlines()[0])
-    total_logic = 1180984
-    total_reg = 2361968
-    total_ram = 2160
-    for l in res:
-        l = l.split("|")
-        logic.append(int(l[5]))
-        reg.append(int(l[9]))
-        ram.append(int(l[10]) + int(l[11])/2.0)
-    logic_overhead = float(logic[rr] - logic[cl]) / float(total_logic - logic[sh]) * 100
-    reg_overhead = float(reg[rr] - reg[cl]) / float(total_reg - reg[sh]) * 100
-    ram_overhead = float(ram[rr] - ram[cl]) / float(total_ram - ram[sh]) * 100
-    return logic_overhead, reg_overhead, ram_overhead
-
 def geomean_of_percent(data: List[float]):
     scaledRatio = [100 + p for p in data]
     return stat.geometric_mean(scaledRatio) - 100
 
-print("{},{},{},{},{},{},{},{},{},{},{}".format(
-    "benchmark", "avg(runtime)(ms)", "avg(overhead) (%)", "std(overhead) (%)", "hb violation (%)", "std(hb violation) (%)",
-    "logic_overhead(%)", "reg_overhead(%)", "ram_overhead(%)", "avg(trace size) (B)", "Trace Reduction"))
+
+print("{},{},{},{},{},{},{},{}".format(
+    "benchmark", "avg(runtime)(ms)", "avg(overhead) (%)", "std(overhead) (%)",
+    "avg(trace size) (B)", "Trace Reduction",
+    "hb violation (%)", "std(hb violation) (%)"
+))
 
 for benchName, benchID in benchmarks.items():
     if benchName == "test_dram_dma":
@@ -114,21 +91,15 @@ for benchName, benchID in benchmarks.items():
     #perf_overhead = np.array(perf_overhead)
     #hb_violation = np.array(hb_violation)
 
-    if benchName == "test_dram_dma":
-        rpt = FPGA_RR_SYNTH_PATH + benchID + ".hierarchical_utilization_route_design.rpt"
-    else:
-        rpt = HLS_SYNTH_PATH + benchID + ".hierarchical_utilization_route_design.rpt"
-    logic_overhead, reg_overhead, ram_overhead = get_resource_util(rpt)
-
     mean_runtime = stat.mean(runtime)
     mean_trace_sizeB = stat.mean(trace_sizeB)
     cycles = (mean_runtime / 10**3) * 250 * 10**6 # 250MHz
     cycle_accurate_trace_sizeB = cycles * args.record_width // 8
     trace_size_reduction = int(cycle_accurate_trace_sizeB // mean_trace_sizeB)
-    print("{},{},{},{},{},{},{},{},{},{},{}".format(
+    print("{},{},{},{},{},{},{},{}".format(
         benchName,
         mean_runtime,
         geomean_of_percent([overhead + 100 for overhead in perf_overhead]) - 100, stat.stdev(perf_overhead),
+        mean_trace_sizeB, trace_size_reduction,
         stat.mean(hb_violation), stat.stdev(hb_violation),
-        logic_overhead, reg_overhead, ram_overhead,
-        mean_trace_sizeB, trace_size_reduction))
+    ))
