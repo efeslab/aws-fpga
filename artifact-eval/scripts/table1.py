@@ -6,6 +6,8 @@ from sh import grep, tail
 import argparse
 import statistics as stat
 from typing import List
+from utils import geomean_of_percent
+from config import benchmarks
 
 HOME = os.getenv("HOME")
 parser = argparse.ArgumentParser(description="Reproduce the Table.1 in the paper")
@@ -15,18 +17,6 @@ parser.add_argument('--record-width', type=int, default=1694, help="The width (i
 args = parser.parse_args()
 DRAM_OUTPUT_DIR = args.expr_output
 HLS_OUTPUT_DIR  = args.expr_output
-benchmarks = {
-        "test_dram_dma":"22_03_16-045258",
-        "3d_rendering":"22_03_17-205701",
-        "bnn":"22_03_16-210531",
-        "digit_recognition":"22_03_16-211232",
-        "face_detection":"22_03_16-211934",
-        "spam_filter":"22_03_16-212635",
-        "optical_flow":"22_03_17-020330",
-        "sssp":"22_03_17-021031",
-        "sha256":"22_03_17-021732",
-        "mobilenet":"22_03_17-022433"
-}
 
 def check_file_existance(f):
     if not os.path.exists(f):
@@ -54,11 +44,6 @@ def get_record_size(f):
     record_buffer_size = grep("Record Buffer", f).replace("(","").replace(")","").split()[-2]
     validate_buffer_size = grep("Validate Buffer", f).replace("(","").replace(")","").split()[-2]
     return int(record_buffer_size) + int(validate_buffer_size)
-
-def geomean_of_percent(data: List[float]):
-    scaledRatio = [100 + p for p in data]
-    return stat.geometric_mean(scaledRatio) - 100
-
 
 print("{},{},{},{},{},{},{},{}".format(
     "benchmark", "avg(runtime)(ms)", "avg(overhead) (%)", "std(overhead) (%)",
