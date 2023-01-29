@@ -402,7 +402,8 @@ int axis_fifo_main(int argc, char *argv[]) {
   pthread_t ocl_tid = 0;
   void *ocl_ret;
 #ifdef SV_TEST
-  // in simulation,
+  // in simulation, creating pthread would cause segfault, so we directly call
+  // the entry-point of another thread
   ocl_thread_start(&delayed_start);
   // If you want to trigger the bug in simulation, you can force fifo to fill up
   // by uncommenting the following lines
@@ -470,7 +471,8 @@ int axis_fifo_main(int argc, char *argv[]) {
   }
 
   printf("################# TEST REPORT ###############################\n");
-  printf("total values: %ld ;\nincorrect values: %ld ;\nincorrect values (-1): %ld ;\nout of bound values: %ld ;\n",
+  printf("buffer alignment: %d, delay mode: %s;\n", buffer_alignment, argv[2]);
+  printf("total values: %ld;\nincorrect values: %ld;\nincorrect values (-1): %ld;\nout of bound values: %ld;\n",
           BUFFERSIZE/sizeof(uint32_t) + OCL_INJECT_CNT, unexpected, minus1_counter, oob_counter);
   printf("#############################################################\n");
   out:
