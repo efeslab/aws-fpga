@@ -467,8 +467,10 @@ int axi_atop_filter_main(int argc, char *argv[]) {
     }
   }
 
-  printf("total: %lld, unexpected: %ld places, -1: %ld places, oob: %ld places\n",
+  printf("################# TEST REPORT ###############################\n");
+  printf("total values: %ld;\nincorrect values: %ld;\nincorrect values (-1): %ld;\nout of bound values: %ld;\n",
           DATA_LEN, unexpected, minus1_counter, oob_counter);
+  printf("#############################################################\n");
   out:
   free(pcis_mem);
   pcim_dealloc_buffer(pcim_mem_va);
