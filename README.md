@@ -1,3 +1,7 @@
+# Repo for the upcoming ASPLOS'23 paper "Vidi: Record Replay for Reconfigurable Hardware"
+This is fork from the aws/aws-fpga that contains the implementation of a record/replay framework caled **Vidi**.
+For artifact-eval, check [here](artifact-eval).
+
 # Table of Contents
 
 1. [Overview of AWS EC2 FPGA Development Kit](#overview-of-aws-ec2-fpga-development-kit)
