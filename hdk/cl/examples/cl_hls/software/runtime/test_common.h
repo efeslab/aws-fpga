@@ -113,7 +113,7 @@ static inline void hls_peek_ocl64(uint64_t addr, uint64_t *data) {
     uint32_t lo, hi;
     hls_peek_ocl(addr, &lo);
     hls_peek_ocl(addr + 4, &hi);
-    *data = (hi << 32) | lo;
+    *data = ((uint64_t)(hi) << 32) | lo;
 }
 static inline void hls_poke_ocl64(uint64_t addr, uint64_t data) {
     hls_poke_ocl(addr, data & 0xffffffff);

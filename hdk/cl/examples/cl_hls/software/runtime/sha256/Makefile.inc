@@ -17,7 +17,7 @@ HLS_DESIGN_INPUT := $(GENERATED_INPUT)
 # A newer guess is that the replayer fifo is filled up by interleaving
 # replayable packets as well as pure "loge" packets. Such optimizations can be
 # applied to "twowayhandshake_replayer.sv"
-HLS_DESIGN_TEST_ARGS := -f $(GENERATED_INPUT) -B 1
+HLS_DESIGN_TEST_ARGS := -f $(GENERATED_INPUT) -B 1 -v
 # 250 MHz
 HLS_DESIGN_AGFI_ID := agfi-086380e95f307c702
 

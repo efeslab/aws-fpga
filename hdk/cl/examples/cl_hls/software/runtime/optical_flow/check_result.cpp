@@ -67,16 +67,6 @@ void check_results(velocity_t output[MAX_HEIGHT][MAX_WIDTH], CFloatImage refFlow
   }
 
   double avg_error = accum_error / num_pix;
-  std::ofstream ofile;
-  ofile.open("output.txt");
-  if (ofile.is_open())
-  {
-    ofile << "Average error: " << avg_error << " degrees" << std::endl;
-    ofile.close();
-  }
-  else
-  {
-    std::cout << "Failed to create output file!" << std::endl;
-  }
-
+  std::ostream &ofile = std::cout;
+  ofile << "Average error: " << avg_error << " degrees" << std::endl;
 }
