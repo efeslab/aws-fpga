@@ -17,7 +17,8 @@ parser.add_argument('-o', '--output', type=str, default="resource_overhead_sweep
 args = parser.parse_args()
 FPGA_RR_SYNTH_PATH = f"{args.prebuilt_synth}/hdk/cl/examples/cl_fpgarr/build/reports/"
 
-#rcParams['figure.figsize'] = 6.8, 4.5
+# sanity check
+assert(os.path.exists(FPGA_RR_SYNTH_PATH))
 
 t = []  # total traced width
 lut = []

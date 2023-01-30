@@ -3,7 +3,6 @@
 import os
 import argparse
 from sh import grep, tail
-import numpy as np
 from utils import get_resource_util
 from config import benchmarks
 
@@ -14,6 +13,10 @@ parser.add_argument('--prebuilt-synth', type=str, default=f"{HOME}/aws-fpga-preb
 args = parser.parse_args()
 HLS_SYNTH_PATH = f"{args.prebuilt_synth}/hdk/cl/examples/cl_hls/build/reports/"
 FPGA_RR_SYNTH_PATH = f"{args.prebuilt_synth}/hdk/cl/examples/cl_fpgarr/build/reports/"
+
+# sanity check
+assert(os.path.exists(HLS_SYNTH_PATH))
+assert(os.path.exists(FPGA_RR_SYNTH_PATH))
 
 print("{},{},{},{}".format(
     "benchmark", "logic_overhead(%)", "reg_overhead(%)", "ram_overhead(%)"))

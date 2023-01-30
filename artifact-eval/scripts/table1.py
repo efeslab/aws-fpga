@@ -18,6 +18,10 @@ args = parser.parse_args()
 DRAM_OUTPUT_DIR = args.expr_output
 HLS_OUTPUT_DIR  = args.expr_output
 
+# sanity check
+assert(os.path.exists(DRAM_OUTPUT_DIR))
+assert(os.path.exists(HLS_OUTPUT_DIR))
+
 def check_file_existance(f):
     if not os.path.exists(f):
         raise RuntimeError(f"Does {f} exist?")
