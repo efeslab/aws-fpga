@@ -19,5 +19,5 @@ describe:
 	sudo fpga-describe-local-image -S 0 -M
 clearfpga:
 	$(CLEAR_FPGA)
-$(RR_TOOL): $(wildcard $(RR_TOOL_DIR)/*)
+$(RR_TOOL): $(wildcard $(RR_TOOL_DIR)/*.cpp) $(wildcard $(RR_TOOL_DIR)/*.hpp)
 	make -C $(RR_TOOL_DIR)
