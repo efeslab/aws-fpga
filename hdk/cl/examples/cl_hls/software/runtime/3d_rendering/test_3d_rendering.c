@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <malloc.h>
 #include <poll.h>
+#include <openssl/sha.h>
 
 #include <utils/sh_dpi_tasks.h>
 
@@ -165,6 +166,13 @@ int dma_example_hwsw_cosim(int slot_id, size_t buffer_size)
 
     rc = do_dma_read((uint8_t*)read_buffer, total_output_size, MEM_16G, 0, slot_id);
     fail_on(rc, out, "DMA read failed on DIMM 1");
+
+    unsigned char *hash = SHA1(read_buffer, total_output_size, NULL);
+    puts("SHA1 hash of the output buffer: ");
+    for (int i = 160/8; i > 0; --i) {
+        printf("%02x", hash[i-1]);
+    }
+    putchar('\n');
 
     ofile = fopen("outputs.txt", "w+");
 
