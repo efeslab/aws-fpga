@@ -321,6 +321,29 @@ module twowayhandshake_logger #(
   // }}}
 
   ////////////////////////////////////////////////////////////////////////////
+  // FIFO semantics
+  ////////////////////////////////////////////////////////////////////////////
+  // {{{
+  // The following liveness properties are introduced to avoid the degenerated
+  // cases where ready signals of downstream channels are always low
+  logb_ready_liveness: `ASSUME property (EVENTUAL_RISE(clk,rstn,logb_ready));
+  loge_ready_liveness: `ASSUME property (EVENTUAL_RISE(clk,rstn,loge_ready));
+  // TODO the following prop_fifo is slow to prove. Maybe consider using sby to
+  // write intermediate proof
+  property prop_fifo;
+    logic [DATA_WIDTH-1:0] d = 0;
+    logic [F_CNTWIDTH-1:0] tag = 0;
+    @(posedge clk) disable iff (!rstn)
+    // This property specifies both lossless and inorder thanks to the
+    // instrumented packet counter {in,out}_cnt
+    // Note that here out implies input because the input may be stalled by
+    // multiple downstream channels (logb, loge), including the output channel
+    (out_valid && out_ready, tag=out_cnt, d=out_data) |-> ##[0:$] (in_valid && in_ready && in_cnt == tag && in_data == d);
+  endproperty
+  assert_prop_fifo: `ASSERT property(prop_fifo);
+  // }}}
+
+  ////////////////////////////////////////////////////////////////////////////
   // Performance related properties
   ////////////////////////////////////////////////////////////////////////////
   // {{{

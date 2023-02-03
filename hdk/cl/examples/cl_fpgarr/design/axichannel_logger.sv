@@ -113,7 +113,12 @@ lib_pipe_pipe #(
 );
 `endif
 
-// TODO the proof for this module is no longer available after switching to BRAM
+// TODO the proof for this module is no longer available after switching from
+// skidbuffer to BRAM-based fifo+almful
+// TODO: after the almful design refactoring, I think the only non-trivial and
+// relevant property can be proved here is that loge can only send one more
+// transactions after logb_almful is asserted.
+// More detailed documentation is available in the cl_fpgarr_happenbefore_encoder.sv
 
 `ifdef FORMAL
 assign F_loge_data_pipe = in_data;
