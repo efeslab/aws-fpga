@@ -66,6 +66,10 @@ for benchName, benchID in benchmarks.items():
     trace_sizeB = []
     glob_pattern = f"{OUTPUT_DIR}/{benchName}*_diff.txt"
     matched_prefix = [path[:-len('diff.txt')] for path in glob.glob(glob_pattern)]
+    if len(matched_prefix) == 0:
+        # skip non-exist benchmark results
+        print(f"skip non-exists benchmark: {benchName}")
+        continue
     for bench_prefix in matched_prefix:
         none_ns    = get_elaspsed_ns(bench_prefix + "none.log")
         recordv_ns = get_elaspsed_ns(bench_prefix + "recordv.log")
