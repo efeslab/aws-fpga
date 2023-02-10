@@ -39,6 +39,8 @@ Clone the `asplos23-ae` branch of this repository:
 # skip the clone if you are using servers provided by us
 git clone https://github.com/efeslab/aws-fpga
 ```
+**NOTE:** The source code directory has to be a git repo. If you are using the Zenodo archive, please use `git init` as a workaround.
+
 In the `dev` server, enable the hardware development environment on **EVERY NEW** command-line shell:
 ```bash
 cd aws-fpga
