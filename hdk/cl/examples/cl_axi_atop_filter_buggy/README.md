@@ -12,7 +12,7 @@ The following experiments are expected to take < 20min
 (1) Go to the corresponding software directory
 ```bash
 # assuming we were at the git repo root dir aws-fpga
-cd hdk/cl/examples/cl_axi_atop_filter/software/runtime
+cd hdk/cl/examples/cl_axi_atop_filter_buggy/software/runtime
 ```
 
 (2) Flash a prebuilt FPGA image of the buggy implementation
