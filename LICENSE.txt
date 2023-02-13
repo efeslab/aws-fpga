@@ -1,3 +1,8 @@
+================================================================================
+Unless explicitly specified, the majority of this repo is forked from
+`https://github.com/aws/aws-fpga/`, which has the following License.
+================================================================================
+
 Copyright 2014-2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License"). You
@@ -78,5 +83,35 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+================================================================================
+Changes under `hdk/cl/examples/cl_fpgarr/` are associated to the ASPLOS 2023 paper
+"Vidi: Record Replay for Reconfigurable Hardware"
+They are licensed in the Apache Licence, Version 2.0
+================================================================================
+Copyright 2020-2023 EFESLab at University of Michigan. All Rights Reserved.
 
+Licensed under the Apache License, Version 2.0 (the "License"). You
+may not use this file except in compliance with the License. A copy of
+the License is located at
 
+    http://aws.amazon.com/apache2.0/
+
+================================================================================
+`hdk/cl/examples/cl_hls` contains multiple applications and their licences are
+listed below.
+================================================================================
+`https://github.com/cornell-zhang/rosetta`: BSD v3.0
+`https://github.com/aeonstasis/sssp-fpga`: MIT
+`https://github.com/onioncc/iSmartDNN`: Not Specified
+`https://github.com/dowenberghmark/FPGA-SHA256`: GPL v3.0
+
+================================================================================
+`hdk/cl/examples/cl_axis_fifo_buggy` consists of
+================================================================================
+`https://github.com/alexforencich/verilog-axis`: MIT
+`https://github.com/efeslab/hardware-bugbase`: Not Specified
+
+================================================================================
+`hdk/cl/examples/cl_axi_atop_filter_buggy` consists of
+================================================================================
+`https://github.com/pulp-platform/axi`: Apache License 2.0
