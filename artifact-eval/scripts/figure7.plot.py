@@ -1,10 +1,13 @@
 #!/usr/bin/python3
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import os
 import argparse
 from utils import get_resource_util
 from config import SWEEP_INTERFACES_MAP
 from config import sweep_configurations
+
+mpl.rcParams['pdf.fonttype'] = 42
 
 HOME = os.getenv("HOME")
 parser = argparse.ArgumentParser(
