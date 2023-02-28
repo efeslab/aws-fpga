@@ -280,6 +280,8 @@ cd hdk/cl/examples/cl_hls/software/runtime
 make NUM_TEST=5 test_all
 ```
 
+**NOTE:** The application sha256 is configured to NOT perform additional hash-result checks by default. To verify the correctness of the FPGA program, users can append argument `-v` to the corresponding [makefile](../hdk/cl/examples/cl_hls/software/runtime/sha256/Makefile.inc) (i.e., `HLS_DESIGN_TEST_ARGS := -f $(GENERATED_INPUT) -B 1 -v`). However, `-v` will increase the application runtime and cause the following Table.1 script to report different numbers from the paper.
+
 (3) Check output.
 
 For each application `${APP}`, the expected outcomes are:
