@@ -1,6 +1,23 @@
-# Repo for the upcoming ASPLOS'23 paper "Vidi: Record Replay for Reconfigurable Hardware"
-This is fork from the aws/aws-fpga that contains the implementation of a record/replay framework caled **Vidi**.
+# Repo for the ASPLOS'23 paper [Vidi: Record Replay for Reconfigurable Hardware](https://dl.acm.org/doi/10.1145/3582016.3582040)
+This is forked from the aws/aws-fpga that contains the implementation of a record/replay framework called **Vidi**.
 For artifact-eval, check [here](artifact-eval).
+
+# Portability and Tutorials
+
+For portability to platforms other than the AWS F1 platform but still uses AXI interfaces, there is no polished write-up available as of this point. But feel free to email (preferrablely the first author) or post questions on github.
+Briefly, you need to hack the simulation/synth script used in [our setup](artifact-eval/README.md#customize-a-new-aws-f1-fpga-application-to-use-vidi) to alternative IPs in your setup.
+And change [the Vidi wrapper](hdk/cl/examples/cl_fpgarr/design/cl_fpgarr_wrapper.sv), which currently assumes the standard I/O interfaces on the AWS F1 platform.
+The skeleton of the Vidi wrapper basically contains:
+1. CSR control signals in module [rr_csrs](hdk/cl/examples/cl_fpgarr/design/cl_fpgarr_csrs.sv)
+2. Various AXI interconnect that setup the backend AXI trace storage and AXIL control registers
+3. Conversion of ad-hoc AXI signals to systemverilog interfaces.
+4. Wrappers of individual AXI interface to record/replay. The macro `REG_AXI_MSTR_INTF_RR` and `REG_AXI_MSTR_INTF_RR` (defined [here](hdk/cl/examples/cl_fpgarr/design/cl_fpgarr_defs.svh)) contain example wrappers as instantiations of other Vidi components.
+5. Codegen of some binary merge tree that would balance the signal widths accordign to the width of tracked interfaces.
+  - example of specifying the tracked interfaces: `hdk/cl/examples/cl_fpgarr/design/scripts/cl_fpgarr_autogrouping.py --help`
+  - example of generating the merge tree: `hdk/cl/examples/cl_fpgarr/design/scripts/sweep_mergetree.sh`
+
+
+The following is the original document that describes how the AWS framework works in general.
 
 # Table of Contents
 
